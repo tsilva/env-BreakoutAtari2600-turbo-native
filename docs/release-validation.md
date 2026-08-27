@@ -41,6 +41,30 @@ cargo test --locked --lib
 pytest -m "not stable_retro"
 ```
 
+## Supported-platform determinism evidence
+
+Every CI run generates the same ROM-free public lane trace independently on
+Apple-silicon macOS and x86-64 Linux. Each generator first proves that its
+target lane is unchanged by batch size, active neighboring lanes, lane order,
+or thread count. The workload records reset and transition observations,
+rewards, termination and truncation flags, shared information, and exact
+continuation from a serialized snapshot.
+
+The two jobs upload fresh JSON traces for that run. A dependent job downloads
+both artifacts and compares them with:
+
+```bash
+python scripts/deterministic_trace.py compare \
+  deterministic-trace-macos-arm64.json \
+  deterministic-trace-linux-x86_64.json
+```
+
+The command accepts exactly one trace from each supported binary platform and
+requires the package version and workload identity to agree. A mismatch names
+both platforms and the first divergent public trace field. Observation
+mismatches include the exact CHW element and both `uint8` values. No expected
+digest, recorded frame, or other oracle trace is checked into the repository.
+
 Before publishing, a clean candidate checkout must pass the pinned
 original-Stable-Retro semantic oracle and retain its diagnostic receipt outside
 the repository. After publishing, regenerate the oracle with
