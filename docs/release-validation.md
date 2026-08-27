@@ -41,26 +41,21 @@ cargo test --locked --lib
 pytest -m "not stable_retro"
 ```
 
-Before publishing, a clean candidate checkout must pass the pinned
-original-Stable-Retro semantic oracle and retain its diagnostic receipt outside
-the repository. After publishing, regenerate the oracle with
-`env-breakoutatari2600-turbo-native@VERSION`; that PyPI-candidate receipt is the release gate:
+Before publishing, a clean candidate checkout must pass the sole pinned Stable
+Retro Turbo semantic oracle through its public vector-provider API:
 
 ```bash
-make test-semantic-oracle ORACLE_OUTPUT=/external/evidence/breakout-receipt
-turbobench oracle breakout/start-v2 \
-  --left stable-retro@1.0.1 \
-  --right env-breakoutatari2600-turbo-native@VERSION \
-  --output /external/evidence/breakout-release-receipt
-make verify-semantic-oracle \
-  ORACLE_RECEIPT=/external/evidence/breakout-release-receipt
+RETRO_DATA_PATH=/path/to/lawful/stable_retro/data \
+make test-semantic-oracle \
+  STABLE_RETRO_TURBO_REPO=/path/to/env-StableRetro-turbo
 ```
 
-The final command is the fail-closed release gate: it requires the complete
-4,096-step shapes 1 and 4 workload, `stable-retro==1.0.1` from PyPI, no dirty or
-diagnostic provider override, and a PyPI `env-breakoutatari2600-turbo-native` candidate. Public CI
-cannot run this private-ROM gate; its ordinary tests validate the harness and
-environment contracts but are not cartridge-fidelity evidence.
+[`validation/stable-retro-turbo.json`](../validation/stable-retro-turbo.json)
+is the single operational pin. Validation fails closed if the exact checkout,
+reported provider version, Turbo Vector API, or lawful ROM is absent or
+incompatible. Public CI cannot run this private-ROM check; its ordinary tests
+validate the harness and environment contracts but are not cartridge-fidelity
+evidence.
 
 ## Candidate artifacts
 

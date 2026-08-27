@@ -152,12 +152,10 @@ remains a separate install and is not part of the core dependency set.
 uv run --frozen --extra play env-breakoutatari2600-turbo-native play       # open the player
 uv run --frozen --extra play env-breakoutatari2600-turbo-native play --uncapped
 uv run --frozen env-breakoutatari2600-turbo-native benchmark               # benchmark the policy path
-uv run --frozen python scripts/compare_stable_retro.py     # run live differential checks
 uv run --frozen ruff check .                               # lint Python
 uv run --frozen pytest -m "not stable_retro"               # run regular Python tests
 cargo test --locked --lib                                  # run Rust tests
-make test-stable-retro                                     # require live cartridge parity
-make test-semantic-oracle                                  # compare to original Stable Retro authority
+RETRO_DATA_PATH=/lawful/stable_retro/data make test-semantic-oracle  # require pinned Turbo parity
 ```
 
 Append `--help` to the player or benchmark command for its options.
@@ -177,19 +175,19 @@ Append `--help` to the player or benchmark command for its options.
   reset, matching the conventional Atari reset distribution. FIRE is not
   issued automatically: `use_fire_reset` remains unavailable and the policy
   must start each serve.
-- The canonical `Start` state targets Stable Retro's native 160×210 Atari Breakout frame,
+- The canonical `Start` state targets Stable Retro Turbo's native 160×210 Atari Breakout frame,
   lifecycle, physics, raster, rewards, collision behavior, and public trajectory
   values. In particular, `ball_y` uses the Atari RAM convention where zero
   means the serve is waiting for FIRE. Opt into raw frames with
   `render_mode="rgb_array"`; `render()` then returns lane zero's canonical Stella
   RGB frame while `render_lane(index)` selects any lane, separately from policy
-  observations. Original Stable Retro's BGR-labeled RGB565 frame transport is
+  observations. Stable Retro Turbo's inherited BGR-labeled RGB565 transport is
   normalized only at this human-facing boundary.
-- Live validation requires a separately obtained lawful ROM. The TurboBench
-  semantic oracle pins original `stable-retro==1.0.1` as the authority; the
-  sibling `stable-retro-turbo` differential remains a secondary regression
-  check. No ROM, save state, or recorded reference frame is distributed by
-  this project.
+- Live validation requires a separately obtained lawful ROM. The sole semantic
+  oracle is the Stable Retro Turbo vector provider selected by
+  [`validation/stable-retro-turbo.json`](validation/stable-retro-turbo.json).
+  No provider package, ROM, save state, or recorded reference frame is
+  distributed by this project.
 - Only Apple-silicon macOS and x86-64 Linux are supported. See
   [support](SUPPORT.md), [benchmarking](docs/benchmarking.md), and
   [release validation](docs/release-validation.md) for exact boundaries.
