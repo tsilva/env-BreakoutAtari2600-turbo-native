@@ -44,6 +44,12 @@ _NATIVE_SIGNAL_NAMES = (*_SIGNAL_NAMES, "_awaiting_fire")
 _CANONICAL_GAME = "Breakout-Atari2600-v0"
 _START_IDS = ("Start", "checker", "tunnel", "sparse")
 _RETRO_BUTTON_COUNT = 8
+_FILTERED_ACTION_ROWS = (
+    (0, 0, 0, 0, 0, 0, 0, 0),
+    (1, 0, 0, 0, 0, 0, 0, 0),
+    (0, 0, 0, 0, 0, 0, 0, 1),
+    (0, 0, 0, 0, 0, 0, 1, 0),
+)
 _NATIVE_ACTION_BY_MASK = {
     0: 0,
     1 << BUTTONS.index("BUTTON"): 1,
@@ -470,6 +476,7 @@ class BreakoutVecEnv(VectorEnv):
         self.capabilities = MappingProxyType(
             {
                 "supported_action_modes": ("filtered", "custom_discrete"),
+                "supported_filtered_actions": _FILTERED_ACTION_ROWS,
                 "supported_observation_layouts": ("chw",),
                 "supported_observation_color_modes": ("grayscale",),
                 "supported_resize_algorithms": ("area",),
@@ -711,20 +718,27 @@ class BreakoutVecEnv(VectorEnv):
                     f"for action_preset={self.action_preset!r}"
                 )
             return self._custom_native_actions[values]
-        buttons = np.asarray(actions, dtype=np.int8)
+        if type(actions) is not np.ndarray:
+            raise TypeError(
+                "Stable Retro-compatible actions must be a plain NumPy array"
+            )
+        if actions.dtype != np.int8:
+            raise TypeError("Stable Retro-compatible actions must have dtype np.int8")
+        buttons = actions
         expected_shape = (self.num_envs, _RETRO_BUTTON_COUNT)
         if buttons.shape != expected_shape:
             raise ValueError(f"actions must have shape {expected_shape}")
         if np.any((buttons != 0) & (buttons != 1)):
             raise ValueError("Stable Retro-compatible actions must contain only 0 or 1")
-        native = np.zeros(self.num_envs, dtype=np.uint8)
-        fire = buttons[:, 0] != 0
-        left = buttons[:, 6] != 0
-        right = buttons[:, 7] != 0
-        native[right & ~left] = 2
-        native[left & ~right] = 3
-        native[fire] = 1
-        return native
+        matches = np.all(
+            buttons[:, np.newaxis, :] == np.asarray(_FILTERED_ACTION_ROWS), axis=2
+        )
+        if not np.all(np.any(matches, axis=1)):
+            raise ValueError(
+                "Stable Retro-compatible actions must be exactly one of "
+                "noop, FIRE, right, or left"
+            )
+        return np.argmax(matches, axis=1).astype(np.uint8)
 
     def active_state_indices(self) -> np.ndarray:
         return self._active_state_indices
