@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import base64
 import copy
+import hashlib
 import importlib.util
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -73,6 +76,34 @@ def test_platform_comparison_names_first_divergent_public_value(tmp_path):
             r"0x1\.0000000000000p\+0"
         ),
     ):
+        module.compare_trace_files([macos_path, linux_path])
+
+
+def test_platform_comparison_names_first_divergent_observation_element(tmp_path):
+    module = _load_trace_module()
+    macos = module.generate_trace("macos-arm64")
+    linux = copy.deepcopy(macos)
+    linux["platform"] = "linux-x86_64"
+    observation = linux["trace"][3]["observation"]
+    data = bytearray(base64.b64decode(observation["data_base64"]))
+    coordinates = (1, 2, 3)
+    offset = coordinates[0] * 84 * 84 + coordinates[1] * 84 + coordinates[2]
+    macos_value = data[offset]
+    linux_value = (macos_value + 1) % 256
+    data[offset] = linux_value
+    observation["data_base64"] = base64.b64encode(data).decode("ascii")
+    observation["sha256"] = hashlib.sha256(data).hexdigest()
+    linux["trace_digest"] = module.trace_digest(linux["trace"])
+    macos_path = tmp_path / "macos.json"
+    linux_path = tmp_path / "linux.json"
+    macos_path.write_text(json.dumps(macos), encoding="utf-8")
+    linux_path.write_text(json.dumps(linux), encoding="utf-8")
+
+    expected = (
+        rf"macos-arm64.*linux-x86_64.*trace\[3\]\.observation\[1,2,3\].*"
+        rf"{macos_value}.*{linux_value}"
+    )
+    with pytest.raises(module.TraceMismatch, match=re.compile(expected)):
         module.compare_trace_files([macos_path, linux_path])
 
 

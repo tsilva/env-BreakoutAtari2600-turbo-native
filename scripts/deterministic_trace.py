@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import base64
 import hashlib
 import json
 import platform as host_platform
@@ -17,8 +18,8 @@ import numpy as np
 from env_breakoutatari2600_turbo_native import BreakoutVecEnv
 
 GAME_ID = "Breakout-Atari2600-v0"
-SCHEMA_VERSION = 1
-WORKLOAD_ID = "public-lane-determinism-v1"
+SCHEMA_VERSION = 2
+WORKLOAD_ID = "public-lane-determinism-v2"
 STEP_COUNT = 96
 SNAPSHOT_STEP = 40
 SUPPORTED_PLATFORMS = ("macos-arm64", "linux-x86_64")
@@ -38,10 +39,12 @@ def trace_digest(trace: Sequence[Mapping[str, Any]]) -> str:
 
 def _array_value(value: np.ndarray) -> dict[str, Any]:
     contiguous = np.ascontiguousarray(value)
+    data = contiguous.tobytes()
     return {
         "dtype": contiguous.dtype.str,
         "shape": list(contiguous.shape),
-        "sha256": hashlib.sha256(contiguous.tobytes()).hexdigest(),
+        "sha256": hashlib.sha256(data).hexdigest(),
+        "data_base64": base64.b64encode(data).decode("ascii"),
     }
 
 
@@ -120,6 +123,8 @@ def _first_difference(left: Any, right: Any, path: str = "trace"):
     if type(left) is not type(right):
         return path, left, right
     if isinstance(left, Mapping):
+        if _is_array_value(left) and _is_array_value(right):
+            return _array_difference(left, right, path)
         left_keys = sorted(left)
         right_keys = sorted(right)
         if left_keys != right_keys:
@@ -143,6 +148,44 @@ def _first_difference(left: Any, right: Any, path: str = "trace"):
         return None
     if left != right:
         return path, left, right
+    return None
+
+
+def _is_array_value(value: Mapping[str, Any]) -> bool:
+    return set(value) == {"dtype", "shape", "sha256", "data_base64"}
+
+
+def _array_difference(
+    left: Mapping[str, Any], right: Mapping[str, Any], path: str
+):
+    for key in ("dtype", "shape"):
+        if left[key] != right[key]:
+            return f"{path}.{key}", left[key], right[key]
+    dtype = np.dtype(left["dtype"])
+    if dtype != np.dtype(np.uint8):
+        return f"{path}.dtype", left["dtype"], "uint8 policy observation"
+    left_data = base64.b64decode(left["data_base64"], validate=True)
+    right_data = base64.b64decode(right["data_base64"], validate=True)
+    expected_size = int(np.prod(left["shape"], dtype=np.int64))
+    if len(left_data) != expected_size or len(right_data) != expected_size:
+        return (
+            f"{path}.data_base64.length",
+            len(left_data),
+            len(right_data),
+        )
+    left_array = np.frombuffer(left_data, dtype=dtype).reshape(left["shape"])
+    right_array = np.frombuffer(right_data, dtype=dtype).reshape(right["shape"])
+    different = np.argwhere(left_array != right_array)
+    if different.size:
+        coordinates = tuple(int(value) for value in different[0])
+        coordinate_path = ",".join(str(value) for value in coordinates)
+        return (
+            f"{path}[{coordinate_path}]",
+            int(left_array[coordinates]),
+            int(right_array[coordinates]),
+        )
+    if left["sha256"] != right["sha256"]:
+        return f"{path}.sha256", left["sha256"], right["sha256"]
     return None
 
 

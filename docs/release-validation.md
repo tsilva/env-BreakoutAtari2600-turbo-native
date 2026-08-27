@@ -61,8 +61,9 @@ python scripts/deterministic_trace.py compare \
 
 The command accepts exactly one trace from each supported binary platform and
 requires the package version and workload identity to agree. A mismatch names
-both platforms and the first divergent public trace field; no expected digest
-or other oracle trace is checked into the repository.
+both platforms and the first divergent public trace field. Observation
+mismatches include the exact CHW element and both `uint8` values. No expected
+digest, recorded frame, or other oracle trace is checked into the repository.
 
 Before publishing, a clean candidate checkout must pass the pinned
 original-Stable-Retro semantic oracle and retain its diagnostic receipt outside
