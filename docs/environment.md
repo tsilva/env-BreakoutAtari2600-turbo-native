@@ -55,10 +55,14 @@ immediately.
 ## Actions, observations, and rewards
 
 - With `use_restricted_actions="filtered"`, each action batch has shape
-  `(num_envs, 8)` and uses Stable Retro's button vectors. The supported rows
-  are noop, FIRE, right, and left. The native convenience interface omits that
-  option and accepts `(num_envs,)` values: `0` noop, `1` FIRE, `2` right, and
-  `3` left.
+  `(num_envs, 8)`, has dtype `np.int8`, and uses Stable Retro's button order.
+  Only the exact binary noop, FIRE, right, and left rows disclosed by
+  `capabilities["supported_filtered_actions"]` are accepted. FIRE with a
+  direction, simultaneous directions, unrelated buttons, multiple active
+  buttons, other shapes or dtypes, and non-binary values reject the whole
+  batch before any lane advances. The native convenience interface omits the
+  filtered option and accepts `(num_envs,)` values: `0` noop, `1` FIRE, `2`
+  right, and `3` left.
 - The default policy observation has shape `(num_envs, 4, 84, 84)`, CHW layout,
   grayscale `uint8` values, four stacked frames, and four native frames per
   environment step.

@@ -760,6 +760,7 @@ def test_turbo_api_v2_metadata_capabilities_and_rendering():
         assert env.live_snapshots_deterministic is True
         assert tuple(env.capabilities) == (
             "supported_action_modes",
+            "supported_filtered_actions",
             "supported_observation_layouts",
             "supported_observation_color_modes",
             "supported_resize_algorithms",

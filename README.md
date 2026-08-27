@@ -104,6 +104,8 @@ full-cap research recipes rather than short timed demos.
   advertises `rgb_array`.
 - Immutable `capabilities` and `signal_schema` declarations describe supported
   features and the dtype, shape, and reset/step availability of every signal.
+- `capabilities["supported_filtered_actions"]` discloses the exact noop, FIRE,
+  right, and left eight-button rows accepted by the filtered action transport.
 - `buttons`, `action_mode`, `action_preset`, `action_table`,
   `action_meanings`, and `action_table_hash` expose the resolved action
   semantics without provider-specific probing.
@@ -167,6 +169,11 @@ Append `--help` to the player or benchmark command for its options.
 - Native actions are `0` noop, `1` FIRE, `2` right, and `3` left. The default
   policy observation is grayscale `uint8`, CHW, and shaped
   `(num_envs, 4, 84, 84)`.
+- Filtered actions use `int8` batches shaped `(num_envs, 8)`. Only the exact
+  binary noop, FIRE, right, and left rows disclosed by
+  `capabilities["supported_filtered_actions"]` are accepted; unsupported
+  buttons, combinations, dtypes, shapes, and values reject the whole batch
+  before any lane advances.
 - Rewards are score deltas using Atari row scoring. There is no life-loss or
   board-clear shaping. The cartridge presents two walls: the first refills
   after the next paddle return, the second ends at score 864 without another
