@@ -28,6 +28,11 @@ REQUIRED_PROVIDER_INTEGRATION_FILES = (
 )
 ACTION_TABLE = ((), ("BUTTON",), ("RIGHT",), ("LEFT",))
 REQUIRED_SHARED_INFO = ("ball_y", "lives", "score")
+RESET_DISTRIBUTION_SEEDS = tuple(range(64))
+# Conservative two-sample KS envelope for 64 deterministic observations per
+# provider. The fixed corpus makes this a regression gate rather than a flaky
+# probabilistic test.
+MAX_RESET_CDF_DISTANCE = 0.25
 
 
 def canonicalize_provider_frame(frame: np.ndarray) -> np.ndarray:
@@ -412,6 +417,70 @@ def _compare_seeded_reset_noops(oracle, native, *, maximum: int) -> np.ndarray:
     return counts
 
 
+def _sample_noop_reset_distribution(
+    environment, *, seeds: tuple[int, ...], maximum: int
+) -> np.ndarray:
+    counts = np.empty(len(seeds), dtype=np.int64)
+    for index, seed in enumerate(seeds):
+        _, info = environment.reset(seed=[seed, seed])
+        lane_counts = np.asarray(info["noop_reset_count"], dtype=np.int64)
+        if lane_counts.shape != (2,):
+            raise ObservableMismatch(
+                "seeded reset distribution has incompatible noop_reset_count "
+                f"shape {lane_counts.shape}; expected (2,)"
+            )
+        counts[index] = lane_counts[0]
+    if np.any((counts < 1) | (counts > maximum)):
+        raise ObservableMismatch(
+            f"seeded reset distribution sampled outside inclusive 1..{maximum}: "
+            f"{counts.tolist()}"
+        )
+    return counts
+
+
+def validate_noop_reset_distribution(
+    oracle_counts: np.ndarray,
+    native_counts: np.ndarray,
+    *,
+    maximum: int,
+) -> dict[str, object]:
+    """Compare reproducible empirical reset distributions without pairing seeds."""
+    oracle = np.asarray(oracle_counts, dtype=np.int64).reshape(-1)
+    native = np.asarray(native_counts, dtype=np.int64).reshape(-1)
+    if oracle.shape != native.shape or oracle.size < 32:
+        raise ValueError("reset distributions require equal samples of at least 32")
+    for name, counts in (("oracle", oracle), ("native", native)):
+        if np.any((counts < 1) | (counts > maximum)):
+            raise ObservableMismatch(
+                f"{name} reset distribution sampled outside inclusive 1..{maximum}: "
+                f"{counts.tolist()}"
+            )
+
+    oracle_histogram = np.bincount(oracle, minlength=maximum + 1)[1:]
+    native_histogram = np.bincount(native, minlength=maximum + 1)[1:]
+    oracle_cdf = np.cumsum(oracle_histogram, dtype=np.float64) / oracle.size
+    native_cdf = np.cumsum(native_histogram, dtype=np.float64) / native.size
+    cdf_distance = float(np.max(np.abs(oracle_cdf - native_cdf)))
+    if cdf_distance > MAX_RESET_CDF_DISTANCE:
+        raise ObservableMismatch(
+            "seeded reset distribution mismatch: "
+            f"empirical CDF distance {cdf_distance:.6f} exceeds "
+            f"{MAX_RESET_CDF_DISTANCE:.6f}; "
+            f"oracle_histogram={oracle_histogram.tolist()}, "
+            f"native_histogram={native_histogram.tolist()}"
+        )
+    return {
+        "matches": True,
+        "sample_count": int(oracle.size),
+        "seed_corpus": [RESET_DISTRIBUTION_SEEDS[0], RESET_DISTRIBUTION_SEEDS[-1]],
+        "maximum": maximum,
+        "cdf_distance": cdf_distance,
+        "maximum_cdf_distance": MAX_RESET_CDF_DISTANCE,
+        "oracle_histogram": oracle_histogram.astype(int).tolist(),
+        "native_histogram": native_histogram.astype(int).tolist(),
+    }
+
+
 def _compare_step(oracle, native, actions: np.ndarray, *, context: str):
     oracle_result = oracle.step(actions)
     native_result = native.step(actions)
@@ -541,10 +610,26 @@ def run_live_suite(inputs: OracleInputs, *, steps: int) -> dict[str, object]:
             inputs, provider, info_path, noop_reset_max=30
         )
         try:
+            oracle_distribution = _sample_noop_reset_distribution(
+                oracle,
+                seeds=RESET_DISTRIBUTION_SEEDS,
+                maximum=30,
+            )
+            native_distribution = _sample_noop_reset_distribution(
+                native,
+                seeds=RESET_DISTRIBUTION_SEEDS,
+                maximum=30,
+            )
+            distribution = validate_noop_reset_distribution(
+                oracle_distribution,
+                native_distribution,
+                maximum=30,
+            )
             counts = _compare_seeded_reset_noops(oracle, native, maximum=30)
             report["seeded_reset_noops"] = {
                 "exact": True,
                 "counts": counts.astype(int).tolist(),
+                "distribution": distribution,
             }
         finally:
             oracle.close()

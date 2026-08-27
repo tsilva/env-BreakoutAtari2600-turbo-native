@@ -37,5 +37,9 @@ def test_representative_canonical_trajectories_match_pinned_turbo_provider():
     assert report["provider"]["turbo_api_version"] == 2
     assert report["aligned_reset"]["exact"]
     assert report["seeded_reset_noops"]["exact"]
+    distribution = report["seeded_reset_noops"]["distribution"]
+    assert distribution["sample_count"] == 64
+    assert distribution["seed_corpus"] == [0, 63]
+    assert distribution["matches"]
     assert report["trajectories"]["cycling"]["exact"]
     assert report["trajectories"]["seeded-random"]["exact"]

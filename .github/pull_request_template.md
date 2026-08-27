@@ -9,7 +9,8 @@ Describe the user-visible result and why it belongs in env-BreakoutAtari2600-tur
 - [ ] `cargo clippy --all-targets -- -D warnings`
 - [ ] `cargo test --lib`
 - [ ] `uv run pytest -m "not stable_retro"`
-- [ ] Live Stable Retro parity run, or not applicable
+- [ ] Pinned Stable Retro Turbo sole-oracle run, or not applicable:
+  `RETRO_DATA_PATH=/path/to/lawful/stable_retro/data make test-semantic-oracle`
 
 ## Compatibility and provenance
 

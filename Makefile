@@ -33,9 +33,14 @@ test-rust:
 test-python:
 	$(PYTHON) -m pytest $(PYTEST_ARGS)
 
-test-semantic-oracle: develop-release
+test-semantic-oracle:
 	@test -n "$(RETRO_DATA_PATH)" || \
 		(echo "Set RETRO_DATA_PATH to separately obtained lawful Stable Retro data" >&2; exit 2)
+	RETRO_DATA_PATH="$(RETRO_DATA_PATH)" \
+	$(PYTHON) scripts/compare_stable_retro_turbo.py \
+		--provider-repo "$(STABLE_RETRO_TURBO_REPO)" \
+		--preflight-only
+	UV_CACHE_DIR=$(UV_CACHE_DIR) $(PYTHON) -m maturin develop --release --locked
 	UV_CACHE_DIR=$(UV_CACHE_DIR) uv pip install --python "$(PYTHON)" "$(STABLE_RETRO_TURBO_REPO)"
 	BREAKOUT_REQUIRE_STABLE_RETRO_TURBO=1 \
 	BREAKOUT_STABLE_RETRO_TURBO_REPO="$(STABLE_RETRO_TURBO_REPO)" \
