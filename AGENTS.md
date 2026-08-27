@@ -13,3 +13,13 @@ Before every task in this repository, use the `$specs-author` skill to read the 
 - Use `/build-release` to cut, tag, publish, and verify PyPI releases with
   validated macOS arm64 and Linux x86_64 wheels. Skill:
   `.codex/skills/build-release/SKILL.md`.
+
+## Agent skills
+
+### Issue tracker
+
+Issues and specs are tracked in this repository’s GitHub Issues. See `docs/agents/issue-tracker.md`.
+
+### Domain docs
+
+This is a single-context repository with a root `CONTEXT.md` and system-wide ADRs under `docs/adr/`. See `docs/agents/domain.md`.
