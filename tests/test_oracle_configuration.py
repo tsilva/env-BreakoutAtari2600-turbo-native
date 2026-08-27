@@ -7,6 +7,7 @@ import subprocess
 import sys
 import tomllib
 from pathlib import Path
+from types import SimpleNamespace
 
 import numpy as np
 import pytest
@@ -328,6 +329,61 @@ def test_required_validation_fails_clearly_for_incompatible_provider(tmp_path):
     assert "provider revision is incompatible" in result.stderr
 
 
+def test_provider_load_rejects_shadow_module_despite_pinned_install_provenance(
+    tmp_path, monkeypatch
+):
+    import compare_stable_retro_turbo as comparison
+
+    provider_repo = tmp_path / "pinned-provider"
+    installed_root = tmp_path / "site-packages"
+    installed_module = installed_root / "fixture_provider"
+    shadow_module = tmp_path / "shadow/fixture_provider/__init__.py"
+    provider_repo.mkdir()
+    installed_module.mkdir(parents=True)
+    shadow_module.parent.mkdir(parents=True)
+    shadow_module.write_text("shadow code\n", encoding="utf-8")
+
+    pin = comparison.ProviderPin(
+        distribution="fixture-provider",
+        module="fixture_provider",
+        repository="https://example.invalid/fixture-provider",
+        revision="a" * 40,
+        turbo_api_version=2,
+        version="1.2.3",
+    )
+    inputs = comparison.OracleInputs(
+        pin=pin,
+        provider_repo=provider_repo,
+        data_dir=tmp_path / "data",
+        provider_data_dir=tmp_path / "provider-data",
+    )
+    provider = SimpleNamespace(
+        __file__=str(shadow_module),
+        __version__="1.2.3",
+        RetroVecEnv=SimpleNamespace(
+            metadata={"turbo_api_version": 2, "transition_transport": "numpy"}
+        ),
+    )
+
+    class _Distribution:
+        def read_text(self, filename: str) -> str | None:
+            assert filename == "direct_url.json"
+            return json.dumps({"url": provider_repo.as_uri()})
+
+        def locate_file(self, path: str) -> Path:
+            return installed_root / path
+
+    monkeypatch.setattr(comparison.importlib, "import_module", lambda _: provider)
+    monkeypatch.setattr(
+        comparison.importlib.metadata, "distribution", lambda _: _Distribution()
+    )
+
+    with pytest.raises(
+        comparison.PreflightError, match="not imported from the installed distribution"
+    ):
+        comparison._load_provider(inputs)
+
+
 def test_reset_distribution_comparison_rejects_a_wrong_distribution():
     from compare_stable_retro_turbo import (
         ObservableMismatch,
@@ -336,10 +392,10 @@ def test_reset_distribution_comparison_rejects_a_wrong_distribution():
 
     oracle_counts = np.concatenate(
         (np.ones(300, dtype=np.int64), np.full(300, 30, dtype=np.int64))
-    )
+    ).reshape(-1, 1)
     wrong_native_counts = np.concatenate(
         (np.ones(408, dtype=np.int64), np.full(192, 30, dtype=np.int64))
-    )
+    ).reshape(-1, 1)
 
     with pytest.raises(ObservableMismatch, match="distribution mismatch"):
         validate_noop_reset_distribution(
@@ -408,11 +464,31 @@ def test_reset_distribution_comparison_samples_every_lane():
         maximum=30,
     )
 
-    assert oracle_counts.size == 120
+    assert oracle_counts.shape == (60, 2)
     with pytest.raises(ObservableMismatch, match="distribution mismatch"):
         validate_noop_reset_distribution(
             oracle_counts,
             native_counts,
+            maximum=30,
+        )
+
+
+def test_reset_distribution_comparison_rejects_drift_hidden_by_lane_pooling():
+    from compare_stable_retro_turbo import (
+        ObservableMismatch,
+        validate_noop_reset_distribution,
+    )
+
+    oracle_counts = np.full((256, 2), 30, dtype=np.int64)
+    wrong_native_counts = oracle_counts.copy()
+    wrong_native_counts[:47, 1] = 1
+
+    with pytest.raises(
+        ObservableMismatch, match=r"lane 1.*distribution mismatch"
+    ):
+        validate_noop_reset_distribution(
+            oracle_counts,
+            wrong_native_counts,
             maximum=30,
         )
 

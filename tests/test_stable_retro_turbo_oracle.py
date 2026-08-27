@@ -39,9 +39,12 @@ def test_representative_canonical_trajectories_match_pinned_turbo_provider():
     assert report["seeded_reset_noops"]["exact"]
     distribution = report["seeded_reset_noops"]["distribution"]
     assert distribution["sample_count"] == 512
+    assert distribution["lane_sample_count"] == 256
+    assert distribution["lane_count"] == 2
     assert distribution["seed_corpus"] == [0, 255]
     assert distribution["maximum_cdf_distance"] == 0.15
     assert distribution["matches"]
+    assert [lane["lane"] for lane in distribution["lanes"]] == [0, 1]
     assert report["seeded_reset_noops"]["counts"] == list(range(1, 31))
     assert report["trajectories"]["cycling"]["exact"]
     assert report["trajectories"]["seeded-random"]["exact"]

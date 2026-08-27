@@ -29,9 +29,9 @@ REQUIRED_PROVIDER_INTEGRATION_FILES = (
 ACTION_TABLE = ((), ("BUTTON",), ("RIGHT",), ("LEFT",))
 REQUIRED_SHARED_INFO = ("ball_y", "lives", "score")
 RESET_DISTRIBUTION_SEEDS = tuple(range(256))
-# Each of 256 independent reset seeds exercises both lanes, producing 512 public
-# observations per provider. At effective n=256, the two-sample KS 1% critical
-# distance is approximately 1.63 * sqrt(2 / 256) = 0.144; 0.15 is conservative.
+# Each of 256 independent reset seeds exercises both lanes. Each lane is checked
+# independently at effective n=256. The two-sample KS 1% critical distance is
+# approximately 1.63 * sqrt(2 / 256) = 0.144; 0.15 is conservative.
 MAX_RESET_CDF_DISTANCE = 0.15
 
 
@@ -267,9 +267,8 @@ def _load_provider(inputs: OracleInputs):
         ) from error
 
     module_path = Path(provider.__file__).resolve()
-    direct_url_text = importlib.metadata.distribution(
-        inputs.pin.distribution
-    ).read_text("direct_url.json")
+    installed_distribution = importlib.metadata.distribution(inputs.pin.distribution)
+    direct_url_text = installed_distribution.read_text("direct_url.json")
     direct_url = json.loads(direct_url_text) if direct_url_text else {}
     parsed_url = urlparse(direct_url.get("url", ""))
     installed_source = (
@@ -277,12 +276,18 @@ def _load_provider(inputs: OracleInputs):
         if parsed_url.scheme == "file"
         else None
     )
-    if not module_path.is_relative_to(inputs.provider_repo) and (
-        installed_source != inputs.provider_repo
-    ):
+    installed_module = Path(
+        installed_distribution.locate_file(inputs.pin.module.replace(".", "/"))
+    ).resolve()
+    if installed_source != inputs.provider_repo:
         raise PreflightError(
             "Stable Retro Turbo was not installed from the pinned checkout: "
             f"module={module_path}, source={installed_source}"
+        )
+    if not module_path.is_relative_to(installed_module):
+        raise PreflightError(
+            "Stable Retro Turbo was not imported from the installed distribution: "
+            f"module={module_path}, distribution_module={installed_module}"
         )
     if provider.__version__ != inputs.pin.version:
         raise PreflightError(
@@ -495,7 +500,7 @@ def sample_noop_reset_distribution(
     lane_count = int(environment.num_envs)
     if lane_count <= 0 or not seeds:
         raise ValueError("reset distribution requires lanes and a seed corpus")
-    counts = np.empty(len(seeds) * lane_count, dtype=np.int64)
+    counts = np.empty((len(seeds), lane_count), dtype=np.int64)
     representative_seeds: dict[int, tuple[int, ...]] = {}
     for index, seed in enumerate(seeds):
         seed_batch = (seed,) * lane_count
@@ -506,8 +511,7 @@ def sample_noop_reset_distribution(
                 "seeded reset distribution has incompatible noop_reset_count "
                 f"shape {lane_counts.shape}; expected ({lane_count},)"
             )
-        offset = index * lane_count
-        counts[offset : offset + lane_count] = lane_counts
+        counts[index] = lane_counts
         for count in lane_counts:
             representative_seeds.setdefault(int(count), seed_batch)
     if np.any((counts < 1) | (counts > maximum)):
@@ -569,10 +573,19 @@ def validate_noop_reset_distribution(
     maximum: int,
 ) -> dict[str, object]:
     """Compare reproducible empirical reset distributions without pairing seeds."""
-    oracle = np.asarray(oracle_counts, dtype=np.int64).reshape(-1)
-    native = np.asarray(native_counts, dtype=np.int64).reshape(-1)
-    if oracle.shape != native.shape or oracle.size < 32:
-        raise ValueError("reset distributions require equal samples of at least 32")
+    oracle = np.asarray(oracle_counts, dtype=np.int64)
+    native = np.asarray(native_counts, dtype=np.int64)
+    if (
+        oracle.ndim != 2
+        or native.ndim != 2
+        or oracle.shape != native.shape
+        or oracle.shape[0] < 32
+        or oracle.shape[1] == 0
+    ):
+        raise ValueError(
+            "reset distributions require equal two-dimensional lane samples "
+            "with at least 32 seeds"
+        )
     for name, counts in (("oracle", oracle), ("native", native)):
         if np.any((counts < 1) | (counts > maximum)):
             raise ObservableMismatch(
@@ -580,28 +593,46 @@ def validate_noop_reset_distribution(
                 f"{counts.tolist()}"
             )
 
-    oracle_histogram = np.bincount(oracle, minlength=maximum + 1)[1:]
-    native_histogram = np.bincount(native, minlength=maximum + 1)[1:]
-    oracle_cdf = np.cumsum(oracle_histogram, dtype=np.float64) / oracle.size
-    native_cdf = np.cumsum(native_histogram, dtype=np.float64) / native.size
-    cdf_distance = float(np.max(np.abs(oracle_cdf - native_cdf)))
-    if cdf_distance > MAX_RESET_CDF_DISTANCE:
-        raise ObservableMismatch(
-            "seeded reset distribution mismatch: "
-            f"empirical CDF distance {cdf_distance:.6f} exceeds "
-            f"{MAX_RESET_CDF_DISTANCE:.6f}; "
-            f"oracle_histogram={oracle_histogram.tolist()}, "
-            f"native_histogram={native_histogram.tolist()}"
+    lanes: list[dict[str, object]] = []
+    for lane in range(oracle.shape[1]):
+        oracle_histogram = np.bincount(
+            oracle[:, lane], minlength=maximum + 1
+        )[1:]
+        native_histogram = np.bincount(
+            native[:, lane], minlength=maximum + 1
+        )[1:]
+        oracle_cdf = np.cumsum(oracle_histogram, dtype=np.float64) / oracle.shape[0]
+        native_cdf = np.cumsum(native_histogram, dtype=np.float64) / native.shape[0]
+        cdf_distance = float(np.max(np.abs(oracle_cdf - native_cdf)))
+        if cdf_distance > MAX_RESET_CDF_DISTANCE:
+            raise ObservableMismatch(
+                f"seeded reset lane {lane} distribution mismatch: "
+                f"empirical CDF distance {cdf_distance:.6f} exceeds "
+                f"{MAX_RESET_CDF_DISTANCE:.6f}; "
+                f"oracle_histogram={oracle_histogram.tolist()}, "
+                f"native_histogram={native_histogram.tolist()}"
+            )
+        lanes.append(
+            {
+                "lane": lane,
+                "cdf_distance": cdf_distance,
+                "oracle_histogram": oracle_histogram.astype(int).tolist(),
+                "native_histogram": native_histogram.astype(int).tolist(),
+            }
         )
+    maximum_observed_distance = max(
+        float(lane["cdf_distance"]) for lane in lanes
+    )
     return {
         "matches": True,
         "sample_count": int(oracle.size),
+        "lane_sample_count": int(oracle.shape[0]),
+        "lane_count": int(oracle.shape[1]),
         "seed_corpus": [RESET_DISTRIBUTION_SEEDS[0], RESET_DISTRIBUTION_SEEDS[-1]],
         "maximum": maximum,
-        "cdf_distance": cdf_distance,
+        "cdf_distance": maximum_observed_distance,
         "maximum_cdf_distance": MAX_RESET_CDF_DISTANCE,
-        "oracle_histogram": oracle_histogram.astype(int).tolist(),
-        "native_histogram": native_histogram.astype(int).tolist(),
+        "lanes": lanes,
     }
 
 
