@@ -718,7 +718,11 @@ class BreakoutVecEnv(VectorEnv):
                     f"for action_preset={self.action_preset!r}"
                 )
             return self._custom_native_actions[values]
-        if not isinstance(actions, np.ndarray) or actions.dtype != np.int8:
+        if type(actions) is not np.ndarray:
+            raise TypeError(
+                "Stable Retro-compatible actions must be a plain NumPy array"
+            )
+        if actions.dtype != np.int8:
             raise TypeError("Stable Retro-compatible actions must have dtype np.int8")
         buttons = actions
         expected_shape = (self.num_envs, _RETRO_BUTTON_COUNT)

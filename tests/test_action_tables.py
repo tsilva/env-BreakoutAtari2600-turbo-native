@@ -167,6 +167,21 @@ _NOOP_AND_FIRE = np.asarray(
             (np.zeros((2, 8), dtype=dtype), TypeError, "dtype np.int8")
             for dtype in (np.bool_, np.uint8, np.int16, np.float32)
         ],
+        (
+            np.ma.array(
+                [
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 2],
+                ],
+                mask=[
+                    [False, False, False, False, False, False, False, False],
+                    [False, False, False, False, False, False, False, True],
+                ],
+                dtype=np.int8,
+            ),
+            TypeError,
+            "plain NumPy array",
+        ),
         (np.zeros(8, dtype=np.int8), ValueError, r"shape \(2, 8\)"),
         (np.zeros((1, 8), dtype=np.int8), ValueError, r"shape \(2, 8\)"),
         (np.zeros((2, 7), dtype=np.int8), ValueError, r"shape \(2, 8\)"),
@@ -189,6 +204,7 @@ _NOOP_AND_FIRE = np.asarray(
         "uint8-dtype",
         "int16-dtype",
         "float32-dtype",
+        "masked-array",
         "missing-batch-axis",
         "wrong-lane-count",
         "wrong-button-count",
