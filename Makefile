@@ -36,14 +36,17 @@ test-python:
 test-semantic-oracle:
 	@test -n "$(RETRO_DATA_PATH)" || \
 		(echo "Set RETRO_DATA_PATH to separately obtained lawful Stable Retro data" >&2; exit 2)
+	@set -eu; \
+	provider_source=$$(mktemp -d "$${TMPDIR:-/tmp}/breakout-stable-retro-turbo.XXXXXX"); \
+	trap 'rm -rf -- "$$provider_source"' EXIT; \
 	RETRO_DATA_PATH="$(RETRO_DATA_PATH)" \
 	$(PYTHON) scripts/compare_stable_retro_turbo.py \
 		--provider-repo "$(STABLE_RETRO_TURBO_REPO)" \
-		--preflight-only
-	UV_CACHE_DIR=$(UV_CACHE_DIR) $(PYTHON) -m maturin develop --release --locked
-	UV_CACHE_DIR=$(UV_CACHE_DIR) uv pip install --python "$(PYTHON)" "$(STABLE_RETRO_TURBO_REPO)"
+		--prepare-provider "$$provider_source"; \
+	UV_CACHE_DIR=$(UV_CACHE_DIR) $(PYTHON) -m maturin develop --release --locked; \
+	UV_CACHE_DIR=$(UV_CACHE_DIR) uv pip install --python "$(PYTHON)" "$$provider_source"; \
 	BREAKOUT_REQUIRE_STABLE_RETRO_TURBO=1 \
-	BREAKOUT_STABLE_RETRO_TURBO_REPO="$(STABLE_RETRO_TURBO_REPO)" \
+	BREAKOUT_STABLE_RETRO_TURBO_REPO="$$provider_source" \
 	RETRO_DATA_PATH="$(RETRO_DATA_PATH)" \
 	$(PYTHON) -m pytest -m stable_retro tests/test_stable_retro_turbo_oracle.py $(PYTEST_ARGS)
 

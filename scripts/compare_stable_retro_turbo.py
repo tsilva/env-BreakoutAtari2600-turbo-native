@@ -28,11 +28,11 @@ REQUIRED_PROVIDER_INTEGRATION_FILES = (
 )
 ACTION_TABLE = ((), ("BUTTON",), ("RIGHT",), ("LEFT",))
 REQUIRED_SHARED_INFO = ("ball_y", "lives", "score")
-RESET_DISTRIBUTION_SEEDS = tuple(range(64))
-# Conservative two-sample KS envelope for 64 deterministic observations per
-# provider. The fixed corpus makes this a regression gate rather than a flaky
-# probabilistic test.
-MAX_RESET_CDF_DISTANCE = 0.25
+RESET_DISTRIBUTION_SEEDS = tuple(range(256))
+# Each of 256 independent reset seeds exercises both lanes, producing 512 public
+# observations per provider. At effective n=256, the two-sample KS 1% critical
+# distance is approximately 1.63 * sqrt(2 / 256) = 0.144; 0.15 is conservative.
+MAX_RESET_CDF_DISTANCE = 0.15
 
 
 def canonicalize_provider_frame(frame: np.ndarray) -> np.ndarray:
@@ -99,7 +99,90 @@ def _git_head(repository: Path) -> str:
     return result.stdout.strip()
 
 
-def preflight(provider_repo: Path, data_root: Path | None) -> OracleInputs:
+def _prepare_provider_checkout(
+    provider_repo: Path,
+    destination: Path,
+    *,
+    revision: str,
+) -> Path:
+    tree = subprocess.run(
+        [
+            "git",
+            "-C",
+            str(provider_repo),
+            "ls-tree",
+            "-r",
+            revision,
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        env={**os.environ, "GIT_NO_REPLACE_OBJECTS": "1"},
+    )
+    if tree.returncode != 0:
+        detail = tree.stderr.strip() or "cannot inspect pinned tree"
+        raise PreflightError(
+            f"cannot inspect pinned Stable Retro Turbo provider tree: {detail}"
+        )
+    submodules = [
+        line.partition("\t")[2]
+        for line in tree.stdout.splitlines()
+        if line.startswith("160000 ")
+    ]
+    if submodules:
+        raise PreflightError(
+            "pinned Stable Retro Turbo provider contains unsupported submodules: "
+            f"{', '.join(submodules)}"
+        )
+
+    if destination.exists() and any(destination.iterdir()):
+        raise PreflightError(
+            f"isolated provider destination is not empty: {destination}"
+        )
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    clone = subprocess.run(
+        [
+            "git",
+            "clone",
+            "--quiet",
+            "--no-checkout",
+            "--no-local",
+            str(provider_repo),
+            str(destination),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        env={**os.environ, "GIT_NO_REPLACE_OBJECTS": "1"},
+    )
+    if clone.returncode != 0:
+        detail = clone.stderr.strip() or "clone failed"
+        raise PreflightError(
+            "cannot create isolated Stable Retro Turbo provider checkout: "
+            f"{detail}"
+        )
+    checkout = subprocess.run(
+        ["git", "-C", str(destination), "checkout", "--quiet", "--detach", revision],
+        check=False,
+        capture_output=True,
+        text=True,
+        env={**os.environ, "GIT_NO_REPLACE_OBJECTS": "1"},
+    )
+    if checkout.returncode != 0:
+        detail = checkout.stderr.strip() or "checkout failed"
+        raise PreflightError(
+            "cannot checkout pinned Stable Retro Turbo provider revision: "
+            f"{detail}"
+        )
+    return destination.resolve()
+
+
+def preflight(
+    provider_repo: Path,
+    data_root: Path | None,
+    *,
+    prepare_provider: Path | None = None,
+) -> OracleInputs:
     pin = ProviderPin.load()
     if data_root is None:
         raise PreflightError(
@@ -115,11 +198,10 @@ def preflight(provider_repo: Path, data_root: Path | None) -> OracleInputs:
         )
 
     provider_repo = provider_repo.expanduser().resolve()
-    package_dir = provider_repo / pin.module
-    if not package_dir.is_dir():
+    if not provider_repo.is_dir():
         raise PreflightError(
             f"pinned Stable Retro Turbo provider checkout not found at "
-            f"{provider_repo}; expected module directory {package_dir}"
+            f"{provider_repo}; expected a Git checkout"
         )
 
     actual_revision = _git_head(provider_repo)
@@ -127,6 +209,19 @@ def preflight(provider_repo: Path, data_root: Path | None) -> OracleInputs:
         raise PreflightError(
             "Stable Retro Turbo provider revision is incompatible: "
             f"expected {pin.revision}, found {actual_revision} at {provider_repo}"
+        )
+    if prepare_provider is not None:
+        provider_repo = _prepare_provider_checkout(
+            provider_repo,
+            prepare_provider.expanduser().resolve(),
+            revision=pin.revision,
+        )
+
+    package_dir = provider_repo / pin.module
+    if not package_dir.is_dir():
+        raise PreflightError(
+            f"pinned Stable Retro Turbo provider checkout not found at "
+            f"{provider_repo}; expected module directory {package_dir}"
         )
 
     version_path = package_dir / "VERSION.txt"
@@ -394,48 +489,77 @@ def _seed_for_noop_count(count: int, maximum: int) -> int:
     raise RuntimeError(f"could not align reset noop count {count}")
 
 
-def _compare_seeded_reset_noops(oracle, native, *, maximum: int) -> np.ndarray:
-    oracle_observation, oracle_info = oracle.reset(seed=[0, 0])
-    counts = np.asarray(oracle_info["noop_reset_count"], dtype=np.int64)
-    if np.any((counts < 1) | (counts > maximum)):
-        raise ObservableMismatch(
-            f"seeded reset noops: counts outside inclusive 1..{maximum}: {counts}"
-        )
-    aligned_native_seeds = [
-        _seed_for_noop_count(int(count), maximum) for count in counts
-    ]
-    native_observation, native_info = native.reset(seed=aligned_native_seeds)
-    _compare_reset_values(
-        oracle,
-        native,
-        oracle_observation,
-        native_observation,
-        oracle_info,
-        native_info,
-        context="seeded reset noops",
-    )
-    return counts
-
-
-def _sample_noop_reset_distribution(
+def sample_noop_reset_distribution(
     environment, *, seeds: tuple[int, ...], maximum: int
-) -> np.ndarray:
-    counts = np.empty(len(seeds), dtype=np.int64)
+) -> tuple[np.ndarray, dict[int, tuple[int, ...]]]:
+    lane_count = int(environment.num_envs)
+    if lane_count <= 0 or not seeds:
+        raise ValueError("reset distribution requires lanes and a seed corpus")
+    counts = np.empty(len(seeds) * lane_count, dtype=np.int64)
+    representative_seeds: dict[int, tuple[int, ...]] = {}
     for index, seed in enumerate(seeds):
-        _, info = environment.reset(seed=[seed, seed])
+        seed_batch = (seed,) * lane_count
+        _, info = environment.reset(seed=list(seed_batch))
         lane_counts = np.asarray(info["noop_reset_count"], dtype=np.int64)
-        if lane_counts.shape != (2,):
+        if lane_counts.shape != (lane_count,):
             raise ObservableMismatch(
                 "seeded reset distribution has incompatible noop_reset_count "
-                f"shape {lane_counts.shape}; expected (2,)"
+                f"shape {lane_counts.shape}; expected ({lane_count},)"
             )
-        counts[index] = lane_counts[0]
+        offset = index * lane_count
+        counts[offset : offset + lane_count] = lane_counts
+        for count in lane_counts:
+            representative_seeds.setdefault(int(count), seed_batch)
     if np.any((counts < 1) | (counts > maximum)):
         raise ObservableMismatch(
             f"seeded reset distribution sampled outside inclusive 1..{maximum}: "
             f"{counts.tolist()}"
         )
-    return counts
+    return counts, representative_seeds
+
+
+def validate_seeded_reset_semantics(
+    oracle,
+    native,
+    *,
+    representative_seeds: dict[int, tuple[int, ...]],
+    maximum: int,
+) -> np.ndarray:
+    expected_counts = set(range(1, maximum + 1))
+    missing = sorted(expected_counts - set(representative_seeds))
+    if missing:
+        raise ObservableMismatch(
+            "seeded reset semantics corpus did not observe noop counts "
+            f"{missing} from inclusive 1..{maximum}"
+        )
+
+    verified: list[int] = []
+    for target_count in sorted(expected_counts):
+        oracle_seeds = representative_seeds[target_count]
+        oracle_observation, oracle_info = oracle.reset(seed=list(oracle_seeds))
+        oracle_counts = np.asarray(
+            oracle_info["noop_reset_count"], dtype=np.int64
+        )
+        if target_count not in oracle_counts:
+            raise ObservableMismatch(
+                f"seeded reset noop count {target_count}: oracle seed corpus "
+                f"was not reproducible; observed {oracle_counts.tolist()}"
+            )
+        aligned_native_seeds = [
+            _seed_for_noop_count(int(count), maximum) for count in oracle_counts
+        ]
+        native_observation, native_info = native.reset(seed=aligned_native_seeds)
+        _compare_reset_values(
+            oracle,
+            native,
+            oracle_observation,
+            native_observation,
+            oracle_info,
+            native_info,
+            context=f"seeded reset noop count {target_count}",
+        )
+        verified.append(target_count)
+    return np.asarray(verified, dtype=np.int64)
 
 
 def validate_noop_reset_distribution(
@@ -610,12 +734,14 @@ def run_live_suite(inputs: OracleInputs, *, steps: int) -> dict[str, object]:
             inputs, provider, info_path, noop_reset_max=30
         )
         try:
-            oracle_distribution = _sample_noop_reset_distribution(
-                oracle,
-                seeds=RESET_DISTRIBUTION_SEEDS,
-                maximum=30,
+            oracle_distribution, representative_seeds = (
+                sample_noop_reset_distribution(
+                    oracle,
+                    seeds=RESET_DISTRIBUTION_SEEDS,
+                    maximum=30,
+                )
             )
-            native_distribution = _sample_noop_reset_distribution(
+            native_distribution, _ = sample_noop_reset_distribution(
                 native,
                 seeds=RESET_DISTRIBUTION_SEEDS,
                 maximum=30,
@@ -625,7 +751,12 @@ def run_live_suite(inputs: OracleInputs, *, steps: int) -> dict[str, object]:
                 native_distribution,
                 maximum=30,
             )
-            counts = _compare_seeded_reset_noops(oracle, native, maximum=30)
+            counts = validate_seeded_reset_semantics(
+                oracle,
+                native,
+                representative_seeds=representative_seeds,
+                maximum=30,
+            )
             report["seeded_reset_noops"] = {
                 "exact": True,
                 "counts": counts.astype(int).tolist(),
@@ -659,6 +790,11 @@ def parse_args() -> argparse.Namespace:
         help="validate the provider pin and lawful data without loading either environment",
     )
     parser.add_argument(
+        "--prepare-provider",
+        type=Path,
+        help="create and validate an isolated checkout of the pinned provider commit",
+    )
+    parser.add_argument(
         "--steps",
         type=int,
         default=2_048,
@@ -671,14 +807,18 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     args = parse_args()
     try:
-        inputs = preflight(args.provider_repo, args.data_root)
+        inputs = preflight(
+            args.provider_repo,
+            args.data_root,
+            prepare_provider=args.prepare_provider,
+        )
     except PreflightError as error:
         print(f"oracle validation unavailable: {error}", file=sys.stderr)
         return 2
-    if args.preflight_only:
+    if args.preflight_only or args.prepare_provider is not None:
         print(
-            "Stable Retro Turbo oracle inputs validated: "
-            f"{inputs.pin.version} at {inputs.pin.revision}"
+            "Stable Retro Turbo oracle inputs validated from isolated source: "
+            f"{inputs.pin.version} at {inputs.pin.revision} ({inputs.provider_repo})"
         )
         return 0
     try:

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tomllib
@@ -48,10 +49,122 @@ def test_make_exposes_one_required_turbo_oracle_command():
     assert makefile.count("\ntest-semantic-oracle:") == 1
     assert "BREAKOUT_REQUIRE_STABLE_RETRO_TURBO=1" in makefile
     assert "tests/test_stable_retro_turbo_oracle.py" in makefile
+    assert "--prepare-provider \"$$provider_source\"" in makefile
+    assert 'uv pip install --python "$(PYTHON)" "$$provider_source"' in makefile
+    assert 'BREAKOUT_STABLE_RETRO_TURBO_REPO="$$provider_source"' in makefile
     assert "stable-retro@" not in makefile
     assert "TURBOBENCH" not in makefile
     assert "\ntest-stable-retro:" not in makefile
     assert "\nverify-semantic-oracle:" not in makefile
+
+
+def test_prepare_provider_uses_only_the_pinned_committed_source(tmp_path):
+    fixture_root = tmp_path / "fixture-project"
+    fixture_script = fixture_root / "scripts/compare_stable_retro_turbo.py"
+    fixture_script.parent.mkdir(parents=True)
+    shutil.copy2(
+        REPO_ROOT / "scripts/compare_stable_retro_turbo.py",
+        fixture_script,
+    )
+
+    data_dir = tmp_path / "data/stable/Breakout-Atari2600-v0"
+    data_dir.mkdir(parents=True)
+    (data_dir / "rom.a26").write_bytes(b"external test fixture")
+    provider_repo = tmp_path / "provider"
+    provider_package = provider_repo / "fixture_provider"
+    provider_data = provider_package / "data/stable/Breakout-Atari2600-v0"
+    provider_data.mkdir(parents=True)
+    (provider_package / "VERSION.txt").write_text("1.2.3\n", encoding="utf-8")
+    (provider_package / "marker.txt").write_text("pinned\n", encoding="utf-8")
+    (provider_package / "staged-marker.txt").write_text(
+        "pinned\n", encoding="utf-8"
+    )
+    for filename in ("Start.state", "data.json", "scenario.json"):
+        (provider_data / filename).write_text("pinned\n", encoding="utf-8")
+    (provider_repo / ".gitignore").write_text("ignored-payload\n", encoding="utf-8")
+    subprocess.run(["git", "init", "-q", str(provider_repo)], check=True)
+    subprocess.run(["git", "-C", str(provider_repo), "add", "."], check=True)
+    subprocess.run(
+        [
+            "git",
+            "-C",
+            str(provider_repo),
+            "-c",
+            "user.name=Oracle test",
+            "-c",
+            "user.email=oracle-test@example.invalid",
+            "commit",
+            "-qm",
+            "pinned provider",
+        ],
+        check=True,
+    )
+    revision = subprocess.run(
+        ["git", "-C", str(provider_repo), "rev-parse", "HEAD"],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    pin_dir = fixture_root / "validation"
+    pin_dir.mkdir()
+    (pin_dir / "stable-retro-turbo.json").write_text(
+        json.dumps(
+            {
+                "distribution": "fixture-provider",
+                "module": "fixture_provider",
+                "repository": "https://example.invalid/fixture-provider",
+                "revision": revision,
+                "turbo_api_version": 2,
+                "version": "1.2.3",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    (provider_package / "marker.txt").write_text("modified\n", encoding="utf-8")
+    (provider_package / "staged-marker.txt").write_text(
+        "modified\n", encoding="utf-8"
+    )
+    subprocess.run(
+        ["git", "-C", str(provider_repo), "add", "fixture_provider/staged-marker.txt"],
+        check=True,
+    )
+    (provider_package / "untracked-payload").write_text("attack\n", encoding="utf-8")
+    (provider_repo / "ignored-payload").write_text("attack\n", encoding="utf-8")
+    prepared_provider = tmp_path / "prepared-provider"
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(fixture_script),
+            "--provider-repo",
+            str(provider_repo),
+            "--data-root",
+            str(tmp_path / "data"),
+            "--prepare-provider",
+            str(prepared_provider),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert (prepared_provider / "fixture_provider/marker.txt").read_text(
+        encoding="utf-8"
+    ) == "pinned\n"
+    assert (prepared_provider / "fixture_provider/staged-marker.txt").read_text(
+        encoding="utf-8"
+    ) == "pinned\n"
+    assert not (prepared_provider / "fixture_provider/untracked-payload").exists()
+    assert not (prepared_provider / "ignored-payload").exists()
+    prepared_revision = subprocess.run(
+        ["git", "-C", str(prepared_provider), "rev-parse", "HEAD"],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    assert prepared_revision == revision
 
 
 def test_canonical_command_rejects_wrong_checkout_before_install(tmp_path):
@@ -221,12 +334,109 @@ def test_reset_distribution_comparison_rejects_a_wrong_distribution():
         validate_noop_reset_distribution,
     )
 
-    oracle_counts = np.tile(np.arange(1, 31, dtype=np.int64), 4)
-    wrong_native_counts = np.ones(oracle_counts.shape, dtype=np.int64)
+    oracle_counts = np.concatenate(
+        (np.ones(300, dtype=np.int64), np.full(300, 30, dtype=np.int64))
+    )
+    wrong_native_counts = np.concatenate(
+        (np.ones(408, dtype=np.int64), np.full(192, 30, dtype=np.int64))
+    )
 
     with pytest.raises(ObservableMismatch, match="distribution mismatch"):
         validate_noop_reset_distribution(
             oracle_counts,
             wrong_native_counts,
+            maximum=30,
+        )
+
+
+class _ResetCountEnvironment:
+    num_envs = 2
+
+    def __init__(
+        self,
+        *,
+        corrupt_lane_one_distribution: bool = False,
+        corrupt_semantics_at: int | None = None,
+    ) -> None:
+        self.corrupt_lane_one_distribution = corrupt_lane_one_distribution
+        self.corrupt_semantics_at = corrupt_semantics_at
+        self.frames = np.zeros((2, 1, 1, 3), dtype=np.uint8)
+
+    def reset(self, *, seed):
+        counts = np.asarray(
+            [
+                np.random.default_rng(value).integers(1, 31, dtype=np.uint64)
+                for value in seed
+            ],
+            dtype=np.int64,
+        )
+        if self.corrupt_lane_one_distribution:
+            counts[1] = 1
+        observation = counts.astype(np.uint8).reshape(2, 1)
+        if self.corrupt_semantics_at is not None:
+            observation[counts == self.corrupt_semantics_at] += 1
+        self.frames = np.zeros((2, 1, 1, 3), dtype=np.uint8)
+        info = {
+            "ball_y": counts.copy(),
+            "lives": np.full(2, 5, dtype=np.int64),
+            "score": np.zeros(2, dtype=np.int64),
+            "state_index": np.zeros(2, dtype=np.int64),
+            "start_source": np.asarray(["Start", "Start"]),
+            "noop_reset_count": counts.copy(),
+        }
+        return observation, info
+
+    def render_lane(self, lane: int) -> np.ndarray:
+        return self.frames[lane]
+
+
+def test_reset_distribution_comparison_samples_every_lane():
+    from compare_stable_retro_turbo import (
+        ObservableMismatch,
+        sample_noop_reset_distribution,
+        validate_noop_reset_distribution,
+    )
+
+    oracle_counts, _ = sample_noop_reset_distribution(
+        _ResetCountEnvironment(),
+        seeds=tuple(range(60)),
+        maximum=30,
+    )
+    native_counts, _ = sample_noop_reset_distribution(
+        _ResetCountEnvironment(corrupt_lane_one_distribution=True),
+        seeds=tuple(range(60)),
+        maximum=30,
+    )
+
+    assert oracle_counts.size == 120
+    with pytest.raises(ObservableMismatch, match="distribution mismatch"):
+        validate_noop_reset_distribution(
+            oracle_counts,
+            native_counts,
+            maximum=30,
+        )
+
+
+def test_aligned_reset_semantics_reject_a_wrong_nondefault_count():
+    from compare_stable_retro_turbo import (
+        ObservableMismatch,
+        validate_seeded_reset_semantics,
+    )
+
+    seeds_by_count: dict[int, tuple[int, int]] = {}
+    for seed in range(100_000):
+        count = int(np.random.default_rng(seed).integers(1, 31, dtype=np.uint64))
+        seeds_by_count.setdefault(count, (seed, 0))
+        if len(seeds_by_count) == 30:
+            break
+
+    with pytest.raises(
+        ObservableMismatch,
+        match="seeded reset noop count 17: policy observation mismatch",
+    ):
+        validate_seeded_reset_semantics(
+            _ResetCountEnvironment(),
+            _ResetCountEnvironment(corrupt_semantics_at=17),
+            representative_seeds=seeds_by_count,
             maximum=30,
         )
