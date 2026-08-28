@@ -13,7 +13,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "command",
         nargs="?",
-        choices=("play", "benchmark"),
+        choices=("play",),
         help="command to run",
     )
     return parser
@@ -29,11 +29,6 @@ def main(argv: Sequence[str] | None = None) -> None:
         from .play import main as play_main
 
         play_main(args[1:], prog="env-breakoutatari2600-turbo-native play")
-        return
-    if args[0] == "benchmark":
-        from .benchmark import main as benchmark_main
-
-        benchmark_main(args[1:], prog="env-breakoutatari2600-turbo-native benchmark")
         return
     parser.parse_args(args)
 

@@ -153,14 +153,15 @@ remains a separate install and is not part of the core dependency set.
 ```bash
 uv run --frozen --extra play env-breakoutatari2600-turbo-native play       # open the player
 uv run --frozen --extra play env-breakoutatari2600-turbo-native play --uncapped
-uv run --frozen env-breakoutatari2600-turbo-native benchmark               # benchmark the policy path
 uv run --frozen ruff check .                               # lint Python
 uv run --frozen pytest -m "not stable_retro"               # run regular Python tests
 cargo test --locked --lib                                  # run Rust tests
 RETRO_DATA_PATH=/lawful/stable_retro/data make test-semantic-oracle ORACLE_RECEIPT=/external/oracle.json  # certify pinned Turbo parity
 ```
 
-Append `--help` to the player or benchmark command for its options.
+Append `--help` to the player command for its options. Matched performance
+comparisons are provided by [TurboBench](https://github.com/tsilva/turbobench),
+not by this repository.
 
 ## Notes
 
@@ -204,8 +205,8 @@ Append `--help` to the player or benchmark command for its options.
   No provider package, ROM, save state, or recorded reference frame is
   distributed by this project.
 - Only Apple-silicon macOS and x86-64 Linux are supported. See
-  [support](SUPPORT.md), [benchmarking](docs/benchmarking.md), and
-  [release validation](docs/release-validation.md) for exact boundaries.
+  [support](SUPPORT.md) and [release validation](docs/release-validation.md)
+  for exact boundaries.
 - The [specification compliance matrix](docs/specification-compliance.md) maps
   every project requirement to its maintained executable or non-code evidence.
 - The project is a `0.x` community preview. Public changes are recorded in the

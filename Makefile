@@ -1,4 +1,4 @@
-.PHONY: benchmark develop develop-release lint play release-prepare test test-python test-rust test-semantic-oracle test-semantic-oracle-diagnostic
+.PHONY: develop develop-release lint play release-prepare test test-python test-rust test-semantic-oracle test-semantic-oracle-diagnostic
 
 PYTHON ?= .venv/bin/python
 UV_CACHE_DIR ?= .uv-cache
@@ -14,9 +14,6 @@ develop:
 
 develop-release:
 	UV_CACHE_DIR=$(UV_CACHE_DIR) $(PYTHON) -m maturin develop --release --locked
-
-benchmark: develop-release
-	$(PYTHON) -m env_breakoutatari2600_turbo_native.benchmark
 
 play: develop-release
 	$(PYTHON) -m env_breakoutatari2600_turbo_native.play

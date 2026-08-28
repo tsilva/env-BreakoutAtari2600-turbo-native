@@ -35,7 +35,7 @@ Evidence: `.github/workflows/oracle-evidence.yml` constructs lawful ROM input on
 <!-- SPECS:4 -->
 > Training implementations must remain outside this repository.
 
-Evidence: `tests/test_community.py::test_readme_delegates_training_to_pinned_gradlab_recipes` rejects a project training command. Non-code review: `git ls-files` contains environment, player, benchmark, validation, and release code but no training implementation.
+Evidence: `tests/test_community.py::test_readme_delegates_training_to_pinned_gradlab_recipes` rejects a project training command. Non-code review: `git ls-files` contains environment, player, validation, and release code but no training implementation.
 
 <!-- SPECS:5 -->
 > Stable-Baselines3 and interactive-player dependencies must remain optional rather than core dependencies.
@@ -131,7 +131,7 @@ Evidence: `tests/test_env.py::test_breakout_contract_uses_the_canonical_turbo_pr
 
 Evidence: `tests/test_oracle_configuration.py::test_operational_pin_selects_stable_retro_turbo_vector_provider`, `tests/test_oracle_configuration.py::test_make_exposes_one_certifying_turbo_oracle_command`, and `tests/test_spec_compliance.py::test_current_public_contract_never_demotes_the_turbo_oracle` enforce one pin, one gate, and current authority language.
 
-The drift guard inspects Git modes and blobs for every tracked current contract, code, workflow, lock, and release-skill file. It rejects symlinks and invalid UTF-8 text candidates, skips only NUL-marked binary blobs, and subjects its own adversarial test module to the same scan. Phrase-local rules allow only negation that governs the prohibited claim, tightly described upstream/legal provenance, and actual versioned changelog/benchmark history.
+The drift guard inspects Git modes and blobs for every tracked current contract, code, workflow, lock, and release-skill file. It rejects symlinks and invalid UTF-8 text candidates, skips only NUL-marked binary blobs, and subjects its own adversarial test module to the same scan. Phrase-local rules allow only negation that governs the prohibited claim, tightly described upstream/legal provenance, and actual versioned changelog history.
 
 <!-- SPECS:23 -->
 > After aligning the starting state or reset outcome, every externally observable canonical `Start` trajectory detail must match the oracle under equivalent configuration and actions, including rendered frames, policy observations, rewards, score, lives, termination, truncation, and shared information values.

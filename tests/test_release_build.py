@@ -172,7 +172,13 @@ def test_release_workflow_publishes_sdist_checksums_and_github_release():
     assert "oracle_release_gate.py verify-release" in build
     assert '--repository "$GITHUB_REPOSITORY"' in build
     assert "environment: oracle" in oracle
-    assert "secrets.BREAKOUT_ROM_BASE64" in oracle
+    assert "secrets.R2_ACCESS_KEY_ID" in oracle
+    assert "secrets.R2_SECRET_ACCESS_KEY" in oracle
+    assert "vars.R2_ACCOUNT_ID" in oracle
+    assert "vars.R2_BUCKET" in oracle
+    assert "aws s3 cp" in oracle
+    assert "validation/oracle-roms.json" in oracle
+    assert "BREAKOUT_ROM_BASE64" not in oracle
     assert "make test-semantic-oracle" in oracle
     assert "actions/attest-build-provenance" in oracle
     assert "oracle_receipt" not in oracle
