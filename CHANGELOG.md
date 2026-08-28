@@ -6,6 +6,8 @@ releases; changes will be recorded here.
 
 ## Unreleased
 
+## [0.5.8] - 2026-08-28
+
 ### Changed
 
 - Promoted the pinned Stable Retro Turbo vector provider to the sole live
@@ -230,6 +232,7 @@ releases; changes will be recorded here.
 
 - Initial public release.
 
+[0.5.8]: https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/compare/v0.5.7...v0.5.8
 [0.5.7]: https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/compare/v0.5.6...v0.5.7
 [0.5.6]: https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/compare/v0.5.5...v0.5.6
 [0.5.5]: https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/compare/v0.5.4...v0.5.5
