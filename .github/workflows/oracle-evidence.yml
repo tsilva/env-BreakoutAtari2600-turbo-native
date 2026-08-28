@@ -91,7 +91,7 @@ jobs:
 
           repository="$(jq -r .repository validation/stable-retro-turbo.json)"
           revision="$(jq -r .revision validation/stable-retro-turbo.json)"
-          git clone --quiet --filter=blob:none --no-checkout "$repository" "$RUNNER_TEMP/provider"
+          git clone --quiet --no-checkout "$repository" "$RUNNER_TEMP/provider"
           git -C "$RUNNER_TEMP/provider" checkout --quiet --detach "$revision"
 
       - name: Run canonical sole-oracle gate
