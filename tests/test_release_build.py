@@ -179,6 +179,7 @@ def test_release_workflow_publishes_sdist_checksums_and_github_release():
     assert "aws s3 cp" in oracle
     assert "validation/oracle-roms.json" in oracle
     assert "BREAKOUT_ROM_BASE64" not in oracle
+    assert "--filter=blob:none" not in oracle
     assert "make test-semantic-oracle" in oracle
     assert "actions/attest-build-provenance" in oracle
     assert "oracle_receipt" not in oracle
