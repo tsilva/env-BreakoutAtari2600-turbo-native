@@ -10,8 +10,6 @@ from pathlib import Path
 
 import pytest
 
-from scripts.benchmark_comparison import build_parser
-
 REPO_ROOT = Path(__file__).resolve().parents[1]
 COMPLIANCE_MATRIX = REPO_ROOT / "docs" / "specification-compliance.md"
 FORMER_IDENTIFIERS = (
@@ -1105,12 +1103,6 @@ def test_public_docs_use_frame_terms_from_the_domain_glossary():
     environment_docs = (REPO_ROOT / "docs" / "environment.md").read_text(
         encoding="utf-8"
     )
-    benchmarking_docs = (REPO_ROOT / "docs" / "benchmarking.md").read_text(
-        encoding="utf-8"
-    )
-    benchmark_report = (
-        REPO_ROOT / "docs" / "benchmarks" / "v0.3.0-macos-arm64.md"
-    ).read_text(encoding="utf-8")
     public_api = "\n".join(
         text
         for path, text in _tracked_texts()
@@ -1123,8 +1115,6 @@ def test_public_docs_use_frame_terms_from_the_domain_glossary():
     assert "Opt into raw frames" not in rendered_docs
     assert "raw emulator frames" not in environment_docs
     assert "Stable Retro-compatible" not in rendered_docs + environment_docs
-    assert "with ALE, Stable Retro," not in benchmarking_docs
-    assert "Stable Retro performs" not in benchmark_report
     assert "native 160×210 Atari Breakout frame" not in rendered_docs
     assert "160×210 native indexed frame" in rendered_docs
     assert "native 160x210 RGB frame" not in public_api
@@ -1140,13 +1130,3 @@ def test_public_docs_use_frame_terms_from_the_domain_glossary():
         r"\braw frames?\b",
     ):
         assert not re.search(ambiguous, public_prose, re.IGNORECASE), ambiguous
-
-
-def test_benchmark_comparison_names_the_turbo_provider_explicitly():
-    parser = build_parser()
-    option_strings = {
-        option for action in parser._actions for option in action.option_strings
-    }
-
-    assert "--stable-retro-turbo-repo" in option_strings
-    assert "--stable-retro-repo" not in option_strings

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import pytest
 from env_breakoutatari2600_turbo_native.cli import build_parser, main
 
 
@@ -8,7 +9,9 @@ def test_cli_help_and_commands():
 
     assert parser.parse_args([]).command is None
     assert parser.parse_args(["play"]).command == "play"
-    assert parser.parse_args(["benchmark"]).command == "benchmark"
+    with pytest.raises(SystemExit):
+        parser.parse_args(["benchmark"])
+    assert "benchmark" not in parser.format_help()
     assert "train" not in parser.format_help()
 
 

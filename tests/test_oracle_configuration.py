@@ -17,6 +17,26 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 
+def test_oracle_rom_manifest_pins_external_breakout_rom():
+    manifest = json.loads(
+        (REPO_ROOT / "validation/oracle-roms.json").read_text(encoding="utf-8")
+    )
+
+    assert manifest == {
+        "schema": 1,
+        "roms": {
+            "Breakout-Atari2600-v0": {
+                "object_key": "atari2600/Breakout-Atari2600-v0/rom.a26",
+                "sha256": (
+                    "376323f051c3c373c887fd83abead39d"
+                    "87d844ff283d435f4addbfc1710c6fd5"
+                ),
+                "size": 2048,
+            }
+        },
+    }
+
+
 def test_operational_pin_selects_stable_retro_turbo_vector_provider():
     pin = json.loads(
         (REPO_ROOT / "validation/stable-retro-turbo.json").read_text(encoding="utf-8")
