@@ -157,14 +157,33 @@ def test_release_workflow_publishes_sdist_checksums_and_github_release():
     publish = (
         REPO_ROOT / ".github" / "workflows" / "release.yml"
     ).read_text(encoding="utf-8")
+    oracle = (
+        REPO_ROOT / ".github" / "workflows" / "oracle-evidence.yml"
+    ).read_text(encoding="utf-8")
 
     assert "build-sdist" in build
     assert "*.tar.gz" in build
     assert "uv python install 3.11 3.14" in build
     assert "release_state.py candidate" in build
+    assert "oracle_run_id" in build
+    assert "oracle_receipt" not in build
+    assert ".github/workflows/oracle-evidence.yml" in build
+    assert 'test "$(jq -r .head_sha <<< "$run")"' in build
+    assert "oracle_release_gate.py verify-release" in build
+    assert '--repository "$GITHUB_REPOSITORY"' in build
+    assert "environment: oracle" in oracle
+    assert "secrets.BREAKOUT_ROM_BASE64" in oracle
+    assert "make test-semantic-oracle" in oracle
+    assert "actions/attest-build-provenance" in oracle
+    assert "oracle_receipt" not in oracle
+    assert "oracle_release_gate.py verify-local" not in build
+    assert "stable-retro-turbo-oracle.json" in build
     assert "attest-build-provenance" in build
     assert "attest-sbom" in build
     assert "gh release create" in publish
+    assert "oracle_release_gate.py verify-release" in publish
+    assert "stable-retro-turbo-oracle.json" in publish
+    assert "oracle_release_gate.py verify-local" not in publish
     assert "gh-action-pypi-publish" in publish
     assert "cp candidate/dist/env_breakoutatari2600_turbo_native-*" in publish
     assert "packages-dir: publish-primary" in publish
@@ -174,6 +193,36 @@ def test_release_workflow_publishes_sdist_checksums_and_github_release():
     assert "RELEASE_APP_ID" not in publish
     assert "parity_run_id" not in build
     assert "push:\n    tags:" not in build + publish
+
+
+def test_publish_workflow_rejects_wrong_candidate_run_head_ref_or_workflow():
+    publish = (
+        REPO_ROOT / ".github" / "workflows" / "release.yml"
+    ).read_text(encoding="utf-8")
+
+    for required in (
+        'test "$(jq -r .head_sha <<< "$run")" = "${{ inputs.commit }}"',
+        'test "$(jq -r .head_branch <<< "$run")" = main',
+        'test "$(jq -r .path <<< "$run")" = .github/workflows/release-build.yml',
+    ):
+        assert required in publish
+
+
+def test_publish_workflow_binds_distribution_attestations_to_candidate_source():
+    publish = (
+        REPO_ROOT / ".github" / "workflows" / "release.yml"
+    ).read_text(encoding="utf-8")
+
+    assert (
+        '--signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release-build.yml"'
+        in publish
+    )
+    assert '--source-digest "${{ inputs.commit }}"' in publish
+    assert "--deny-self-hosted-runners" in publish
+    assert (
+        'gh attestation verify "$distribution" --repo "$GITHUB_REPOSITORY"\n'
+        not in publish
+    )
 
 
 def test_release_notes_are_validated_before_pypi_publication():

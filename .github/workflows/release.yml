@@ -68,6 +68,8 @@ jobs:
           test "$(jq -r .conclusion <<< "$run")" = success
           test "$(jq -r .event <<< "$run")" = workflow_dispatch
           test "$(jq -r .path <<< "$run")" = .github/workflows/release-build.yml
+          test "$(jq -r .head_sha <<< "$run")" = "${{ inputs.commit }}"
+          test "$(jq -r .head_branch <<< "$run")" = main
 
       - name: Download exact candidate bundle
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
@@ -96,6 +98,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          .venv/bin/python scripts/oracle_release_gate.py verify-release \
+            --receipt candidate/stable-retro-turbo-oracle.json \
+            --candidate-version "${{ inputs.version }}" \
+            --candidate-commit "${{ inputs.commit }}" \
+            --repository "$GITHUB_REPOSITORY"
           .venv/bin/python scripts/release_state.py verify \
             --candidate candidate \
             --version "${{ inputs.version }}" \
@@ -103,7 +110,11 @@ jobs:
             --repository "${{ github.repository }}" \
             --run-id "${{ inputs.candidate_run_id }}" > /dev/null
           for distribution in candidate/dist/*; do
-            gh attestation verify "$distribution" --repo "$GITHUB_REPOSITORY"
+            gh attestation verify "$distribution" \
+              --repo "$GITHUB_REPOSITORY" \
+              --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release-build.yml" \
+              --source-digest "${{ inputs.commit }}" \
+              --deny-self-hosted-runners
           done
 
       - name: Determine idempotent PyPI transition
@@ -205,6 +216,7 @@ jobs:
             for asset in verified-release/candidate/dist/* \
               verified-release/candidate/SHA256SUMS \
               verified-release/candidate/release-manifest.json \
+              verified-release/candidate/stable-retro-turbo-oracle.json \
               verified-release/candidate/sbom.spdx.json; do
               cmp "$asset" "published-release/$(basename "$asset")"
             done
@@ -213,6 +225,7 @@ jobs:
               verified-release/candidate/dist/* \
               verified-release/candidate/SHA256SUMS \
               verified-release/candidate/release-manifest.json \
+              verified-release/candidate/stable-retro-turbo-oracle.json \
               verified-release/candidate/sbom.spdx.json \
               --repo "$GITHUB_REPOSITORY" \
               --title "env-BreakoutAtari2600-turbo-native $tag" \

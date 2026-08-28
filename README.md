@@ -10,7 +10,7 @@ vector-environment API. Add it to a uv project from PyPI, create
 `BreakoutVecEnv`, and step every lane with one NumPy action batch.
 
 Fixed-point Rust physics owns game state and parallel stepping. Python exposes
-manual reset, policy-ready observations, native rendering, exact snapshots, and
+manual reset, policy-ready observations, rendered frames, exact snapshots, and
 side-effect-free action branching.
 
 <div align="center">
@@ -104,6 +104,8 @@ full-cap research recipes rather than short timed demos.
   advertises `rgb_array`.
 - Immutable `capabilities` and `signal_schema` declarations describe supported
   features and the dtype, shape, and reset/step availability of every signal.
+- `capabilities["supported_filtered_actions"]` discloses the exact noop, FIRE,
+  right, and left eight-button rows accepted by the filtered action transport.
 - `buttons`, `action_mode`, `action_preset`, `action_table`,
   `action_meanings`, and `action_table_hash` expose the resolved action
   semantics without provider-specific probing.
@@ -136,7 +138,7 @@ obs, infos = env.reset(
 env.close()
 ```
 
-Importing the package also preserves the Stable Retro-compatible
+Importing the package also preserves the Stable Retro Turbo-compatible
 `Breakout-Atari2600-v0` vector ID. The complete lifecycle, configuration,
 snapshot, and branching contract is in the
 [environment documentation](docs/environment.md).
@@ -152,12 +154,10 @@ remains a separate install and is not part of the core dependency set.
 uv run --frozen --extra play env-breakoutatari2600-turbo-native play       # open the player
 uv run --frozen --extra play env-breakoutatari2600-turbo-native play --uncapped
 uv run --frozen env-breakoutatari2600-turbo-native benchmark               # benchmark the policy path
-uv run --frozen python scripts/compare_stable_retro.py     # run live differential checks
 uv run --frozen ruff check .                               # lint Python
 uv run --frozen pytest -m "not stable_retro"               # run regular Python tests
 cargo test --locked --lib                                  # run Rust tests
-make test-stable-retro                                     # require live cartridge parity
-make test-semantic-oracle                                  # compare to original Stable Retro authority
+RETRO_DATA_PATH=/lawful/stable_retro/data make test-semantic-oracle ORACLE_RECEIPT=/external/oracle.json  # certify pinned Turbo parity
 ```
 
 Append `--help` to the player or benchmark command for its options.
@@ -167,32 +167,47 @@ Append `--help` to the player or benchmark command for its options.
 - Native actions are `0` noop, `1` FIRE, `2` right, and `3` left. The default
   policy observation is grayscale `uint8`, CHW, and shaped
   `(num_envs, 4, 84, 84)`.
+- Filtered actions use `int8` batches shaped `(num_envs, 8)`. Only the exact
+  binary noop, FIRE, right, and left rows disclosed by
+  `capabilities["supported_filtered_actions"]` are accepted; unsupported
+  buttons, combinations, dtypes, shapes, and values reject the whole batch
+  before any lane advances.
 - Rewards are score deltas using Atari row scoring. There is no life-loss or
   board-clear shaping. The cartridge presents two walls: the first refills
   after the next paddle return, the second ends at score 864 without another
   refill, and only losing all five lives terminates the episode.
 - Autoreset is disabled. Reset terminated lanes explicitly with a Boolean
   `reset_mask`; unselected lanes remain byte-exact.
-- `noop_reset_max=N` samples `1..N` seeded raw-frame noops for each static
-  reset, matching the conventional Atari reset distribution. FIRE is not
+- With `noop_reset_max=N`, each static reset samples a seeded inclusive count
+  from `1..N` and advances that many native console frames with noop, matching
+  the conventional Atari reset distribution. FIRE is not
   issued automatically: `use_fire_reset` remains unavailable and the policy
   must start each serve.
-- The canonical `Start` state targets Stable Retro's native 160×210 Atari Breakout frame,
+- The canonical `Start` state targets Stable Retro Turbo's 160×210 native indexed frame,
   lifecycle, physics, raster, rewards, collision behavior, and public trajectory
   values. In particular, `ball_y` uses the Atari RAM convention where zero
-  means the serve is waiting for FIRE. Opt into raw frames with
+  means the serve is waiting for FIRE. Opt into rendered frames with
   `render_mode="rgb_array"`; `render()` then returns lane zero's canonical Stella
-  RGB frame while `render_lane(index)` selects any lane, separately from policy
-  observations. Original Stable Retro's BGR-labeled RGB565 frame transport is
+  RGB rendered frame while `render_lane(index)` selects any lane, separately from policy
+  observations. Stable Retro Turbo's inherited BGR-labeled RGB565 transport is
   normalized only at this human-facing boundary.
-- Live validation requires a separately obtained lawful ROM. The TurboBench
-  semantic oracle pins original `stable-retro==1.0.1` as the authority; the
-  sibling `stable-retro-turbo` differential remains a secondary regression
-  check. No ROM, save state, or recorded reference frame is distributed by
-  this project.
+- Live validation requires a separately obtained lawful ROM. The sole semantic
+  oracle is the Stable Retro Turbo vector provider selected by
+  [`validation/stable-retro-turbo.json`](validation/stable-retro-turbo.json).
+  `make test-semantic-oracle ORACLE_RECEIPT=/external/oracle.json` is the sole
+  certifying command; its fixed workload receipt binds the exact clean checkout
+  or published candidate, configuration, provider pin, and comparison result.
+  Configurable pytest runs are diagnostic only and cannot create a receipt.
+  Releases accept only receipts generated and provenance-attested by the
+  protected manual `Stable Retro Turbo oracle evidence` workflow; arbitrary
+  uploaded or caller-authored JSON has no release authority.
+  No provider package, ROM, save state, or recorded reference frame is
+  distributed by this project.
 - Only Apple-silicon macOS and x86-64 Linux are supported. See
   [support](SUPPORT.md), [benchmarking](docs/benchmarking.md), and
   [release validation](docs/release-validation.md) for exact boundaries.
+- The [specification compliance matrix](docs/specification-compliance.md) maps
+  every project requirement to its maintained executable or non-code evidence.
 - The project is a `0.x` community preview. Public changes are recorded in the
   [changelog](CHANGELOG.md). Serialized `get_state()` snapshots are portable
   only within the same package version and compatible configuration; live

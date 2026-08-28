@@ -487,9 +487,8 @@ fn step_native(lane: &mut Lane, action: u8) -> (f32, bool, bool) {
             unreachable!("wide-paddle zero offset is a crossing branch");
         }
         if relative_fp != 0 && !crossing_branch {
-            let relative_pixels = (relative_fp / FP).abs();
             let steep_limit = if lane.narrow_paddle { 3 } else { 4 };
-            lane.steep_angle = (1..=steep_limit).contains(&relative_pixels);
+            lane.steep_angle = relative_fp.abs() <= steep_limit * FP;
         }
         lane.collision_count = (lane.collision_count + 1).min(12);
         apply_atari_speed(lane);
@@ -2212,6 +2211,25 @@ mod parity_tests {
         assert_eq!(
             (wide_positive_half.ball_x, wide_positive_half.ball_vx),
             (93 * FP + FP / 2, -2 * FP)
+        );
+    }
+
+    #[test]
+    fn fractional_positive_paddle_offset_selects_steep_return() {
+        let mut lane = active_lane();
+        lane.paddle_x = 139 * FP;
+        lane.ball_x = 144 * FP + FP / 2;
+        lane.ball_y = 186 * FP;
+        lane.ball_vx = FP;
+        lane.ball_vy = FP;
+        lane.collision_latches = 2;
+
+        step_native(&mut lane, 0);
+
+        assert_eq!((lane.ball_vx, lane.ball_vy), (-FP, -3 * FP / 2));
+        assert_eq!(
+            (lane.ball_x, lane.ball_y),
+            (143 * FP + FP / 2, 184 * FP + FP / 2)
         );
     }
 

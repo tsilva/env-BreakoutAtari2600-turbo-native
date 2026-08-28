@@ -24,7 +24,10 @@ Before beginning, verify all of these controls rather than assuming them:
 - immutable GitHub Releases are enabled only after the pre-hardening evidence
   archive is verified in object-locked storage; and
 - PyPI Trusted Publishing is restricted to
-  `.github/workflows/release.yml` and the `pypi` environment.
+  `.github/workflows/release.yml` and the `pypi` environment; and
+- one successful protected `Stable Retro Turbo oracle evidence` workflow run
+  generated and provenance-attested a receipt for the exact release commit and
+  version.
 
 The release path does not require a self-hosted parity runner,
 `PARITY_STABLE_RETRO_REPO`, release GitHub App secrets, or a tag ruleset.
@@ -47,13 +50,36 @@ version metadata. It never commits, tags, pushes, resolves dependencies, or
 publishes. Review the diff, commit it directly on `main`, and push only after
 the local checks pass.
 
+From that clean release commit, the canonical local command may be used for
+preflight diagnostics, but its local receipt does not carry release authority:
+
+```bash
+RETRO_DATA_PATH=/path/to/lawful/stable_retro/data \
+make test-semantic-oracle \
+  STABLE_RETRO_TURBO_REPO=/path/to/env-StableRetro-turbo \
+  ORACLE_CANDIDATE=checkout \
+  ORACLE_RECEIPT=/external/evidence/stable-retro-turbo-oracle.json
+```
+
+For release evidence, dispatch `.github/workflows/oracle-evidence.yml` with the
+exact commit SHA and wait for success. Its protected `oracle` environment must
+provide the lawful `BREAKOUT_ROM_BASE64` secret. Record the run id. The workflow
+runs the command itself and provenance-attests its receipt; it accepts no
+receipt or comparison-result input. Do not use a local receipt,
+`test-semantic-oracle-diagnostic`, `PYTEST_ARGS`, a dirty checkout, or an
+unpinned provider as release evidence.
+
 ## 2. Build the attested candidate
 
 After the release commit is pushed, capture the exact `main` SHA. Dispatch
-`.github/workflows/release-build.yml` with that exact SHA. The workflow requires
-the SHA to remain current `main`, checks that the PyPI version is unused, builds
-the candidate, and attests its provenance and SBOM. Monitor it to completion
-and record its run id.
+`.github/workflows/release-build.yml` with that exact SHA and the successful
+`oracle_run_id`. The workflow verifies the oracle workflow path, event, head,
+artifact, oracle-workflow GitHub provenance at the exact source commit,
+receipt SHA/version, provider source pin and built-wheel digest, and complete
+workload before source checks. It embeds the receipt in the candidate ledger,
+requires the SHA to remain current `main`, checks that the PyPI version is
+unused, builds the candidate, and attests its provenance and SBOM. Monitor it
+to completion and record its run id.
 
 Do not rebuild a single artifact locally. If a build or audit fails, fix the
 cause in a new direct `main` commit and build a new candidate for the new SHA.
@@ -83,5 +109,6 @@ gh attestation verify <distribution> --repo tsilva/env-BreakoutAtari2600-turbo-n
 ```
 
 Confirm the `v<version>` tag resolves to the candidate SHA and the GitHub
-Release contains all six candidate files. Report the candidate and publish
+Release contains all seven candidate files, including
+`stable-retro-turbo-oracle.json`. Report the candidate and publish
 workflow URLs in the final response.
