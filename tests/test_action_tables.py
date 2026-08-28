@@ -100,6 +100,47 @@ _NOOP_AND_FIRE = np.asarray(
     ("actions", "error", "message"),
     [
         (
+            np.ma.array(np.zeros((2, 8), dtype=np.int8)),
+            TypeError,
+            "Stable-compatible filtered actions must be a plain NumPy array",
+        ),
+        (
+            np.zeros((2, 8), dtype=np.uint8),
+            TypeError,
+            "Stable-compatible filtered actions must have dtype np.int8",
+        ),
+        (
+            np.full((2, 8), 2, dtype=np.int8),
+            ValueError,
+            "Stable-compatible eight-button transport must contain only 0 or 1",
+        ),
+        (
+            np.asarray(
+                [[1, 0, 0, 0, 0, 0, 0, 1], [0, 0, 0, 0, 0, 0, 1, 1]],
+                dtype=np.int8,
+            ),
+            ValueError,
+            "Stable-compatible filtered-action rows must be exactly one of "
+            "noop, FIRE, right, or left",
+        ),
+    ],
+)
+def test_filtered_action_errors_use_domain_terminology(actions, error, message):
+    env = BreakoutVecEnv(
+        GAME_ID, use_restricted_actions="filtered", num_envs=2, num_threads=1
+    )
+    try:
+        with pytest.raises(error) as raised:
+            env._native_actions(actions)
+        assert str(raised.value) == message
+    finally:
+        env.close()
+
+
+@pytest.mark.parametrize(
+    ("actions", "error", "message"),
+    [
+        (
             np.asarray(
                 [[0, 0, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0, 1]],
                 dtype=np.int8,

@@ -720,22 +720,26 @@ class BreakoutVecEnv(VectorEnv):
             return self._custom_native_actions[values]
         if type(actions) is not np.ndarray:
             raise TypeError(
-                "Stable Retro-compatible actions must be a plain NumPy array"
+                "Stable-compatible filtered actions must be a plain NumPy array"
             )
         if actions.dtype != np.int8:
-            raise TypeError("Stable Retro-compatible actions must have dtype np.int8")
+            raise TypeError(
+                "Stable-compatible filtered actions must have dtype np.int8"
+            )
         buttons = actions
         expected_shape = (self.num_envs, _RETRO_BUTTON_COUNT)
         if buttons.shape != expected_shape:
             raise ValueError(f"actions must have shape {expected_shape}")
         if np.any((buttons != 0) & (buttons != 1)):
-            raise ValueError("Stable Retro-compatible actions must contain only 0 or 1")
+            raise ValueError(
+                "Stable-compatible eight-button transport must contain only 0 or 1"
+            )
         matches = np.all(
             buttons[:, np.newaxis, :] == np.asarray(_FILTERED_ACTION_ROWS), axis=2
         )
         if not np.all(np.any(matches, axis=1)):
             raise ValueError(
-                "Stable Retro-compatible actions must be exactly one of "
+                "Stable-compatible filtered-action rows must be exactly one of "
                 "noop, FIRE, right, or left"
             )
         return np.argmax(matches, axis=1).astype(np.uint8)

@@ -4,6 +4,8 @@ import re
 import subprocess
 import sys
 import tomllib
+from dataclasses import dataclass
+from importlib import util
 from pathlib import Path
 
 import pytest
@@ -12,46 +14,22 @@ from scripts.benchmark_comparison import build_parser
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 COMPLIANCE_MATRIX = REPO_ROOT / "docs" / "specification-compliance.md"
-ADVERSARIAL_FIXTURE_PATH = Path(__file__).resolve()
 FORMER_IDENTIFIERS = (
-    "breakout-turbo-env",
-    "breakout_turbo_env",
-    "Breakout-Turbo-v0",
-    "BreakoutTurbo-v0",
-    "_breakout_turbo",
-    "Breakout Turbo",
-)
-_BENIGN_AUTHORITY_CONTEXT = re.compile(
-    r"(?:\bremov(?:e|ed|ing)\b|\bdeprecat(?:e|ed|ing)\b|"
-    r"\bprevent(?:s|ed|ing)?\b|\bprohibit(?:s|ed|ing)?\b|"
-    r"\bforbid(?:s|den|ding)?\b|\breject(?:s|ed|ing)?\b|"
-    r"\bmust\s+not\b|\bcannot\b|\bnever\b|\bno\s+longer\b|"
-    r"\bupstream\s+provenance\b|\blegal\s+context\b|"
-    r"\bnot\s+sponsored\b|\bnot\s+in\b|\bassert\s+not\b|"
-    r"\bdo\s+not\s+import\b|\bno\b.{0,160}\bis\s+included\b)",
-    re.IGNORECASE,
-)
-_BENIGN_DIRECT_AUTHORITY = re.compile(
-    r"(?:\bremov(?:e|ed|ing)\b|\bdeprecat(?:e|ed|ing)\b|"
-    r"\bupstream\s+provenance\b|\blegal\s+context\b|"
-    r"\bnot\s+sponsored\b|\bno\b.{0,160}\bis\s+included\b|"
-    r"\b(?:must\s+not|cannot|never)\b.{0,120}"
-    r"\b(?:authority|authoritative|oracle|provider|release\s+gate)\b)",
-    re.IGNORECASE,
-)
-_BENIGN_TURBO_SECONDARY = re.compile(
-    r"(?:\b(?:prevent|prohibit|forbid|reject)(?:s|ed|ing)?\b.{0,160}"
-    r"Stable\s+Retro\s+Turbo.{0,120}\bsecondary\b|"
-    r"\b(?:must\s+not|cannot|never)\b.{0,160}Stable\s+Retro\s+Turbo"
-    r".{0,120}\bsecondary\b|Stable\s+Retro\s+Turbo.{0,120}"
-    r"\b(?:not|never)\b.{0,40}\bsecondary\b)",
-    re.IGNORECASE,
+    "breakout" + "-turbo-env",
+    "breakout" + "_turbo_env",
+    "Breakout" + "-Turbo-v0",
+    "Breakout" + "Turbo-v0",
+    "_breakout" + "_turbo",
+    "Breakout" + " Turbo",
+    "breakout" + "-turbo-benchmark",
+    "breakout" + "-turbo-play",
 )
 _DIRECT_STABLE_RETRO_DISTRIBUTION = re.compile(
-    r"(?<![\w-])stable-retro(?!-turbo)(?![\w-])", re.IGNORECASE
+    r"(?<![\w-])" + "stable" + r"-retro(?!-turbo)(?![\w-])", re.IGNORECASE
 )
 _DIRECT_STABLE_RETRO_IMPORT = re.compile(
-    r"\b(?:import\s+retro\b|from\s+retro(?:\.|\s+import\b))", re.IGNORECASE
+    r"\b(?:" + "import" + r"\s+retro\b|from\s+retro(?:\.|\s+import\b))",
+    re.IGNORECASE,
 )
 _DIRECT_STABLE_RETRO_AUTHORITY = re.compile(
     r"(?:\b(?:original\s+)?Stable\s+Retro\b(?!\s+Turbo)"
@@ -69,6 +47,14 @@ _TURBO_SECONDARY = re.compile(
 )
 
 
+@dataclass(frozen=True)
+class TrackedBlob:
+    path: Path
+    mode: str
+    oid: str
+    content: bytes
+
+
 def _spec_requirements() -> list[str]:
     return [
         line.removeprefix("- ")
@@ -82,30 +68,80 @@ def _matrix_requirements() -> list[str]:
     return re.findall(r"^<!-- SPECS:\d+ -->\n> (.+)$", text, flags=re.MULTILINE)
 
 
-def _tracked_paths() -> list[Path]:
+def _tracked_blobs() -> list[TrackedBlob]:
     result = subprocess.run(
-        ["git", "ls-files", "-z"],
+        ["git", "ls-files", "-s", "-z"],
         cwd=REPO_ROOT,
         check=True,
         capture_output=True,
     )
-    return sorted(
-        REPO_ROOT / item for item in result.stdout.decode().split("\0") if item
+    entries: list[tuple[Path, str, str]] = []
+    for record in result.stdout.split(b"\0"):
+        if not record:
+            continue
+        metadata, raw_path = record.split(b"\t", maxsplit=1)
+        mode, raw_oid, stage = metadata.split()
+        if stage != b"0":
+            raise AssertionError(f"unsupported tracked merge stage: {stage!r}")
+        try:
+            path = Path(raw_path.decode("utf-8"))
+        except UnicodeDecodeError as error:
+            raise AssertionError("tracked path is not valid UTF-8") from error
+        entries.append((path, mode.decode("ascii"), raw_oid.decode("ascii")))
+
+    blob_result = subprocess.run(
+        ["git", "cat-file", "--batch"],
+        cwd=REPO_ROOT,
+        input="".join(f"{oid}\n" for _, _, oid in entries).encode("ascii"),
+        check=True,
+        capture_output=True,
     )
+    output = blob_result.stdout
+    offset = 0
+    blobs: list[TrackedBlob] = []
+    for path, mode, expected_oid in entries:
+        header_end = output.index(b"\n", offset)
+        actual_oid, object_type, raw_size = output[offset:header_end].split()
+        if object_type != b"blob" or actual_oid.decode("ascii") != expected_oid:
+            raise AssertionError(f"unexpected tracked object for {path}")
+        size = int(raw_size)
+        start = header_end + 1
+        content = output[start : start + size]
+        if output[start + size : start + size + 1] != b"\n":
+            raise AssertionError(f"malformed tracked blob response for {path}")
+        blobs.append(TrackedBlob(path, mode, expected_oid, content))
+        offset = start + size + 1
+    if offset != len(output):
+        raise AssertionError("unexpected trailing tracked blob data")
+    return sorted(blobs, key=lambda blob: blob.path.as_posix())
 
 
-def _read_text(path: Path) -> str | None:
-    content = path.read_bytes()
-    if b"\0" in content:
+def _tracked_paths() -> list[Path]:
+    return [REPO_ROOT / blob.path for blob in _tracked_blobs()]
+
+
+def _decode_tracked_text(blob: TrackedBlob) -> str | None:
+    if blob.mode == "120000":
+        raise AssertionError(f"unsupported tracked symlink: {blob.path}")
+    if blob.mode not in {"100644", "100755"}:
+        raise AssertionError(f"unsupported tracked mode {blob.mode}: {blob.path}")
+    if b"\0" in blob.content:
         return None
     try:
-        return content.decode("utf-8")
-    except UnicodeDecodeError:
-        return None
+        return blob.content.decode("utf-8")
+    except UnicodeDecodeError as error:
+        raise AssertionError(
+            f"tracked text candidate is not valid UTF-8: {blob.path}"
+        ) from error
 
 
-def _tracked_text_paths() -> list[Path]:
-    return [path for path in _tracked_paths() if _read_text(path) is not None]
+def _tracked_texts() -> list[tuple[Path, str]]:
+    text_blobs: list[tuple[Path, str]] = []
+    for blob in _tracked_blobs():
+        text = _decode_tracked_text(blob)
+        if text is not None:
+            text_blobs.append((blob.path, text))
+    return text_blobs
 
 
 def _current_authority_text(path: Path, text: str) -> str:
@@ -117,42 +153,95 @@ def _current_authority_text(path: Path, text: str) -> str:
     return text
 
 
-def _prose_statements(text: str) -> list[str]:
-    paragraphs = re.split(r"\n\s*\n", text)
-    statements: list[str] = []
-    for paragraph in paragraphs:
-        compact = re.sub(r"\s+", " ", paragraph).strip()
-        if compact:
-            statements.extend(re.split(r"(?<=[.!?])\s+", compact))
-    return statements
+def _clauses(text: str) -> list[str]:
+    return [
+        clause.strip()
+        for clause in re.split(r";|\n|(?<=[.!?])\s+", text)
+        if clause.strip()
+    ]
+
+
+def _distribution_is_denied(clause: str) -> bool:
+    return bool(
+        re.search(
+            r"(?:\b(?:do\s+not|must\s+not|cannot|never)\s+"
+            r"(?:directly\s+)?(?:install|use|depend\s+on|require)\b.{0,40}"
+            + "stable"
+            + r"-retro\b|"
+            + "stable"
+            + r"-retro\b.{0,80}\bnot\s+in\b|"
+            r"\bassert\s+not\b.{0,80}" + "stable" + r"-retro\b)",
+            clause,
+            re.IGNORECASE,
+        )
+    )
+
+
+def _direct_import_is_denied(clause: str) -> bool:
+    return bool(
+        re.search(
+            r"\b(?:do\s+not|must\s+not|cannot|never)\s+" + "import" + r"\s+retro\b",
+            clause,
+            re.IGNORECASE,
+        )
+    )
+
+
+def _original_authority_is_denied(clause: str) -> bool:
+    original = r"(?:original\s+)?Stable\s+Retro\b(?!\s+Turbo)"
+    authority = r"(?:authoritative|authority|oracle|provider|release\s+gate)"
+    return bool(
+        re.search(
+            rf"(?:\b(?:remove|removed|removing|deprecate|deprecated|purge|purged)\b"
+            rf".{{0,40}}{original}.{{0,30}}{authority}(?:\s+path)?|"
+            rf"{original}\s+(?:must\s+not|cannot|never|no\s+longer)\s+"
+            rf"(?:be\s+)?(?:used|treated|described|considered|serve|act)\b"
+            rf".{{0,30}}\b(?:as\s+)?(?:an?\s+)?{authority}|"
+            rf"\b(?:must\s+not|cannot|never)\s+"
+            rf"(?:use|treat|describe|consider)\s+{original}.{{0,30}}"
+            rf"\b(?:as\s+)?(?:an?\s+)?{authority}|"
+            rf"{original}.{{0,80}}\bonly\s+as\s+upstream\s+provenance\b"
+            rf".{{0,80}}\bnever\s+as\s+an?\s+oracle\b)",
+            clause,
+            re.IGNORECASE,
+        )
+    )
+
+
+def _turbo_secondary_is_denied(clause: str) -> bool:
+    turbo = r"Stable\s+Retro\s+Turbo"
+    return bool(
+        re.search(
+            rf"(?:\b(?:prevent|prohibit|forbid|reject)(?:s|ed|ing)?\s+"
+            rf"{turbo}\s+from\s+being\s+(?:described|treated|used)\s+as\s+secondary\b|"
+            rf"{turbo}\s+(?:must\s+not|cannot|never)\s+"
+            rf"(?:be\s+)?(?:described|treated|used)\s+as\s+secondary\b|"
+            rf"{turbo}.{{0,40}}\b(?:is\s+not|is\s+never)\s+secondary\b)",
+            clause,
+            re.IGNORECASE,
+        )
+    )
 
 
 def _authority_violations(path: Path, text: str) -> list[str]:
     current = _current_authority_text(path, text)
     violations: list[str] = []
 
-    for line_number, line in enumerate(current.splitlines(), start=1):
-        if _BENIGN_AUTHORITY_CONTEXT.search(line):
-            continue
-        if _DIRECT_STABLE_RETRO_DISTRIBUTION.search(line):
-            violations.append(f"line {line_number}: direct stable-retro distribution")
-        if _DIRECT_STABLE_RETRO_IMPORT.search(line):
-            violations.append(f"line {line_number}: direct import retro")
-
-    authority_statements = (
-        _prose_statements(current)
-        if path.suffix.lower() == ".md"
-        else current.splitlines()
-    )
-    for statement in authority_statements:
-        if _DIRECT_STABLE_RETRO_AUTHORITY.search(
-            statement
-        ) and not _BENIGN_DIRECT_AUTHORITY.search(statement):
-            violations.append("direct original Stable Retro authority")
-        if _TURBO_SECONDARY.search(statement) and not _BENIGN_TURBO_SECONDARY.search(
-            statement
+    for clause_number, clause in enumerate(_clauses(current), start=1):
+        if _DIRECT_STABLE_RETRO_DISTRIBUTION.search(
+            clause
+        ) and not _distribution_is_denied(clause):
+            violations.append(f"clause {clause_number}: direct legacy distribution")
+        if _DIRECT_STABLE_RETRO_IMPORT.search(clause) and not _direct_import_is_denied(
+            clause
         ):
-            violations.append("Stable Retro Turbo described as secondary")
+            violations.append(f"clause {clause_number}: direct legacy import")
+        if _DIRECT_STABLE_RETRO_AUTHORITY.search(
+            clause
+        ) and not _original_authority_is_denied(clause):
+            violations.append(f"clause {clause_number}: unapproved legacy authority")
+        if _TURBO_SECONDARY.search(clause) and not _turbo_secondary_is_denied(clause):
+            violations.append(f"clause {clause_number}: sole-oracle demotion")
 
     return violations
 
@@ -160,22 +249,32 @@ def _authority_violations(path: Path, text: str) -> list[str]:
 def _former_identity_violations(path: Path, text: str) -> list[str]:
     current = _current_authority_text(path, text)
     violations: list[str] = []
-    historical = re.compile(
-        r"\b(?:removed?|renamed?|deprecated|purged|historical|formerly)\b|"
-        r"\bformer\s+(?:name|identifier)\b|\b(?:legal|upstream)\s+provenance\b",
-        re.I,
-    )
-    restoration = re.compile(
-        r"\b(?:restore|reintroduce|register|publish|current|use\s+.+\s+as)\b", re.I
-    )
 
-    for line_number, line in enumerate(current.splitlines(), start=1):
+    for clause_number, clause in enumerate(_clauses(current), start=1):
         for identifier in FORMER_IDENTIFIERS:
-            if identifier not in line:
+            if identifier not in clause:
                 continue
-            if historical.search(line) and not restoration.search(line):
+            escaped = re.escape(identifier)
+            historical = re.search(
+                rf"(?:\b(?:removed?|deprecated|purged)\b.{{0,80}}{escaped}"
+                rf".{{0,60}}\b(?:registration|identifier|command|name|entry\s+point)\b|"
+                rf"\b(?:renamed|replaced)\b.{{0,80}}{escaped}|"
+                rf"\b(?:former|old|historical|deprecated)\s+"
+                rf"(?:name|identifier|command)\b.{{0,40}}{escaped}"
+                rf".{{0,60}}\b(?:appears?\s+only\s+as\s+)?"
+                rf"(?:legal|upstream)\s+provenance\b)",
+                clause,
+                re.IGNORECASE,
+            )
+            current_support = re.search(
+                r"\b(?:remain(?:s|ed)?|supported|accepted|current|register(?:ed)?|"
+                r"restore(?:d)?|reintroduc(?:e|ed)|publish(?:ed)?|run)\b",
+                clause,
+                re.IGNORECASE,
+            )
+            if historical and not current_support:
                 continue
-            violations.append(f"line {line_number}: {identifier}")
+            violations.append(f"clause {clause_number}: {identifier}")
 
     return violations
 
@@ -187,49 +286,91 @@ def test_compliance_matrix_maps_every_spec_requirement_literally_and_in_order():
     assert _matrix_requirements() == requirements
 
 
+def _blob(
+    path: str,
+    content: bytes,
+    *,
+    mode: str = "100644",
+) -> TrackedBlob:
+    return TrackedBlob(Path(path), mode, "0" * 40, content)
+
+
 @pytest.mark.parametrize("name", ["guard.sh", "Cargo.lock", "release-tool"])
-def test_tracked_text_detection_is_content_based(name, tmp_path):
-    path = tmp_path / name
-    path.write_text("import retro\n", encoding="utf-8")
+def test_tracked_text_detection_is_content_based(name):
+    content = ("import" + " retro\n").encode()
 
-    assert _read_text(path) == "import retro\n"
+    assert _decode_tracked_text(_blob(name, content)) == content.decode()
 
 
-def test_tracked_text_detection_rejects_binary_content(tmp_path):
-    path = tmp_path / "extensionless"
-    path.write_bytes(b"text prefix\x00binary payload")
+def test_tracked_text_detection_skips_nul_marked_binary_content():
+    blob = _blob("extensionless", b"text prefix\x00binary payload")
 
-    assert _read_text(path) is None
+    assert _decode_tracked_text(blob) is None
+
+
+def test_tracked_text_detection_fails_closed_on_invalid_utf8():
+    with pytest.raises(AssertionError, match="not valid UTF-8"):
+        _decode_tracked_text(_blob("guard.sh", b"text prefix\xffpayload"))
+
+
+def test_tracked_text_detection_fails_closed_on_symlinks_without_dereference():
+    with pytest.raises(AssertionError, match="unsupported tracked symlink"):
+        _decode_tracked_text(_blob("current-contract", b"README.md", mode="120000"))
 
 
 def test_tracked_text_enumeration_has_no_suffix_or_executable_name_allowlist(
-    tmp_path, monkeypatch
+    monkeypatch,
 ):
-    text_paths = [tmp_path / name for name in ("guard.sh", "Cargo.lock", "release-tool")]
-    for path in text_paths:
-        path.write_text("current contract\n", encoding="utf-8")
-    binary = tmp_path / "generated-image"
-    binary.write_bytes(b"image\x00payload")
+    text_blobs = [
+        _blob(name, b"current contract\n")
+        for name in ("guard.sh", "Cargo.lock", "release-tool")
+    ]
+    binary = _blob("generated-image", b"image\x00payload")
     monkeypatch.setattr(
-        sys.modules[__name__], "_tracked_paths", lambda: [*text_paths, binary]
+        sys.modules[__name__], "_tracked_blobs", lambda: [*text_blobs, binary]
     )
 
-    assert _tracked_text_paths() == text_paths
+    assert _tracked_texts() == [
+        (blob.path, "current contract\n") for blob in text_blobs
+    ]
 
 
 @pytest.mark.parametrize(
     ("path", "text"),
     [
-        (Path("README.md"), "Original Stable Retro is the authoritative oracle."),
-        (Path("release.sh"), "pip install stable-retro"),
-        (Path("release-tool"), "import retro"),
+        (
+            Path("README.md"),
+            "Original Stable" + " Retro is the authoritative oracle.",
+        ),
+        (Path("release.sh"), "pip install stable" + "-retro"),
+        (Path("release-tool"), "import" + " retro"),
         (
             Path("CHANGELOG.md"),
-            "# Changelog\n\n## Unreleased\n\nStable Retro Turbo is secondary.",
+            "# Changelog\n\n## Unreleased\n\nStable Retro" + " Turbo is secondary.",
         ),
         (
             Path("docs/specification-compliance.md"),
-            "Stable Retro Turbo remains a secondary parity target.",
+            "Stable Retro" + " Turbo remains a secondary parity target.",
+        ),
+        (
+            Path("policy.md"),
+            "Never write cache files; pip install stable" + "-retro",
+        ),
+        (
+            Path("policy.md"),
+            "Removed an obsolete note; Original Stable" + " Retro is the oracle.",
+        ),
+        (
+            Path("policy.md"),
+            "Prevent unrelated drift; Stable Retro" + " Turbo is secondary.",
+        ),
+        (
+            Path("policy.md"),
+            "Prevent stale wording; import" + " retro",
+        ),
+        (
+            Path("policy.md"),
+            "Never demote Turbo; pip install stable" + "-retro",
         ),
     ],
 )
@@ -242,25 +383,30 @@ def test_authority_guard_rejects_adversarial_current_authority(path, text):
     [
         (
             Path("CHANGELOG.md"),
-            "## [0.5.3] - 2026-08-12\n\nStable Retro Turbo was secondary.",
+            "## [0.5.3] - 2026-08-12\n\nStable Retro" + " Turbo was secondary.",
         ),
         (
             Path("CHANGELOG.md"),
-            "## Unreleased\n\nRemoved the original Stable Retro authority path.",
+            "## Unreleased\n\nRemoved the original Stable" + " Retro authority path.",
         ),
         (
             Path("THIRD_PARTY_NOTICES.md"),
-            "The project is not sponsored by the maintainers of Stable Retro.",
+            "The project is not sponsored by the maintainers of Stable" + " Retro.",
         ),
         (
             Path("CONTRIBUTING.md"),
-            "Original Stable Retro may appear only as upstream provenance, never as an oracle.",
+            "Original Stable"
+            + " Retro may appear only as upstream provenance, never as an oracle.",
         ),
-        (Path("Makefile"), 'assert "stable-retro@" not in makefile'),
+        (Path("Makefile"), 'assert "stable' + '-retro@" not in makefile'),
         (Path("provider.py"), "import env_stableretro_turbo as retro"),
         (
             Path("docs/policy.md"),
-            "Prevent Stable Retro Turbo from being described as secondary.",
+            "Prevent Stable Retro" + " Turbo from being described as secondary.",
+        ),
+        (
+            Path("docs/policy.md"),
+            "Original Stable" + " Retro must not be used as an oracle.",
         ),
     ],
 )
@@ -270,14 +416,7 @@ def test_authority_guard_allows_negation_provenance_and_versioned_history(path, 
 
 @pytest.mark.parametrize(
     "identifier",
-    [
-        "breakout-turbo-env",
-        "breakout_turbo_env",
-        "Breakout-Turbo-v0",
-        "BreakoutTurbo-v0",
-        "_breakout_turbo",
-        "Breakout Turbo",
-    ],
+    FORMER_IDENTIFIERS,
 )
 def test_former_identity_guard_rejects_each_known_identifier(identifier):
     text = f"Register {identifier} as the current public command or environment ID."
@@ -285,18 +424,31 @@ def test_former_identity_guard_rejects_each_known_identifier(identifier):
     assert _former_identity_violations(Path("README.md"), text)
 
 
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Removed an obsolete note; run Breakout" + "Turbo-v0.",
+        "For historical reasons, Breakout" + "Turbo-v0 remains supported.",
+        "The former identifier Breakout"
+        + "Turbo-v0 remains an accepted environment ID.",
+    ],
+)
+def test_former_identity_guard_rejects_unrelated_or_current_history_claims(text):
+    assert _former_identity_violations(Path("README.md"), text)
+
+
 def test_former_identity_guard_allows_narrow_historical_mentions():
     assert not _former_identity_violations(
         Path("CHANGELOG.md"),
-        "## Unreleased\n\nRemoved the legacy `BreakoutTurbo-v0` registration.",
+        "## Unreleased\n\nRemoved the legacy `Breakout" + "Turbo-v0` registration.",
     )
     assert not _former_identity_violations(
         Path("CHANGELOG.md"),
-        "## [0.5.0] - 2026-07-27\n\nThe old command was `breakout-turbo-env`.",
+        "## [0.5.0] - 2026-07-27\n\nThe old command was `breakout" + "-turbo-env`.",
     )
     assert not _former_identity_violations(
         Path("THIRD_PARTY_NOTICES.md"),
-        "The former name `Breakout Turbo` appears only as legal provenance.",
+        "The former name `Breakout" + " Turbo` appears only as legal provenance.",
     )
 
 
@@ -326,15 +478,24 @@ def test_documented_pytest_selectors_collect_and_release_commands_parse():
         in matrix
     )
     assert f".venv/bin/python {release_helper} build-sdist" in matrix
-    for command in ("build-platform", "build-sdist"):
-        result = subprocess.run(
-            [sys.executable, release_helper, command, "--help"],
-            cwd=REPO_ROOT,
-            check=True,
-            capture_output=True,
-            text=True,
-        )
-        assert "usage:" in result.stdout
+    module_spec = util.spec_from_file_location(
+        "release_build_for_compliance",
+        REPO_ROOT / release_helper,
+    )
+    assert module_spec is not None and module_spec.loader is not None
+    release_build = util.module_from_spec(module_spec)
+    module_spec.loader.exec_module(release_build)
+    release_parser = release_build.build_parser()
+
+    platform_args = release_parser.parse_args(
+        ["build-platform", "--platform", "macos-arm64"]
+    )
+    assert platform_args.platform == "macos-arm64"
+    assert platform_args.func is release_build.build_platform
+    sdist_args = release_parser.parse_args(["build-sdist"])
+    assert sdist_args.func is release_build.build_sdist
+    with pytest.raises(SystemExit):
+        release_parser.parse_args(["build-platform"])
 
 
 def test_policy_and_render_paths_share_the_native_indexed_pixel_source():
@@ -350,14 +511,9 @@ def test_policy_and_render_paths_share_the_native_indexed_pixel_source():
 
 def test_current_public_contract_never_demotes_the_turbo_oracle():
     violations: list[str] = []
-    for path in _tracked_text_paths():
-        if path.resolve() == ADVERSARIAL_FIXTURE_PATH:
-            continue
-        text = _read_text(path)
-        assert text is not None
+    for path, text in _tracked_texts():
         violations.extend(
-            f"{path.relative_to(REPO_ROOT)}: {finding}"
-            for finding in _authority_violations(path.relative_to(REPO_ROOT), text)
+            f"{path}: {finding}" for finding in _authority_violations(path, text)
         )
 
     assert not violations, "\n".join(violations)
@@ -366,16 +522,9 @@ def test_current_public_contract_never_demotes_the_turbo_oracle():
 def test_current_project_surfaces_do_not_restore_former_identifiers():
     violations: list[str] = []
 
-    for path in _tracked_text_paths():
-        if path.resolve() == ADVERSARIAL_FIXTURE_PATH:
-            continue
-        text = _read_text(path)
-        assert text is not None
+    for path, text in _tracked_texts():
         violations.extend(
-            f"{path.relative_to(REPO_ROOT)}: {finding}"
-            for finding in _former_identity_violations(
-                path.relative_to(REPO_ROOT), text
-            )
+            f"{path}: {finding}" for finding in _former_identity_violations(path, text)
         )
 
     assert not violations, "\n".join(violations)
@@ -424,9 +573,12 @@ def test_public_docs_use_frame_terms_from_the_domain_glossary():
     benchmark_report = (
         REPO_ROOT / "docs" / "benchmarks" / "v0.3.0-macos-arm64.md"
     ).read_text(encoding="utf-8")
-    public_api = (
-        REPO_ROOT / "python" / "env_breakoutatari2600_turbo_native" / "env.py"
-    ).read_text(encoding="utf-8")
+    public_api = "\n".join(
+        text
+        for path, text in _tracked_texts()
+        if path.parts[:2] == ("python", "env_breakoutatari2600_turbo_native")
+        and path.suffix == ".py"
+    )
     contributing = (REPO_ROOT / "CONTRIBUTING.md").read_text(encoding="utf-8")
     public_prose = rendered_docs + environment_docs + contributing + public_api
 
@@ -439,6 +591,9 @@ def test_public_docs_use_frame_terms_from_the_domain_glossary():
     assert "160×210 native indexed frame" in rendered_docs
     assert "native 160x210 RGB frame" not in public_api
     assert "Stella RGB rendered frame" in public_api
+    assert "Stable Retro-compatible actions" not in public_api
+    assert "Stable-compatible filtered actions" in public_api
+    assert "eight-button transport" in public_api
     for ambiguous in (
         r"\bnative rendering\b",
         r"\bnative \d+[x×]\d+ Atari Breakout frame\b",
