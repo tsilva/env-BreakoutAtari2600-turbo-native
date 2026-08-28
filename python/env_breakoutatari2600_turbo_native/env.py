@@ -848,7 +848,7 @@ class BreakoutVecEnv(VectorEnv):
         }
 
     def render_lane(self, lane: int) -> np.ndarray | None:
-        """Return one lane's native 160x210 RGB frame without advancing it."""
+        """Return a lane's 160x210 Stella RGB rendered frame without advancing."""
         if self.closed:
             raise RuntimeError("cannot render a closed environment")
         if isinstance(lane, (bool, np.bool_)):

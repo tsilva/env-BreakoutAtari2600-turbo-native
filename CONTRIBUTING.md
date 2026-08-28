@@ -33,7 +33,7 @@ uv run pytest -m "not stable_retro"
 ```
 
 Changes that can affect the `Start` state's physics, rewards, lifecycle,
-observations, native rendering, or shared information must pass the sole live
+observations, rendering, or shared information must pass the sole live
 Stable Retro Turbo oracle:
 
 ```bash

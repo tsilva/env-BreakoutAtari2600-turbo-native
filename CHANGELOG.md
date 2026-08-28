@@ -16,7 +16,7 @@ releases; changes will be recorded here.
 
 ### Fixed
 
-- Point repository links and sibling Stable Retro checkout defaults at the
+- Point repository links and sibling Stable Retro Turbo checkout defaults at the
   standardized repository names.
 
 ## [0.5.7] - 2026-08-20
