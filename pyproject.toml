@@ -71,7 +71,7 @@ include = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 markers = [
-  "stable_retro: live frame-by-frame differential tests requiring the local Breakout ROM",
+  "stable_retro: live differential tests against pinned Stable Retro Turbo requiring a lawful local Breakout ROM",
 ]
 
 [tool.ruff]

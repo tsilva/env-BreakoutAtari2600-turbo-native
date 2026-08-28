@@ -45,7 +45,7 @@ env = gym.make_vec(
 ```
 
 The module-qualified ID imports and registers the package. Importing the
-package also preserves the Stable Retro-compatible `Breakout-Atari2600-v0`
+package also preserves the Stable Retro Turbo-compatible `Breakout-Atari2600-v0`
 vector ID.
 
 The canonical constructor accepts the same explicit Breakout fields used by
@@ -55,16 +55,21 @@ immediately.
 ## Actions, observations, and rewards
 
 - With `use_restricted_actions="filtered"`, each action batch has shape
-  `(num_envs, 8)` and uses Stable Retro's button vectors. The supported rows
-  are noop, FIRE, right, and left. The native convenience interface omits that
-  option and accepts `(num_envs,)` values: `0` noop, `1` FIRE, `2` right, and
-  `3` left.
+  `(num_envs, 8)`, has dtype `np.int8`, and uses Stable Retro Turbo's button
+  order.
+  Only the exact binary noop, FIRE, right, and left rows disclosed by
+  `capabilities["supported_filtered_actions"]` are accepted. FIRE with a
+  direction, simultaneous directions, unrelated buttons, multiple active
+  buttons, other shapes or dtypes, and non-binary values reject the whole
+  batch before any lane advances. The native convenience interface omits the
+  filtered option and accepts `(num_envs,)` values: `0` noop, `1` FIRE, `2`
+  right, and `3` left.
 - The default policy observation has shape `(num_envs, 4, 84, 84)`, CHW layout,
-  grayscale `uint8` values, four stacked frames, and four native frames per
-  environment step.
+  grayscale `uint8` values, four stacked frames, and four native console frames
+  per environment step.
 - Rendering is disabled by default. With `render_mode="rgb_array"`, `render()`
-  returns lane zero as the canonical 160×210 Stella RGB frame and
-  `render_lane(index)` selects any lane. Original Stable Retro's BGR-labeled
+  returns lane zero as the canonical 160×210 Stella RGB rendered frame and
+  `render_lane(index)` selects any lane. Stable Retro Turbo's inherited BGR-labeled
   RGB565 frame transport is normalized at this human-facing boundary only.
   Rendering never advances the game and remains separate from policy
   observations. Without that opt-in, both methods return `None` and
@@ -124,7 +129,7 @@ with a lane-aligned `state_indices` int32 array in the reset options.
 
 Set `noop_reset_max=N` to reproduce the conventional Atari reset distribution:
 each static lane reset samples an inclusive count from `1..N` and advances that
-many raw emulator frames with the noop action. The count is independent of
+many native console frames with the noop action. The count is independent of
 `frame_skip`, is reported as `noop_reset_count` in reset infos, and is
 reproducible from `reset(seed=...)`. A scalar vector seed expands to
 `seed + lane_index`; lane-aligned seeds control lanes directly. Masked resets
@@ -140,16 +145,16 @@ changes the cartridge's hidden serve phase.
 `info_filter` accepts `"all"`, `"terminal"`, `"none"`, or a mapping containing
 `mode` and `keys`. Available signals are paddle and ball coordinates and
 velocity, brick mask, score, lives, tick, remaining bricks, layout, collision
-events, and pending reset. `ball_y` matches Stable Retro's Atari RAM info value:
+events, and pending reset. `ball_y` matches Stable Retro Turbo's Atari RAM info value:
 it is zero while the cartridge is waiting for FIRE and uses the cartridge's
 integer coordinate while the ball is active. Gymnasium-style underscore masks
 identify which lanes contain each value.
 
 The cartridge lifecycle contains two walls, not independently terminating
 levels. Clearing wall one reaches 432 points; the selected layout reappears one
-native frame after the ball's next paddle return. Clearing wall two reaches the
-Atari maximum score of 864 and leaves the board empty permanently. Play
-continues on that empty board until all five lives have been lost. The
+native console frame after the ball's next paddle return. Clearing wall two
+reaches the Atari maximum score of 864 and leaves the board empty permanently.
+Play continues on that empty board until all five lives have been lost. The
 `walls_cleared` signal distinguishes this progress from `bricks_remaining`,
 which describes only the current wall. `brick_mask` contains the signed low 64
 bits and `brick_mask_high` contains the remaining high 44 bits.
@@ -210,6 +215,6 @@ restoration.
 - The API is community-preview software under a `0.x` version. Minor releases
   may change documented public APIs and will record changes in the changelog.
 - The only supported distributions are Apple-silicon macOS and x86-64 Linux.
-- The canonical `Start` state targets exact Stable Retro cartridge parity. Other layouts
+- The canonical `Start` state targets exact Stable Retro Turbo cartridge parity. Other layouts
   deliberately change only the brick mask.
 - The package does not include a ROM, save state, or recorded reference frame.
