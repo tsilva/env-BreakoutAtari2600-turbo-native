@@ -65,21 +65,65 @@ both platforms and the first divergent public trace field. Observation
 mismatches include the exact CHW element and both `uint8` values. No expected
 digest, recorded frame, or other oracle trace is checked into the repository.
 
-Before publishing, a clean candidate checkout must pass the sole pinned Stable
-Retro Turbo semantic oracle through its public vector-provider API:
+Before building a release candidate, generate the sole pinned Stable Retro
+Turbo receipt from a clean candidate checkout through its public
+vector-provider API:
 
 ```bash
 RETRO_DATA_PATH=/path/to/lawful/stable_retro/data \
 make test-semantic-oracle \
-  STABLE_RETRO_TURBO_REPO=/path/to/env-StableRetro-turbo
+  STABLE_RETRO_TURBO_REPO=/path/to/env-StableRetro-turbo \
+  ORACLE_CANDIDATE=checkout \
+  ORACLE_RECEIPT=/external/evidence/stable-retro-turbo-oracle.json
 ```
 
 [`validation/stable-retro-turbo.json`](../validation/stable-retro-turbo.json)
-is the single operational pin. Validation fails closed if the exact checkout,
-reported provider version, Turbo Vector API, or lawful ROM is absent or
-incompatible. Public CI cannot run this private-ROM check; its ordinary tests
-validate the harness and environment contracts but are not cartridge-fidelity
-evidence.
+is the single operational pin: it binds the provider commit and tree. The
+certifying environment uses native Python 3.14, builds its provider wheel only
+from a disposable clone of that clean detached tree, validates the installed
+source files and RECORD ledger, and records the wheel digest. It builds the
+checkout candidate in a separate isolated environment, then
+executes the fixed 2,048-step cycling and
+seeded-random trajectories plus seeded-reset semantics and distributions for
+the canonical one-lane and multi-lane workloads. Its receipt binds the exact
+provider pin, candidate version and commit, workload, environment
+configuration, and exact comparison result.
+
+The command fails closed if the pinned provider, Turbo Vector API, lawful ROM,
+clean candidate, candidate identity, complete fixed workload, or trajectory
+result is missing or incompatible. It has no pytest passthrough, so diagnostic
+options such as `--collect-only` cannot create evidence. The configurable
+`make test-semantic-oracle-diagnostic PYTEST_ARGS=...` target is explicitly
+non-certifying. An unpinned or modified provider checkout can be useful there,
+but it cannot satisfy the release command.
+
+To validate the exact immutable package-index candidate instead, run the same
+command in a clean source checkout with `ORACLE_CANDIDATE=X.Y.Z` and
+`ORACLE_CANDIDATE_COMMIT=<40-character-source-SHA>`. The command installs that
+published distribution into its isolated candidate environment and rejects a
+local path or sibling-checkout substitution.
+
+Release authority comes only from the protected manual `Stable Retro Turbo
+oracle evidence` workflow. Its `oracle` environment supplies the separately
+and lawfully obtained ROM as `BREAKOUT_ROM_BASE64`; the workflow checks out the
+exact current `main` commit, fetches the content-pinned provider, runs the same
+canonical command, and creates GitHub build provenance for the resulting
+receipt. It accepts no caller-provided report or receipt JSON:
+
+```bash
+gh workflow run oracle-evidence.yml -f ref="$(git rev-parse HEAD)"
+gh run watch <oracle-run-id> --exit-status
+gh workflow run release-build.yml \
+  -f ref="$(git rev-parse HEAD)" -f oracle_run_id=<oracle-run-id>
+```
+
+The candidate workflow requires that exact successful workflow path, event,
+head SHA, artifact, and GitHub provenance from the oracle workflow at that
+source commit on a GitHub-hosted runner before it verifies the receipt,
+embeds it in the candidate ledger, and allows publication to verify it again.
+Duplicate-key JSON is rejected. Ordinary public CI cannot generate this
+private-ROM evidence; only the protected manual workflow can access the lawful
+ROM. The receipt contains no ROM, frame, save state, or provider package.
 
 ## Candidate artifacts
 
@@ -89,7 +133,8 @@ Each candidate contains exactly:
 - CPython 3.11+ ABI3, manylinux glibc 2.28+, x86-64 wheel;
 - source archive;
 - `SHA256SUMS`;
-- `release-manifest.json`; and
+- `release-manifest.json`;
+- `stable-retro-turbo-oracle.json`; and
 - `sbom.spdx.json`.
 
 Linux wheels are built with `Cargo.lock --locked` inside a digest-pinned

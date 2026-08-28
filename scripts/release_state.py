@@ -14,6 +14,7 @@ from pathlib import Path
 PACKAGE = "env-breakoutatari2600-turbo-native"
 REPOSITORY = "tsilva/env-BreakoutAtari2600-turbo-native"
 SCHEMA = 1
+ORACLE_RECEIPT = "stable-retro-turbo-oracle.json"
 SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 VERSION_RE = re.compile(r"^\d+\.\d+\.\d+$")
 
@@ -63,7 +64,10 @@ def candidate_files(root: Path) -> list[Path]:
     sbom = root / "sbom.spdx.json"
     if not sbom.is_file():
         raise ValueError("candidate is missing sbom.spdx.json")
-    return sorted([*files, sbom])
+    oracle_receipt = root / ORACLE_RECEIPT
+    if not oracle_receipt.is_file():
+        raise ValueError(f"candidate is missing sole-oracle receipt {ORACLE_RECEIPT}")
+    return sorted([*files, sbom, oracle_receipt])
 
 
 def validate_candidate_layout(root: Path) -> None:
@@ -71,6 +75,7 @@ def validate_candidate_layout(root: Path) -> None:
         "SHA256SUMS",
         "release-manifest.json",
         "sbom.spdx.json",
+        ORACLE_RECEIPT,
     }
     actual_root_files = {path.name for path in root.iterdir() if path.is_file()}
     actual_directories = {path.name for path in root.iterdir() if path.is_dir()}
@@ -153,6 +158,8 @@ def verify_candidate(
         raise ValueError("candidate manifest lacks builder identity")
     if run_id is not None and str(builder.get("run_id")) != str(run_id):
         raise ValueError("candidate was produced by a different workflow run")
+    if not (root / ORACLE_RECEIPT).is_file():
+        raise ValueError(f"candidate is missing sole-oracle receipt {ORACLE_RECEIPT}")
 
     artifacts = manifest.get("artifacts")
     if not isinstance(artifacts, list):

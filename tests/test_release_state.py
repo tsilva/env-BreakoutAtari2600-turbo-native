@@ -29,6 +29,9 @@ def make_candidate(tmp_path):
     for name in release_state.expected_distribution_names(VERSION):
         (dist / name).write_bytes(name.encode())
     (root / "sbom.spdx.json").write_text('{"spdxVersion":"SPDX-2.3"}\n')
+    (root / "stable-retro-turbo-oracle.json").write_text(
+        '{"kind":"stable-retro-turbo-oracle-receipt"}\n'
+    )
     release_state.create_candidate(
         argparse.Namespace(
             version=VERSION,
@@ -52,7 +55,35 @@ def test_candidate_round_trip_binds_artifacts_and_commit(tmp_path):
         run_id="20",
     )
     assert manifest["state"] == "built"
-    assert len(manifest["artifacts"]) == 4
+    assert len(manifest["artifacts"]) == 5
+
+
+def test_candidate_requires_sole_oracle_receipt(tmp_path):
+    release_state, root = make_candidate(tmp_path)
+    (root / "stable-retro-turbo-oracle.json").unlink()
+
+    with pytest.raises(ValueError, match="oracle receipt"):
+        release_state.verify_candidate(
+            root,
+            version=VERSION,
+            commit=COMMIT,
+            repository=release_state.REPOSITORY,
+        )
+
+
+def test_candidate_rejects_oracle_receipt_mutation(tmp_path):
+    release_state, root = make_candidate(tmp_path)
+    (root / "stable-retro-turbo-oracle.json").write_text(
+        '{"result":"changed"}\n', encoding="utf-8"
+    )
+
+    with pytest.raises(ValueError, match="digest or size changed"):
+        release_state.verify_candidate(
+            root,
+            version=VERSION,
+            commit=COMMIT,
+            repository=release_state.REPOSITORY,
+        )
 
 
 def test_candidate_verification_rejects_artifact_mutation(tmp_path):
