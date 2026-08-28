@@ -31,7 +31,10 @@ _DIRECT_STABLE_RETRO_IMPORT = re.compile(
     r"\b(?:"
     + "import"
     + r"\s+retro\b|from\s+retro(?:\.|\s+import\b)|"
-    r"importlib\.import_module\(\s*['\"]retro['\"]\s*\)|"
+    r"importlib\.import_module\(\s*(?:name\s*=\s*)?['\"]retro['\"]\s*\)|"
+    r"from\s+importlib\s+import\s+import_module\s*;\s*"
+    r"retro\s*=\s*import_module\(\s*['\"]retro['\"]\s*\)|"
+    r"retro\s*=\s*import_module\(\s*['\"]retro['\"]\s*\)|"
     r"__import__\(\s*['\"]retro['\"]\s*\))",
     re.IGNORECASE,
 )
@@ -724,6 +727,10 @@ def test_authority_guard_evaluates_each_reference_occurrence(text):
         "stable" + "-retro is not required though it is installed for releases.",
         "No stable" + "-retro dependency is shipped although the package includes it.",
         "retro = importlib." + 'import_module("retro")',
+        "retro = importlib." + 'import_module(name="retro")',
+        "from importlib import import_"
+        + "module; retro = import_"
+        + 'module("retro")',
         "retro = __" + 'import__("retro")',
     ],
 )
