@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -70,6 +71,41 @@ def test_make_exposes_one_certifying_turbo_oracle_command():
     assert "TURBOBENCH" not in makefile
     assert "\ntest-stable-retro:" not in makefile
     assert "\nverify-semantic-oracle:" not in makefile
+
+
+def test_canonical_macos_builds_scope_provider_and_candidate_targets():
+    makefile = (REPO_ROOT / "Makefile").read_text(encoding="utf-8")
+    certifying_target = makefile.split("\ntest-semantic-oracle:", 1)[1].split(
+        "\n\ntest-semantic-oracle-diagnostic:", 1
+    )[0]
+
+    provider_build = re.search(
+        r"MACOSX_DEPLOYMENT_TARGET=14\.0.*?uv build.*?\$\$provider_build",
+        certifying_target,
+        flags=re.DOTALL,
+    )
+    candidate_build = re.search(
+        r"MACOSX_DEPLOYMENT_TARGET=11\.0.*?maturin build --release --locked",
+        certifying_target,
+        flags=re.DOTALL,
+    )
+
+    assert provider_build is not None
+    assert candidate_build is not None
+    assert provider_build.start() < candidate_build.start()
+    assert "export MACOSX_DEPLOYMENT_TARGET" not in certifying_target
+
+
+def test_canonical_macos_candidate_requires_supported_wheel_tag(monkeypatch):
+    import oracle_release_gate as gate
+
+    monkeypatch.setattr(gate.sys, "platform", "darwin")
+    monkeypatch.setattr(gate.platform, "machine", lambda: "arm64")
+
+    assert gate._candidate_wheel_filename("1.2.3") == (
+        "env_breakoutatari2600_turbo_native-1.2.3-"
+        "cp311-abi3-macosx_11_0_arm64.whl"
+    )
 
 
 def test_prepare_provider_uses_only_the_pinned_committed_source(tmp_path):

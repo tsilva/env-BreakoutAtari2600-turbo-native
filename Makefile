@@ -56,10 +56,17 @@ test-semantic-oracle:
 	git clone --quiet --no-checkout --no-local "$$provider_source" "$$provider_build"; \
 	git -C "$$provider_build" checkout --quiet --detach \
 		$$(git -C "$$provider_source" rev-parse HEAD); \
-	if [ "$$(uname -s)" = Darwin ]; then export MACOSX_DEPLOYMENT_TARGET=14.0; fi; \
-	UV_CACHE_DIR=$(UV_CACHE_DIR) uv build --no-config --wheel --no-build-logs \
-		--python "$(PYTHON)" --default-index https://pypi.org/simple \
-		--exclude-newer "7 days" --out-dir "$$provider_dist" "$$provider_build"; \
+	if [ "$$(uname -s)" = Darwin ]; then \
+		MACOSX_DEPLOYMENT_TARGET=14.0 \
+		UV_CACHE_DIR=$(UV_CACHE_DIR) uv build --no-config --wheel --no-build-logs \
+			--python "$(PYTHON)" --default-index https://pypi.org/simple \
+			--exclude-newer "7 days" --out-dir "$$provider_dist" "$$provider_build"; \
+	else \
+		env -u MACOSX_DEPLOYMENT_TARGET UV_CACHE_DIR=$(UV_CACHE_DIR) \
+			uv build --no-config --wheel --no-build-logs \
+			--python "$(PYTHON)" --default-index https://pypi.org/simple \
+			--exclude-newer "7 days" --out-dir "$$provider_dist" "$$provider_build"; \
+	fi; \
 	set -- "$$provider_dist"/*.whl; \
 	test "$$#" -eq 1; \
 	test -f "$$1"; \
@@ -69,8 +76,15 @@ test-semantic-oracle:
 	candidate_commit="$(ORACLE_CANDIDATE_COMMIT)"; \
 	if [ "$(ORACLE_CANDIDATE)" = checkout ]; then \
 		candidate_commit=$$(git rev-parse HEAD); \
-		UV_CACHE_DIR=$(UV_CACHE_DIR) $(PYTHON) -m maturin build --release --locked \
-			--out "$$candidate_dist"; \
+		if [ "$$(uname -s)" = Darwin ]; then \
+			MACOSX_DEPLOYMENT_TARGET=11.0 \
+			UV_CACHE_DIR=$(UV_CACHE_DIR) $(PYTHON) -m maturin build --release --locked \
+				--out "$$candidate_dist"; \
+		else \
+			env -u MACOSX_DEPLOYMENT_TARGET UV_CACHE_DIR=$(UV_CACHE_DIR) \
+				$(PYTHON) -m maturin build --release --locked \
+				--out "$$candidate_dist"; \
+		fi; \
 		candidate_version=$$(tr -d '[:space:]' < VERSION.txt); \
 	else \
 		test -n "$$candidate_commit" || \
@@ -118,10 +132,17 @@ test-semantic-oracle-diagnostic:
 	git clone --quiet --no-checkout --no-local "$$provider_source" "$$provider_build"; \
 	git -C "$$provider_build" checkout --quiet --detach \
 		$$(git -C "$$provider_source" rev-parse HEAD); \
-	if [ "$$(uname -s)" = Darwin ]; then export MACOSX_DEPLOYMENT_TARGET=14.0; fi; \
-	UV_CACHE_DIR=$(UV_CACHE_DIR) uv build --no-config --wheel --no-build-logs \
-		--python "$(PYTHON)" --default-index https://pypi.org/simple \
-		--exclude-newer "7 days" --out-dir "$$provider_dist" "$$provider_build"; \
+	if [ "$$(uname -s)" = Darwin ]; then \
+		MACOSX_DEPLOYMENT_TARGET=14.0 \
+		UV_CACHE_DIR=$(UV_CACHE_DIR) uv build --no-config --wheel --no-build-logs \
+			--python "$(PYTHON)" --default-index https://pypi.org/simple \
+			--exclude-newer "7 days" --out-dir "$$provider_dist" "$$provider_build"; \
+	else \
+		env -u MACOSX_DEPLOYMENT_TARGET UV_CACHE_DIR=$(UV_CACHE_DIR) \
+			uv build --no-config --wheel --no-build-logs \
+			--python "$(PYTHON)" --default-index https://pypi.org/simple \
+			--exclude-newer "7 days" --out-dir "$$provider_dist" "$$provider_build"; \
+	fi; \
 	set -- "$$provider_dist"/*.whl; \
 	test "$$#" -eq 1; \
 	test -f "$$1"; \

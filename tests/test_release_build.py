@@ -195,6 +195,36 @@ def test_release_workflow_publishes_sdist_checksums_and_github_release():
     assert "push:\n    tags:" not in build + publish
 
 
+def test_publish_workflow_rejects_wrong_candidate_run_head_ref_or_workflow():
+    publish = (
+        REPO_ROOT / ".github" / "workflows" / "release.yml"
+    ).read_text(encoding="utf-8")
+
+    for required in (
+        'test "$(jq -r .head_sha <<< "$run")" = "${{ inputs.commit }}"',
+        'test "$(jq -r .head_branch <<< "$run")" = main',
+        'test "$(jq -r .path <<< "$run")" = .github/workflows/release-build.yml',
+    ):
+        assert required in publish
+
+
+def test_publish_workflow_binds_distribution_attestations_to_candidate_source():
+    publish = (
+        REPO_ROOT / ".github" / "workflows" / "release.yml"
+    ).read_text(encoding="utf-8")
+
+    assert (
+        '--signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release-build.yml"'
+        in publish
+    )
+    assert '--source-digest "${{ inputs.commit }}"' in publish
+    assert "--deny-self-hosted-runners" in publish
+    assert (
+        'gh attestation verify "$distribution" --repo "$GITHUB_REPOSITORY"\n'
+        not in publish
+    )
+
+
 def test_release_notes_are_validated_before_pypi_publication():
     build = (REPO_ROOT / ".github" / "workflows" / "release-build.yml").read_text(
         encoding="utf-8"
