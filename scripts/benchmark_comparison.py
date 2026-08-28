@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compare equivalent native Breakout and Stable Retro vector workloads."""
+"""Compare equivalent native Breakout and Stable Retro Turbo vector workloads."""
 
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ OBSERVATION_SIZE = 84
 
 
 def action_batches(num_envs: int) -> tuple[np.ndarray, np.ndarray]:
-    """Return equivalent native and Stable Retro action batches."""
+    """Return equivalent native and Stable Retro Turbo action batches."""
     native = np.arange(num_envs, dtype=np.uint8) % 4
     stable = np.zeros((num_envs, 8), dtype=np.int8)
     stable[native == 1, 0] = 1  # FIRE
@@ -91,9 +91,9 @@ def build_turbo(num_threads: int):
 
 def build_stable(num_threads: int, stable_retro_repo: Path):
     sys.path.insert(0, str(stable_retro_repo))
-    import stable_retro as retro
+    import env_stableretro_turbo as retro
 
-    os.environ.setdefault("STABLE_RETRO_DISABLE_AUDIO", "1")
+    os.environ.setdefault("ENV_STABLERETRO_TURBO_DISABLE_AUDIO", "1")
     return retro.RetroVecEnv(
         "Breakout-Atari2600-v0",
         state="Start",

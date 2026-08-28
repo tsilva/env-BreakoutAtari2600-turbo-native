@@ -1,12 +1,10 @@
-.PHONY: benchmark develop develop-release lint play release-prepare test test-python test-rust test-semantic-oracle test-stable-retro verify-semantic-oracle
+.PHONY: benchmark develop develop-release lint play release-prepare test test-python test-rust test-semantic-oracle
 
 PYTHON ?= .venv/bin/python
 UV_CACHE_DIR ?= .uv-cache
 PYTEST_ARGS ?=
-STABLE_RETRO_REPO ?= $(abspath ../env-StableRetro-turbo)
-TURBOBENCH ?= $(abspath ../turbobench/.venv/bin/turbobench)
-ORACLE_OUTPUT ?=
-ORACLE_RECEIPT ?=
+STABLE_RETRO_TURBO_REPO ?= $(abspath ../env-StableRetro-turbo)
+RETRO_DATA_PATH ?=
 
 develop:
 	UV_CACHE_DIR=$(UV_CACHE_DIR) $(PYTHON) -m maturin develop
@@ -35,28 +33,21 @@ test-rust:
 test-python:
 	$(PYTHON) -m pytest $(PYTEST_ARGS)
 
-test-stable-retro: develop-release
-	BREAKOUT_REQUIRE_STABLE_RETRO=1 \
-	BREAKOUT_STABLE_RETRO_REPO="$(STABLE_RETRO_REPO)" \
-	PYTHONPATH="$(CURDIR)/python:$(STABLE_RETRO_REPO)" \
-	$(PYTHON) -m pytest -m stable_retro tests/test_stable_retro_parity.py $(PYTEST_ARGS)
-
 test-semantic-oracle:
-	@set -e; \
-	output="$(ORACLE_OUTPUT)"; \
-	if [ -z "$$output" ]; then output="$$(mktemp -d)/breakout-semantic-oracle"; fi; \
-	$(TURBOBENCH) oracle breakout/start-v2 \
-		--left stable-retro@1.0.1 \
-		--right env-breakoutatari2600-turbo-native@checkout:$(CURDIR) \
-		--output "$$output" \
-		--allow-dirty; \
-	echo "Semantic-oracle receipt: $$output"
-
-verify-semantic-oracle:
-	@test -n "$(ORACLE_RECEIPT)" || \
-		(echo "Set ORACLE_RECEIPT to an external TurboBench receipt" >&2; exit 2)
-	$(TURBOBENCH) verify-oracle "$(ORACLE_RECEIPT)" \
-		--require-canonical \
-		--require-provider env-breakoutatari2600-turbo-native
+	@test -n "$(RETRO_DATA_PATH)" || \
+		(echo "Set RETRO_DATA_PATH to separately obtained lawful Stable Retro data" >&2; exit 2)
+	@set -eu; \
+	provider_source=$$(mktemp -d "$${TMPDIR:-/tmp}/breakout-stable-retro-turbo.XXXXXX"); \
+	trap 'rm -rf -- "$$provider_source"' EXIT; \
+	RETRO_DATA_PATH="$(RETRO_DATA_PATH)" \
+	$(PYTHON) scripts/compare_stable_retro_turbo.py \
+		--provider-repo "$(STABLE_RETRO_TURBO_REPO)" \
+		--prepare-provider "$$provider_source"; \
+	UV_CACHE_DIR=$(UV_CACHE_DIR) $(PYTHON) -m maturin develop --release --locked; \
+	UV_CACHE_DIR=$(UV_CACHE_DIR) uv pip install --python "$(PYTHON)" "$$provider_source"; \
+	BREAKOUT_REQUIRE_STABLE_RETRO_TURBO=1 \
+	BREAKOUT_STABLE_RETRO_TURBO_REPO="$$provider_source" \
+	RETRO_DATA_PATH="$(RETRO_DATA_PATH)" \
+	$(PYTHON) -m pytest -m stable_retro tests/test_stable_retro_turbo_oracle.py $(PYTEST_ARGS)
 
 test: test-rust test-python

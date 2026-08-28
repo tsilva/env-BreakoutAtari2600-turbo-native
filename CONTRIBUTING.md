@@ -33,26 +33,24 @@ uv run pytest -m "not stable_retro"
 ```
 
 Changes that can affect the `Start` state's physics, rewards, lifecycle,
-observations, or native rendering must pass both the sibling-fork differential
-and the exact original-Stable-Retro authority suite:
+observations, native rendering, or shared information must pass the sole live
+Stable Retro Turbo oracle:
 
 ```bash
-make test-stable-retro
-make test-semantic-oracle
+RETRO_DATA_PATH=/path/to/lawful/stable_retro/data \
+make test-semantic-oracle \
+  STABLE_RETRO_TURBO_REPO=/path/to/env-StableRetro-turbo
 ```
 
-The TurboBench suite pins original `stable-retro==1.0.1` and compares scalar
-and four-lane runs for 4,096 seeded transitions, including public native RGB
-frames, processed observations, rewards, termination and truncation, selected
-info, lane resets, and snapshot continuation. The sibling-fork suite remains a
-useful secondary regression check. Both require a locally configured lawful
-Breakout ROM. Checkout receipts are development evidence. After publishing the
-candidate, regenerate the oracle with `env-breakoutatari2600-turbo-native@VERSION` and verify
-that PyPI-candidate receipt outside the repository:
-
-```bash
-make verify-semantic-oracle ORACLE_RECEIPT=/external/evidence/receipt
-```
+The operational provider release and checkout revision are selected only by
+[`validation/stable-retro-turbo.json`](validation/stable-retro-turbo.json).
+The required command fails when that exact checkout, its Turbo Vector API, or
+the lawful Breakout ROM is unavailable or incompatible. It compares aligned
+and seeded-noop resets plus representative trajectories through both public
+vector APIs, including rendered frames, policy observations, rewards, score,
+lives, termination, truncation, and every shared information value. The
+provider is installed only into the local development environment and remains
+outside the project lock, runtime dependencies, and distributions.
 
 See
 [`docs/release-validation.md`](docs/release-validation.md).

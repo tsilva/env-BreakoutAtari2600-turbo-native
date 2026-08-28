@@ -55,7 +55,8 @@ immediately.
 ## Actions, observations, and rewards
 
 - With `use_restricted_actions="filtered"`, each action batch has shape
-  `(num_envs, 8)`, has dtype `np.int8`, and uses Stable Retro's button order.
+  `(num_envs, 8)`, has dtype `np.int8`, and uses Stable Retro Turbo's button
+  order.
   Only the exact binary noop, FIRE, right, and left rows disclosed by
   `capabilities["supported_filtered_actions"]` are accepted. FIRE with a
   direction, simultaneous directions, unrelated buttons, multiple active
@@ -68,7 +69,7 @@ immediately.
   environment step.
 - Rendering is disabled by default. With `render_mode="rgb_array"`, `render()`
   returns lane zero as the canonical 160×210 Stella RGB frame and
-  `render_lane(index)` selects any lane. Original Stable Retro's BGR-labeled
+  `render_lane(index)` selects any lane. Stable Retro Turbo's inherited BGR-labeled
   RGB565 frame transport is normalized at this human-facing boundary only.
   Rendering never advances the game and remains separate from policy
   observations. Without that opt-in, both methods return `None` and
@@ -144,7 +145,7 @@ changes the cartridge's hidden serve phase.
 `info_filter` accepts `"all"`, `"terminal"`, `"none"`, or a mapping containing
 `mode` and `keys`. Available signals are paddle and ball coordinates and
 velocity, brick mask, score, lives, tick, remaining bricks, layout, collision
-events, and pending reset. `ball_y` matches Stable Retro's Atari RAM info value:
+events, and pending reset. `ball_y` matches Stable Retro Turbo's Atari RAM info value:
 it is zero while the cartridge is waiting for FIRE and uses the cartridge's
 integer coordinate while the ball is active. Gymnasium-style underscore masks
 identify which lanes contain each value.
@@ -214,6 +215,6 @@ restoration.
 - The API is community-preview software under a `0.x` version. Minor releases
   may change documented public APIs and will record changes in the changelog.
 - The only supported distributions are Apple-silicon macOS and x86-64 Linux.
-- The canonical `Start` state targets exact Stable Retro cartridge parity. Other layouts
+- The canonical `Start` state targets exact Stable Retro Turbo cartridge parity. Other layouts
   deliberately change only the brick mask.
 - The package does not include a ROM, save state, or recorded reference frame.

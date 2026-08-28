@@ -6,6 +6,11 @@ releases; changes will be recorded here.
 
 ## Unreleased
 
+### Changed
+
+- Promoted the pinned Stable Retro Turbo vector provider to the sole live
+  semantic oracle and removed the original Stable Retro authority path.
+
 ### Fixed
 
 - Point repository links and sibling Stable Retro checkout defaults at the
