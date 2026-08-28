@@ -96,10 +96,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          .venv/bin/python scripts/oracle_release_gate.py verify \
+          .venv/bin/python scripts/oracle_release_gate.py verify-release \
             --receipt candidate/stable-retro-turbo-oracle.json \
             --candidate-version "${{ inputs.version }}" \
-            --candidate-commit "${{ inputs.commit }}"
+            --candidate-commit "${{ inputs.commit }}" \
+            --repository "$GITHUB_REPOSITORY"
           .venv/bin/python scripts/release_state.py verify \
             --candidate candidate \
             --version "${{ inputs.version }}" \

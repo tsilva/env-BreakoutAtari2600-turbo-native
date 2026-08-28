@@ -197,6 +197,9 @@ Append `--help` to the player or benchmark command for its options.
   certifying command; its fixed workload receipt binds the exact clean checkout
   or published candidate, configuration, provider pin, and comparison result.
   Configurable pytest runs are diagnostic only and cannot create a receipt.
+  Releases accept only receipts generated and provenance-attested by the
+  protected manual `Stable Retro Turbo oracle evidence` workflow; arbitrary
+  uploaded or caller-authored JSON has no release authority.
   No provider package, ROM, save state, or recorded reference frame is
   distributed by this project.
 - Only Apple-silicon macOS and x86-64 Linux are supported. See

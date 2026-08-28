@@ -78,8 +78,12 @@ make test-semantic-oracle \
 ```
 
 [`validation/stable-retro-turbo.json`](../validation/stable-retro-turbo.json)
-is the single operational pin. The command builds the checkout candidate in an
-isolated environment and executes the fixed 2,048-step cycling and
+is the single operational pin: it binds the provider commit and tree. The
+certifying environment uses native Python 3.14, builds its provider wheel only
+from a disposable clone of that clean detached tree, validates the installed
+source files and RECORD ledger, and records the wheel digest. It builds the
+checkout candidate in a separate isolated environment, then
+executes the fixed 2,048-step cycling and
 seeded-random trajectories plus seeded-reset semantics and distributions for
 the canonical one-lane and multi-lane workloads. Its receipt binds the exact
 provider pin, candidate version and commit, workload, environment
@@ -99,19 +103,27 @@ command in a clean source checkout with `ORACLE_CANDIDATE=X.Y.Z` and
 published distribution into its isolated candidate environment and rejects a
 local path or sibling-checkout substitution.
 
-Pass the verified receipt into the candidate workflow; the workflow verifies
-it against its exact `ref`, embeds it in the candidate ledger, and publication
-verifies it again:
+Release authority comes only from the protected manual `Stable Retro Turbo
+oracle evidence` workflow. Its `oracle` environment supplies the separately
+and lawfully obtained ROM as `BREAKOUT_ROM_BASE64`; the workflow checks out the
+exact current `main` commit, fetches the content-pinned provider, runs the same
+canonical command, and creates GitHub build provenance for the resulting
+receipt. It accepts no caller-provided report or receipt JSON:
 
 ```bash
+gh workflow run oracle-evidence.yml -f ref="$(git rev-parse HEAD)"
+gh run watch <oracle-run-id> --exit-status
 gh workflow run release-build.yml \
-  -f ref="$(git rev-parse HEAD)" \
-  -f oracle_receipt="$(base64 < /external/evidence/stable-retro-turbo-oracle.json | tr -d '\n')"
+  -f ref="$(git rev-parse HEAD)" -f oracle_run_id=<oracle-run-id>
 ```
 
-Public CI cannot generate this private-ROM evidence. It can only verify the
-ROM-free receipt and harness contracts; the receipt contains no ROM, frame,
-save state, or provider package.
+The candidate workflow requires that exact successful workflow path, event,
+head SHA, artifact, and GitHub provenance from the oracle workflow at that
+source commit on a GitHub-hosted runner before it verifies the receipt,
+embeds it in the candidate ledger, and allows publication to verify it again.
+Duplicate-key JSON is rejected. Ordinary public CI cannot generate this
+private-ROM evidence; only the protected manual workflow can access the lawful
+ROM. The receipt contains no ROM, frame, save state, or provider package.
 
 ## Candidate artifacts
 

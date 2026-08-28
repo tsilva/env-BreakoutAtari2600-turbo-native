@@ -3,7 +3,9 @@ from __future__ import annotations
 import copy
 import importlib.util
 import json
+import subprocess
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -53,7 +55,14 @@ def exact_report(gate):
                 },
             },
         }
-    return {"provider": gate.receipt_provider(PIN), "workloads": workloads}
+    provider = gate.receipt_provider(PIN)
+    del provider["repository"]
+    provider.update(
+        installed_record_sha256="e" * 64,
+        artifact_sha256="f" * 64,
+        artifact_source="isolated-pinned-wheel",
+    )
+    return {"provider": provider, "workloads": workloads}
 
 
 def exact_receipt(gate):
@@ -62,6 +71,8 @@ def exact_receipt(gate):
         "package": gate.CANDIDATE_PACKAGE,
         "version": VERSION,
         "commit": COMMIT,
+        "installed_record_sha256": "c" * 64,
+        "artifact": {"source": "locally-built-wheel", "sha256": "d" * 64},
     }
     return gate.create_receipt(
         provider=PIN,
@@ -89,7 +100,7 @@ def test_receipt_binds_provider_candidate_workload_configuration_and_result():
     assert receipt["comparison"]["result"] == "exact"
 
 
-@pytest.mark.parametrize("field", ["distribution", "version", "revision"])
+@pytest.mark.parametrize("field", ["distribution", "version", "revision", "tree"])
 def test_receipt_rejects_missing_or_wrong_provider(field):
     gate = module()
     receipt = exact_receipt(gate)
@@ -155,6 +166,30 @@ def test_receipt_rejects_collect_only_style_zero_workload():
         verify(gate, receipt)
 
 
+@pytest.mark.parametrize(
+    ("steps", "completion", "completed"),
+    [
+        (1, "episode-ended", [1]),
+        (2_047, "episode-ended", [1]),
+        (2_047, "step-limit", [0]),
+    ],
+)
+def test_receipt_rejects_truncated_nonzero_workload(steps, completion, completed):
+    gate = module()
+    receipt = exact_receipt(gate)
+    trajectory = receipt["comparison"]["report"]["workloads"]["one-lane"][
+        "trajectories"
+    ]["cycling"]
+    trajectory.update(
+        steps=steps,
+        completion=completion,
+        completed_episodes=completed,
+    )
+
+    with pytest.raises(ValueError, match="fixed workload"):
+        verify(gate, receipt)
+
+
 def test_receipt_rejects_mismatched_candidate():
     gate = module()
     receipt = exact_receipt(gate)
@@ -197,3 +232,150 @@ def test_certifying_command_help_has_no_workload_or_pytest_override():
     assert "fixed certifying workload" in generate_help
     assert "--steps" not in generate_help
     assert "PYTEST_ARGS" not in generate_help
+
+
+def test_receipt_loader_rejects_duplicate_json_keys(tmp_path):
+    gate = module()
+    receipt = tmp_path / "receipt.json"
+    receipt.write_text('{"schema":1,"schema":1}\n', encoding="utf-8")
+
+    with pytest.raises(ValueError, match="duplicate JSON key.*schema"):
+        gate.load_receipt(receipt)
+
+
+def test_release_verifier_rejects_unattested_synthetic_receipt(tmp_path, monkeypatch):
+    gate = module()
+    receipt = tmp_path / "synthetic.json"
+    gate.write_receipt(receipt, exact_receipt(gate))
+    monkeypatch.setattr(
+        gate.subprocess,
+        "run",
+        lambda *_args, **_kwargs: subprocess.CompletedProcess([], 1, "", "no attestation"),
+    )
+
+    with pytest.raises(ValueError, match="lacks trusted GitHub provenance"):
+        gate.verify_release_attestation(receipt, "owner/repository", COMMIT)
+
+
+def test_release_verifier_binds_oracle_workflow_source_and_hosted_runner(
+    tmp_path, monkeypatch
+):
+    gate = module()
+    receipt = tmp_path / "receipt.json"
+    receipt.write_text("{}", encoding="utf-8")
+    calls = []
+
+    def run(command, **_kwargs):
+        calls.append(command)
+        return subprocess.CompletedProcess(command, 0, "verified", "")
+
+    monkeypatch.setattr(gate.subprocess, "run", run)
+
+    gate.verify_release_attestation(receipt, "owner/repository", COMMIT)
+
+    assert calls == [
+        [
+            "gh",
+            "attestation",
+            "verify",
+            str(receipt),
+            "--repo",
+            "owner/repository",
+            "--signer-workflow",
+            "owner/repository/.github/workflows/oracle-evidence.yml",
+            "--source-digest",
+            COMMIT,
+            "--deny-self-hosted-runners",
+        ]
+    ]
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("artifact_source", "diagnostic"),
+        ("artifact_sha256", "not-a-digest"),
+        ("installed_record_sha256", None),
+    ],
+)
+def test_receipt_rejects_unbound_provider_runtime(field, value):
+    gate = module()
+    receipt = exact_receipt(gate)
+    receipt["comparison"]["report"]["provider"][field] = value
+
+    with pytest.raises(ValueError, match="provider"):
+        verify(gate, receipt)
+
+
+def test_candidate_install_rejects_shadowed_ambient_module(tmp_path, monkeypatch):
+    gate = module()
+    installed = tmp_path / "site-packages" / gate.CANDIDATE_MODULE
+    installed.mkdir(parents=True)
+    shadow = tmp_path / "shadow" / gate.CANDIDATE_MODULE / "__init__.py"
+    shadow.parent.mkdir(parents=True)
+    shadow.write_text("shadow\n", encoding="utf-8")
+    distribution = SimpleNamespace(
+        locate_file=lambda path: tmp_path / "site-packages" / path,
+        read_text=lambda name: None,
+        files=[],
+    )
+    monkeypatch.setattr(
+        gate.importlib.metadata, "distribution", lambda _name: distribution
+    )
+    monkeypatch.setattr(
+        gate.importlib,
+        "import_module",
+        lambda _name: SimpleNamespace(__file__=str(shadow), __version__=VERSION),
+    )
+    monkeypatch.setattr(gate, "verify_installed_distribution", lambda _dist: "a" * 64)
+
+    with pytest.raises(ValueError, match="ambient candidate module"):
+        gate.candidate_distribution_identity("published-distribution")
+
+
+def test_checkout_candidate_rejects_installed_source_substitution(tmp_path, monkeypatch):
+    gate = module()
+    monkeypatch.setattr(gate, "REPO_ROOT", tmp_path)
+    source = tmp_path / "python" / gate.CANDIDATE_MODULE / "__init__.py"
+    source.parent.mkdir(parents=True)
+    source.write_text("PINNED = True\n", encoding="utf-8")
+    installed_root = tmp_path / "site-packages"
+    installed = installed_root / gate.CANDIDATE_MODULE / "__init__.py"
+    installed.parent.mkdir(parents=True)
+    installed.write_text("PINNED = False\n", encoding="utf-8")
+    distribution = SimpleNamespace(
+        locate_file=lambda path: installed_root / path,
+    )
+
+    with pytest.raises(ValueError, match="does not match checkout"):
+        gate.verify_checkout_source_binding(distribution)
+
+
+def test_published_candidate_rejects_substituted_wheel_identity(tmp_path, monkeypatch):
+    gate = module()
+    installed = tmp_path / "site-packages" / gate.CANDIDATE_MODULE
+    installed.mkdir(parents=True)
+    module_path = installed / "__init__.py"
+    module_path.write_text("installed\n", encoding="utf-8")
+    substitute = tmp_path / "substitute.whl"
+    substitute.write_bytes(b"substitute")
+    distribution = SimpleNamespace(
+        locate_file=lambda path: tmp_path / "site-packages" / path,
+        read_text=lambda name: json.dumps({"url": substitute.as_uri()}),
+        files=[],
+    )
+    monkeypatch.setattr(
+        gate.importlib.metadata, "distribution", lambda _name: distribution
+    )
+    monkeypatch.setattr(
+        gate.importlib.metadata, "version", lambda _name: VERSION
+    )
+    monkeypatch.setattr(
+        gate.importlib,
+        "import_module",
+        lambda _name: SimpleNamespace(__file__=str(module_path), __version__=VERSION),
+    )
+    monkeypatch.setattr(gate, "verify_installed_distribution", lambda _dist: "a" * 64)
+
+    with pytest.raises(ValueError, match="wheel identity"):
+        gate.candidate_distribution_identity("published-distribution")

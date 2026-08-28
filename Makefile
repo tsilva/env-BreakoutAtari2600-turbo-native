@@ -44,31 +44,51 @@ test-semantic-oracle:
 	@set -eu; \
 	temporary=$$(mktemp -d "$${TMPDIR:-/tmp}/breakout-sole-oracle.XXXXXX"); \
 	provider_source="$$temporary/provider"; \
+	provider_build="$$temporary/provider-build"; \
+	provider_dist="$$temporary/provider-dist"; \
+	candidate_dist="$$temporary/candidate-dist"; \
 	candidate_environment="$$temporary/candidate-environment"; \
 	trap 'rm -rf -- "$$temporary"' EXIT; \
 	RETRO_DATA_PATH="$(RETRO_DATA_PATH)" \
 	$(PYTHON) scripts/compare_stable_retro_turbo.py \
 		--provider-repo "$(STABLE_RETRO_TURBO_REPO)" \
 		--prepare-provider "$$provider_source"; \
-	UV_CACHE_DIR=$(UV_CACHE_DIR) uv venv --python "$(PYTHON)" "$$candidate_environment"; \
+	git clone --quiet --no-checkout --no-local "$$provider_source" "$$provider_build"; \
+	git -C "$$provider_build" checkout --quiet --detach \
+		$$(git -C "$$provider_source" rev-parse HEAD); \
+	if [ "$$(uname -s)" = Darwin ]; then export MACOSX_DEPLOYMENT_TARGET=14.0; fi; \
+	UV_CACHE_DIR=$(UV_CACHE_DIR) uv build --no-config --wheel --no-build-logs \
+		--python "$(PYTHON)" --default-index https://pypi.org/simple \
+		--exclude-newer "7 days" --out-dir "$$provider_dist" "$$provider_build"; \
+	set -- "$$provider_dist"/*.whl; \
+	test "$$#" -eq 1; \
+	test -f "$$1"; \
+	provider_wheel="$$1"; \
+	UV_CACHE_DIR=$(UV_CACHE_DIR) uv venv --no-config --python "$(PYTHON)" "$$candidate_environment"; \
 	candidate_python="$$candidate_environment/bin/python"; \
 	candidate_commit="$(ORACLE_CANDIDATE_COMMIT)"; \
 	if [ "$(ORACLE_CANDIDATE)" = checkout ]; then \
 		candidate_commit=$$(git rev-parse HEAD); \
 		UV_CACHE_DIR=$(UV_CACHE_DIR) $(PYTHON) -m maturin build --release --locked \
-			--out "$$temporary/dist"; \
-		set -- "$$temporary"/dist/*.whl; \
-		test "$$#" -eq 1; \
-		UV_CACHE_DIR=$(UV_CACHE_DIR) uv pip install --python "$$candidate_python" "$$1"; \
+			--out "$$candidate_dist"; \
 		candidate_version=$$(tr -d '[:space:]' < VERSION.txt); \
 	else \
 		test -n "$$candidate_commit" || \
 			(echo "Set ORACLE_CANDIDATE_COMMIT for a published candidate" >&2; exit 2); \
-		UV_CACHE_DIR=$(UV_CACHE_DIR) uv pip install --python "$$candidate_python" \
-			"env-breakoutatari2600-turbo-native==$(ORACLE_CANDIDATE)"; \
 		candidate_version="$(ORACLE_CANDIDATE)"; \
+		$(PYTHON) scripts/oracle_release_gate.py download-published \
+			--version "$$candidate_version" --output-dir "$$candidate_dist"; \
 	fi; \
-	UV_CACHE_DIR=$(UV_CACHE_DIR) uv pip install --python "$$candidate_python" "$$provider_source"; \
+	set -- "$$candidate_dist"/*.whl; \
+	test "$$#" -eq 1; \
+	test -f "$$1"; \
+	candidate_wheel="$$1"; \
+	UV_CACHE_DIR=$(UV_CACHE_DIR) uv pip install --no-config \
+		--default-index https://pypi.org/simple \
+		--python "$$candidate_python" "$$candidate_wheel"; \
+	UV_CACHE_DIR=$(UV_CACHE_DIR) uv pip install --no-config \
+		--default-index https://pypi.org/simple \
+		--python "$$candidate_python" "$$provider_wheel"; \
 	RETRO_DATA_PATH="$(RETRO_DATA_PATH)" \
 	"$$candidate_python" scripts/oracle_release_gate.py generate \
 		--receipt "$(ORACLE_RECEIPT)" \
@@ -76,7 +96,7 @@ test-semantic-oracle:
 		--data-root "$(RETRO_DATA_PATH)" \
 		--candidate "$(ORACLE_CANDIDATE)" \
 		--candidate-commit "$$candidate_commit"; \
-	"$$candidate_python" scripts/oracle_release_gate.py verify \
+	"$$candidate_python" scripts/oracle_release_gate.py verify-local \
 		--receipt "$(ORACLE_RECEIPT)" \
 		--candidate-version "$$candidate_version" \
 		--candidate-commit "$$candidate_commit"
@@ -86,14 +106,28 @@ test-semantic-oracle-diagnostic:
 	@test -n "$(RETRO_DATA_PATH)" || \
 		(echo "Set RETRO_DATA_PATH to separately obtained lawful Stable Retro data" >&2; exit 2)
 	@set -eu; \
-	provider_source=$$(mktemp -d "$${TMPDIR:-/tmp}/breakout-stable-retro-turbo.XXXXXX"); \
-	trap 'rm -rf -- "$$provider_source"' EXIT; \
+	temporary=$$(mktemp -d "$${TMPDIR:-/tmp}/breakout-stable-retro-turbo.XXXXXX"); \
+	provider_source="$$temporary/provider"; \
+	provider_build="$$temporary/provider-build"; \
+	provider_dist="$$temporary/provider-dist"; \
+	trap 'rm -rf -- "$$temporary"' EXIT; \
 	RETRO_DATA_PATH="$(RETRO_DATA_PATH)" \
 	$(PYTHON) scripts/compare_stable_retro_turbo.py \
 		--provider-repo "$(STABLE_RETRO_TURBO_REPO)" \
 		--prepare-provider "$$provider_source"; \
+	git clone --quiet --no-checkout --no-local "$$provider_source" "$$provider_build"; \
+	git -C "$$provider_build" checkout --quiet --detach \
+		$$(git -C "$$provider_source" rev-parse HEAD); \
+	if [ "$$(uname -s)" = Darwin ]; then export MACOSX_DEPLOYMENT_TARGET=14.0; fi; \
+	UV_CACHE_DIR=$(UV_CACHE_DIR) uv build --no-config --wheel --no-build-logs \
+		--python "$(PYTHON)" --default-index https://pypi.org/simple \
+		--exclude-newer "7 days" --out-dir "$$provider_dist" "$$provider_build"; \
+	set -- "$$provider_dist"/*.whl; \
+	test "$$#" -eq 1; \
+	test -f "$$1"; \
 	UV_CACHE_DIR=$(UV_CACHE_DIR) $(PYTHON) -m maturin develop --release --locked; \
-	UV_CACHE_DIR=$(UV_CACHE_DIR) uv pip install --python "$(PYTHON)" "$$provider_source"; \
+	UV_CACHE_DIR=$(UV_CACHE_DIR) uv pip install --no-config \
+		--default-index https://pypi.org/simple --python "$(PYTHON)" "$$1"; \
 	BREAKOUT_REQUIRE_STABLE_RETRO_TURBO=1 \
 	BREAKOUT_STABLE_RETRO_TURBO_REPO="$$provider_source" \
 	RETRO_DATA_PATH="$(RETRO_DATA_PATH)" \

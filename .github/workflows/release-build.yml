@@ -7,8 +7,8 @@ on:
         description: "Exact 40-character commit SHA on main"
         required: true
         type: string
-      oracle_receipt:
-        description: "Base64-encoded sole Stable Retro Turbo oracle receipt"
+      oracle_run_id:
+        description: "Successful Stable Retro Turbo oracle evidence workflow run id"
         required: true
         type: string
 
@@ -36,7 +36,9 @@ jobs:
       commit: ${{ steps.identity.outputs.commit }}
     steps:
       - name: Validate immutable ref
-        run: '[[ "${{ inputs.ref }}" =~ ^[0-9a-f]{40}$ ]]'
+        run: |
+          [[ "${{ inputs.ref }}" =~ ^[0-9a-f]{40}$ ]]
+          [[ "${{ inputs.oracle_run_id }}" =~ ^[0-9]+$ ]]
 
       - name: Checkout exact candidate
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -82,17 +84,36 @@ jobs:
           .venv/bin/python .codex/skills/build-release/scripts/release_build.py \
             check-pypi --version "${{ steps.identity.outputs.version }}"
 
-      - name: Verify sole Stable Retro Turbo oracle receipt
+      - name: Validate sole-oracle evidence workflow
         env:
-          ORACLE_RECEIPT_BASE64: ${{ inputs.oracle_receipt }}
+          GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
-          printf '%s' "$ORACLE_RECEIPT_BASE64" | base64 --decode > stable-retro-turbo-oracle.json
-          .venv/bin/python scripts/oracle_release_gate.py verify \
+          run="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${{ inputs.oracle_run_id }}")"
+          test "$(jq -r .conclusion <<< "$run")" = success
+          test "$(jq -r .event <<< "$run")" = workflow_dispatch
+          test "$(jq -r .path <<< "$run")" = .github/workflows/oracle-evidence.yml
+          test "$(jq -r .head_sha <<< "$run")" = "${{ steps.identity.outputs.commit }}"
+
+      - name: Download exact sole-oracle receipt
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: stable-retro-turbo-oracle-${{ steps.identity.outputs.commit }}
+          path: oracle-evidence
+          run-id: ${{ inputs.oracle_run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Verify attested sole-oracle receipt
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp oracle-evidence/stable-retro-turbo-oracle.json stable-retro-turbo-oracle.json
+          .venv/bin/python scripts/oracle_release_gate.py verify-release \
             --receipt stable-retro-turbo-oracle.json \
             --candidate-version "${{ steps.identity.outputs.version }}" \
-            --candidate-commit "${{ steps.identity.outputs.commit }}"
+            --candidate-commit "${{ steps.identity.outputs.commit }}" \
+            --repository "$GITHUB_REPOSITORY"
 
       - name: Run source checks
         run: |
@@ -205,6 +226,24 @@ jobs:
           path: wheels
           merge-multiple: true
 
+      - name: Download exact sole-oracle receipt
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: stable-retro-turbo-oracle-${{ needs.validate.outputs.commit }}
+          path: oracle-evidence
+          run-id: ${{ inputs.oracle_run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Verify attested sole-oracle receipt
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          .venv/bin/python scripts/oracle_release_gate.py verify-release \
+            --receipt oracle-evidence/stable-retro-turbo-oracle.json \
+            --candidate-version "${{ needs.validate.outputs.version }}" \
+            --candidate-commit "${{ needs.validate.outputs.commit }}" \
+            --repository "$GITHUB_REPOSITORY"
+
       - name: Build source distribution
         run: |
           .venv/bin/python .codex/skills/build-release/scripts/release_build.py \
@@ -236,14 +275,15 @@ jobs:
 
       - name: Create and verify candidate ledger
         env:
-          ORACLE_RECEIPT_BASE64: ${{ inputs.oracle_receipt }}
+          GH_TOKEN: ${{ github.token }}
         run: |
-          printf '%s' "$ORACLE_RECEIPT_BASE64" | base64 --decode \
-            > candidate/stable-retro-turbo-oracle.json
-          .venv/bin/python scripts/oracle_release_gate.py verify \
+          cp oracle-evidence/stable-retro-turbo-oracle.json \
+            candidate/stable-retro-turbo-oracle.json
+          .venv/bin/python scripts/oracle_release_gate.py verify-release \
             --receipt candidate/stable-retro-turbo-oracle.json \
             --candidate-version "${{ needs.validate.outputs.version }}" \
-            --candidate-commit "${{ needs.validate.outputs.commit }}"
+            --candidate-commit "${{ needs.validate.outputs.commit }}" \
+            --repository "$GITHUB_REPOSITORY"
           .venv/bin/python scripts/release_state.py candidate \
             --candidate candidate \
             --version "${{ needs.validate.outputs.version }}" \

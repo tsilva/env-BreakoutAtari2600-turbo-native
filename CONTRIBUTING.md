@@ -44,7 +44,7 @@ make test-semantic-oracle \
   ORACLE_RECEIPT=/external/evidence/stable-retro-turbo-oracle.json
 ```
 
-The operational provider release and checkout revision are selected only by
+The operational provider release and checkout tree are selected only by
 [`validation/stable-retro-turbo.json`](validation/stable-retro-turbo.json).
 The required command fails when that exact pin, its Turbo Vector API, the
 lawful Breakout ROM, a clean exact candidate, the fixed one-lane and multi-lane
@@ -60,6 +60,11 @@ and remain outside the project lock, runtime dependencies, and distributions.
 pytest diagnostics, but it is explicitly non-certifying and cannot generate a
 release receipt. This separation prevents options such as `--collect-only`
 from passing the release gate without executing the live workload.
+
+Local receipts exercise the same fixed command, but release authority is
+reserved for the repository's protected manual `Stable Retro Turbo oracle
+evidence` workflow. The release candidate workflow accepts only that exact
+successful run and its GitHub-attested receipt, never caller-supplied JSON.
 
 See
 [`docs/release-validation.md`](docs/release-validation.md).

@@ -26,6 +26,7 @@ def test_operational_pin_selects_stable_retro_turbo_vector_provider():
         "module": "env_stableretro_turbo",
         "repository": "https://github.com/tsilva/env-StableRetro-turbo",
         "revision": "c443cf56003f881042312653a92b17220d1c8459",
+        "tree": "668104110e5a471e9766b83210ffb8fee40e5139",
         "turbo_api_version": 2,
         "version": "1.0.1.post44",
     }
@@ -52,9 +53,14 @@ def test_make_exposes_one_certifying_turbo_oracle_command():
         "\n\ntest-semantic-oracle-diagnostic:", 1
     )[0]
     assert "scripts/oracle_release_gate.py generate" in certifying_target
-    assert "scripts/oracle_release_gate.py verify" in certifying_target
+    assert "scripts/oracle_release_gate.py verify-local" in certifying_target
     assert "--prepare-provider \"$$provider_source\"" in makefile
-    assert 'uv pip install --python "$$candidate_python" "$$provider_source"' in makefile
+    assert "uv pip install --no-config" in certifying_target
+    assert "--default-index https://pypi.org/simple" in certifying_target
+    assert '--python "$$candidate_python" "$$provider_wheel"' in certifying_target
+    assert 'uv build --no-config --wheel --no-build-logs' in certifying_target
+    assert '"$$provider_build"' in certifying_target
+    assert "download-published" in certifying_target
     assert "PYTEST_ARGS" not in certifying_target
     assert "ORACLE_RECEIPT" in certifying_target
     assert "ORACLE_CANDIDATE" in certifying_target
@@ -122,6 +128,12 @@ def test_prepare_provider_uses_only_the_pinned_committed_source(tmp_path):
                 "module": "fixture_provider",
                 "repository": "https://example.invalid/fixture-provider",
                 "revision": revision,
+                "tree": subprocess.run(
+                    ["git", "-C", str(provider_repo), "rev-parse", "HEAD^{tree}"],
+                    check=True,
+                    capture_output=True,
+                    text=True,
+                ).stdout.strip(),
                 "turbo_api_version": 2,
                 "version": "1.2.3",
             }
@@ -350,12 +362,15 @@ def test_provider_load_rejects_shadow_module_despite_pinned_install_provenance(
     installed_module.mkdir(parents=True)
     shadow_module.parent.mkdir(parents=True)
     shadow_module.write_text("shadow code\n", encoding="utf-8")
+    wheel = tmp_path / "fixture-provider.whl"
+    wheel.write_bytes(b"pinned wheel")
 
     pin = comparison.ProviderPin(
         distribution="fixture-provider",
         module="fixture_provider",
         repository="https://example.invalid/fixture-provider",
         revision="a" * 40,
+        tree="b" * 40,
         turbo_api_version=2,
         version="1.2.3",
     )
@@ -376,7 +391,7 @@ def test_provider_load_rejects_shadow_module_despite_pinned_install_provenance(
     class _Distribution:
         def read_text(self, filename: str) -> str | None:
             assert filename == "direct_url.json"
-            return json.dumps({"url": provider_repo.as_uri()})
+            return json.dumps({"url": wheel.as_uri()})
 
         def locate_file(self, path: str) -> Path:
             return installed_root / path
@@ -385,12 +400,135 @@ def test_provider_load_rejects_shadow_module_despite_pinned_install_provenance(
     monkeypatch.setattr(
         comparison.importlib.metadata, "distribution", lambda _: _Distribution()
     )
+    monkeypatch.setattr(
+        comparison, "verify_installed_distribution", lambda _distribution: None
+    )
+    monkeypatch.setattr(
+        comparison, "verify_provider_source_binding", lambda *_arguments: None
+    )
 
     with pytest.raises(
         comparison.PreflightError, match="not imported from the installed distribution"
     ):
         comparison._load_provider(inputs)
 
+
+def test_provider_source_binding_rejects_substituted_installed_code(tmp_path):
+    import compare_stable_retro_turbo as comparison
+
+    provider_repo = tmp_path / "provider"
+    source = provider_repo / "fixture_provider/__init__.py"
+    source.parent.mkdir(parents=True)
+    source.write_text("PINNED = True\n", encoding="utf-8")
+    subprocess.run(["git", "init", "-q", str(provider_repo)], check=True)
+    subprocess.run(["git", "-C", str(provider_repo), "add", "."], check=True)
+    subprocess.run(
+        [
+            "git",
+            "-C",
+            str(provider_repo),
+            "-c",
+            "user.name=Oracle test",
+            "-c",
+            "user.email=oracle-test@example.invalid",
+            "commit",
+            "-qm",
+            "provider",
+        ],
+        check=True,
+    )
+    revision = subprocess.run(
+        ["git", "-C", str(provider_repo), "rev-parse", "HEAD"],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    installed_root = tmp_path / "site-packages"
+    installed_module = installed_root / "fixture_provider"
+    installed_module.mkdir(parents=True)
+    module_path = installed_module / "__init__.py"
+    module_path.write_text("PINNED = False\n", encoding="utf-8")
+    distribution = SimpleNamespace(
+        locate_file=lambda path: installed_root / path,
+    )
+    inputs = comparison.OracleInputs(
+        pin=SimpleNamespace(revision=revision, module="fixture_provider"),
+        provider_repo=provider_repo,
+        data_dir=tmp_path / "data",
+        provider_data_dir=tmp_path / "provider-data",
+    )
+
+    with pytest.raises(comparison.PreflightError, match="source content does not match"):
+        comparison.verify_provider_source_binding(inputs, distribution)
+
+
+def test_certifying_provider_rejects_dirty_or_attached_checkout(tmp_path):
+    import compare_stable_retro_turbo as comparison
+
+    provider_repo = tmp_path / "provider"
+    provider_repo.mkdir()
+    (provider_repo / "provider.py").write_text("PINNED = True\n", encoding="utf-8")
+    subprocess.run(["git", "init", "-q", str(provider_repo)], check=True)
+    subprocess.run(["git", "-C", str(provider_repo), "add", "."], check=True)
+    subprocess.run(
+        [
+            "git",
+            "-C",
+            str(provider_repo),
+            "-c",
+            "user.name=Oracle test",
+            "-c",
+            "user.email=oracle-test@example.invalid",
+            "commit",
+            "-qm",
+            "provider",
+        ],
+        check=True,
+    )
+    revision = subprocess.run(
+        ["git", "-C", str(provider_repo), "rev-parse", "HEAD"],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    tree = subprocess.run(
+        ["git", "-C", str(provider_repo), "rev-parse", "HEAD^{tree}"],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    pin = SimpleNamespace(revision=revision, tree=tree)
+
+    with pytest.raises(comparison.PreflightError, match="detached isolated checkout"):
+        comparison.require_certifying_provider_checkout(provider_repo, pin)
+
+    subprocess.run(
+        ["git", "-C", str(provider_repo), "checkout", "--detach", "-q"], check=True
+    )
+    (provider_repo / "provider.py").write_text("PINNED = False\n", encoding="utf-8")
+    with pytest.raises(comparison.PreflightError, match="provider checkout is dirty"):
+        comparison.require_certifying_provider_checkout(provider_repo, pin)
+
+
+def test_installed_distribution_content_ledger_rejects_mutation(tmp_path):
+    import base64
+    import hashlib
+
+    import compare_stable_retro_turbo as comparison
+
+    installed = tmp_path / "provider.py"
+    installed.write_bytes(b"pinned provider\n")
+    digest = base64.urlsafe_b64encode(hashlib.sha256(installed.read_bytes()).digest())
+    recorded = SimpleNamespace(mode="sha256", value=digest.rstrip(b"=").decode())
+    entry = SimpleNamespace(hash=recorded)
+    distribution = SimpleNamespace(
+        files=[entry], locate_file=lambda _entry: installed
+    )
+
+    assert len(comparison.verify_installed_distribution(distribution)) == 64
+    installed.write_bytes(b"substituted provider\n")
+    with pytest.raises(comparison.PreflightError, match="distribution file changed"):
+        comparison.verify_installed_distribution(distribution)
 
 def test_live_suite_exercises_one_lane_and_multiple_lanes(tmp_path, monkeypatch):
     import compare_stable_retro_turbo as comparison
@@ -404,6 +542,7 @@ def test_live_suite_exercises_one_lane_and_multiple_lanes(tmp_path, monkeypatch)
             distribution="fixture-provider",
             module="fixture_provider",
             revision="a" * 40,
+            tree="b" * 40,
         ),
         provider_data_dir=tmp_path / "provider-data",
     )
@@ -422,7 +561,11 @@ def test_live_suite_exercises_one_lane_and_multiple_lanes(tmp_path, monkeypatch)
         environment_calls.append((lane_count, noop_reset_max))
         return _Environment(lane_count), _Environment(lane_count)
 
-    monkeypatch.setattr(comparison, "_load_provider", lambda _: provider)
+    monkeypatch.setattr(
+        comparison,
+        "_load_provider",
+        lambda _: comparison.ProviderRuntime(provider, "c" * 64, "d" * 64),
+    )
     monkeypatch.setattr(
         comparison,
         "_oracle_info_file",
@@ -466,6 +609,54 @@ def test_live_suite_exercises_one_lane_and_multiple_lanes(tmp_path, monkeypatch)
     assert list(report["workloads"]) == ["one-lane", "multi-lane"]
     assert report["workloads"]["one-lane"]["lane_count"] == 1
     assert report["workloads"]["multi-lane"]["lane_count"] == 2
+
+
+def test_trajectory_resets_terminal_lane_and_completes_fixed_steps(monkeypatch):
+    import compare_stable_retro_turbo as comparison
+
+    environment = SimpleNamespace(num_envs=1)
+    reset_calls: list[dict | None] = []
+    step_calls = 0
+
+    def compare_reset(*_args, options=None, **_kwargs):
+        reset_calls.append(options)
+        return {"ball_y": np.asarray([1], dtype=np.int64)}
+
+    def compare_step(*_args, **_kwargs):
+        nonlocal step_calls
+        step_calls += 1
+        terminated = np.asarray([step_calls == 1])
+        return (
+            np.zeros((1, 1), dtype=np.uint8),
+            np.zeros(1),
+            terminated,
+            np.asarray([False]),
+            {"ball_y": np.asarray([1], dtype=np.int64)},
+        )
+
+    monkeypatch.setattr(comparison, "_compare_reset", compare_reset)
+    monkeypatch.setattr(comparison, "_compare_step", compare_step)
+
+    report = comparison._trajectory(
+        environment,
+        environment,
+        name="fixed",
+        steps=3,
+        random_actions=False,
+    )
+
+    assert step_calls == 3
+    assert reset_calls[0] is None
+    assert len(reset_calls) == 2
+    assert np.array_equal(reset_calls[1]["reset_mask"], np.asarray([True]))
+    assert report == {
+        "exact": True,
+        "complete": True,
+        "completion": "step-limit",
+        "steps": 3,
+        "maximum_steps": 3,
+        "completed_episodes": [1],
+    }
 
 
 def test_reset_distribution_comparison_rejects_a_wrong_distribution():

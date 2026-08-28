@@ -4,6 +4,8 @@
 from __future__ import annotations
 
 import argparse
+import base64
+import hashlib
 import importlib
 import importlib.metadata
 import json
@@ -65,6 +67,7 @@ class ProviderPin:
     module: str
     repository: str
     revision: str
+    tree: str
     turbo_api_version: int
     version: str
 
@@ -85,6 +88,13 @@ class OracleInputs:
     provider_data_dir: Path
 
 
+@dataclass(frozen=True)
+class ProviderRuntime:
+    module: object
+    installed_record_sha256: str
+    artifact_sha256: str
+
+
 def _git_head(repository: Path) -> str:
     result = subprocess.run(
         ["git", "-C", str(repository), "rev-parse", "HEAD"],
@@ -99,6 +109,117 @@ def _git_head(repository: Path) -> str:
             f"{repository}: {detail}"
         )
     return result.stdout.strip()
+
+
+def _git_tree(repository: Path) -> str:
+    result = subprocess.run(
+        ["git", "-C", str(repository), "rev-parse", "HEAD^{tree}"],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        detail = result.stderr.strip() or "cannot identify provider tree"
+        raise PreflightError(f"cannot identify Stable Retro Turbo tree: {detail}")
+    return result.stdout.strip()
+
+
+def require_certifying_provider_checkout(
+    repository: Path, pin: ProviderPin
+) -> None:
+    symbolic = subprocess.run(
+        ["git", "-C", str(repository), "symbolic-ref", "--quiet", "HEAD"],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if symbolic.returncode == 0:
+        raise PreflightError(
+            "certifying validation requires a detached isolated checkout of the "
+            "pinned Stable Retro Turbo provider"
+        )
+    if symbolic.returncode not in {0, 1}:
+        raise PreflightError("cannot validate detached provider checkout")
+    status = subprocess.run(
+        [
+            "git",
+            "-C",
+            str(repository),
+            "status",
+            "--porcelain=v1",
+            "--untracked-files=all",
+            "--ignored=matching",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if status.returncode != 0:
+        raise PreflightError("cannot inspect certifying provider checkout")
+    if status.stdout.strip():
+        raise PreflightError("certifying Stable Retro Turbo provider checkout is dirty")
+    if _git_head(repository) != pin.revision or _git_tree(repository) != pin.tree:
+        raise PreflightError(
+            "certifying Stable Retro Turbo provider content does not match the pin"
+        )
+
+
+def verify_installed_distribution(distribution) -> str:
+    files = distribution.files
+    if not files:
+        raise PreflightError("installed distribution has no content ledger")
+    ledger: list[str] = []
+    for entry in files:
+        recorded = entry.hash
+        if recorded is None:
+            continue
+        path = Path(distribution.locate_file(entry)).resolve()
+        if not path.is_file():
+            raise PreflightError(f"installed distribution file is missing: {entry}")
+        digest = hashlib.new(recorded.mode, path.read_bytes()).digest()
+        encoded = base64.urlsafe_b64encode(digest).rstrip(b"=").decode("ascii")
+        if encoded != recorded.value:
+            raise PreflightError(f"installed distribution file changed: {entry}")
+        ledger.append(f"{entry}\0{recorded.mode}\0{recorded.value}")
+    if not ledger:
+        raise PreflightError("installed distribution content ledger is empty")
+    return hashlib.sha256("\n".join(sorted(ledger)).encode()).hexdigest()
+
+
+def verify_provider_source_binding(inputs: OracleInputs, distribution) -> None:
+    result = subprocess.run(
+        [
+            "git",
+            "-C",
+            str(inputs.provider_repo),
+            "ls-tree",
+            "-r",
+            "--name-only",
+            inputs.pin.revision,
+            "--",
+            inputs.pin.module,
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        raise PreflightError("cannot enumerate pinned provider package content")
+    portable_sources = [
+        Path(relative)
+        for relative in result.stdout.splitlines()
+        if relative.endswith(".py") or Path(relative).name == "VERSION.txt"
+    ]
+    if not portable_sources:
+        raise PreflightError("pinned provider package content is incomplete")
+    for relative in portable_sources:
+        source = inputs.provider_repo / relative
+        installed = Path(distribution.locate_file(relative)).resolve()
+        if not installed.is_file() or installed.read_bytes() != source.read_bytes():
+            raise PreflightError(
+                "installed Stable Retro Turbo source content does not match the pin: "
+                f"{relative}"
+            )
 
 
 def _prepare_provider_checkout(
@@ -184,6 +305,7 @@ def preflight(
     data_root: Path | None,
     *,
     prepare_provider: Path | None = None,
+    certifying: bool = False,
 ) -> OracleInputs:
     pin = ProviderPin.load()
     if data_root is None:
@@ -212,12 +334,20 @@ def preflight(
             "Stable Retro Turbo provider revision is incompatible: "
             f"expected {pin.revision}, found {actual_revision} at {provider_repo}"
         )
+    actual_tree = _git_tree(provider_repo)
+    if actual_tree != pin.tree:
+        raise PreflightError(
+            "Stable Retro Turbo provider tree is incompatible: "
+            f"expected {pin.tree}, found {actual_tree}"
+        )
     if prepare_provider is not None:
         provider_repo = _prepare_provider_checkout(
             provider_repo,
             prepare_provider.expanduser().resolve(),
             revision=pin.revision,
         )
+    if certifying:
+        require_certifying_provider_checkout(provider_repo, pin)
 
     package_dir = provider_repo / pin.module
     if not package_dir.is_dir():
@@ -270,6 +400,8 @@ def _load_provider(inputs: OracleInputs):
 
     module_path = Path(provider.__file__).resolve()
     installed_distribution = importlib.metadata.distribution(inputs.pin.distribution)
+    installed_record_sha256 = verify_installed_distribution(installed_distribution)
+    verify_provider_source_binding(inputs, installed_distribution)
     direct_url_text = installed_distribution.read_text("direct_url.json")
     direct_url = json.loads(direct_url_text) if direct_url_text else {}
     parsed_url = urlparse(direct_url.get("url", ""))
@@ -281,11 +413,16 @@ def _load_provider(inputs: OracleInputs):
     installed_module = Path(
         installed_distribution.locate_file(inputs.pin.module.replace(".", "/"))
     ).resolve()
-    if installed_source != inputs.provider_repo:
+    if (
+        installed_source is None
+        or installed_source.suffix != ".whl"
+        or not installed_source.is_file()
+    ):
         raise PreflightError(
-            "Stable Retro Turbo was not installed from the pinned checkout: "
+            "Stable Retro Turbo was not installed from the isolated source-built wheel: "
             f"module={module_path}, source={installed_source}"
         )
+    artifact_sha256 = hashlib.sha256(installed_source.read_bytes()).hexdigest()
     if not module_path.is_relative_to(installed_module):
         raise PreflightError(
             "Stable Retro Turbo was not imported from the installed distribution: "
@@ -305,7 +442,11 @@ def _load_provider(inputs: OracleInputs):
             f"expected Turbo API {inputs.pin.turbo_api_version} with NumPy "
             f"transport, found API {api_version!r} with {transport!r} transport"
         )
-    return provider
+    return ProviderRuntime(
+        module=provider,
+        installed_record_sha256=installed_record_sha256,
+        artifact_sha256=artifact_sha256,
+    )
 
 
 def _oracle_info_file(data_dir: Path, directory: Path) -> Path:
@@ -712,11 +853,17 @@ def _trajectory(
         done = np.asarray(result[2]) | np.asarray(result[3])
         if np.any(done):
             completed += done.astype(np.int64)
-            break
+            info = _compare_reset(
+                oracle,
+                native,
+                seed=[50_000 + step * lane_count + lane for lane in range(lane_count)],
+                options={"reset_mask": done},
+                context=f"{name} post-terminal reset {step + 1}",
+            )
     return {
         "exact": True,
-        "complete": bool(executed == steps or np.any(completed)),
-        "completion": "episode-ended" if np.any(completed) else "step-limit",
+        "complete": executed == steps,
+        "completion": "step-limit",
         "steps": executed,
         "maximum_steps": steps,
         "completed_episodes": completed.astype(int).tolist(),
@@ -811,13 +958,18 @@ def _run_live_workload(
 def run_live_suite(inputs: OracleInputs, *, steps: int) -> dict[str, object]:
     if steps <= 0:
         raise ValueError("steps must be positive")
-    provider = _load_provider(inputs)
+    runtime = _load_provider(inputs)
+    provider = runtime.module
     report: dict[str, object] = {
         "provider": {
             "distribution": inputs.pin.distribution,
             "module": inputs.pin.module,
             "version": provider.__version__,
             "revision": inputs.pin.revision,
+            "tree": inputs.pin.tree,
+            "installed_record_sha256": runtime.installed_record_sha256,
+            "artifact_sha256": runtime.artifact_sha256,
+            "artifact_source": "isolated-pinned-wheel",
             "turbo_api_version": provider.RetroVecEnv.metadata[
                 "turbo_api_version"
             ],
