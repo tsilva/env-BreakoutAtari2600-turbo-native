@@ -148,24 +148,30 @@ def _current_authority_text(path: Path, text: str) -> str:
     relative = path.as_posix()
     if relative == "CHANGELOG.md":
         return re.split(r"^## \[", text, maxsplit=1, flags=re.MULTILINE)[0]
-    if re.fullmatch(r"docs/benchmarks/v\d[^/]*\.md", relative):
-        return ""
     return text
 
 
 def _clauses(text: str) -> list[str]:
-    return [
-        clause.strip()
-        for clause in re.split(r";|\n|(?<=[.!?])\s+", text)
-        if clause.strip()
-    ]
+    clauses: list[str] = []
+    for sentence in re.split(r";|\n|(?<=[.!?])\s+", text):
+        clauses.extend(
+            claim.strip()
+            for claim in re.split(r"\s+(?:and|but)\s+", sentence, flags=re.IGNORECASE)
+            if claim.strip()
+        )
+    return clauses
 
 
 def _distribution_is_denied(clause: str) -> bool:
     return bool(
         re.search(
             r"(?:\b(?:do\s+not|must\s+not|cannot|never)\s+"
-            r"(?:directly\s+)?(?:install|use|depend\s+on|require)\b.{0,40}"
+            r"(?:directly\s+)?(?:(?:install|use|require)\s+|"
+            r"depend\s+(?:directly\s+)?on\s+)"
+            r"(?:the\s+)?" + "stable" + r"-retro\b|"
+            r"\b(?:does|do|must|should|can)\s+not\s+"
+            r"(?:directly\s+)?(?:(?:include|install|use|require)\s+|"
+            r"depend\s+(?:directly\s+)?on\s+)"
             + "stable"
             + r"-retro\b|"
             + "stable"
@@ -192,8 +198,9 @@ def _original_authority_is_denied(clause: str) -> bool:
     authority = r"(?:authoritative|authority|oracle|provider|release\s+gate)"
     return bool(
         re.search(
-            rf"(?:\b(?:remove|removed|removing|deprecate|deprecated|purge|purged)\b"
-            rf".{{0,40}}{original}.{{0,30}}{authority}(?:\s+path)?|"
+            rf"(?:\b(?:remove|removed|removing|deprecate|deprecated|purge|purged)\b\s+"
+            rf"(?:the\s+)?{original}\s+{authority}(?:\s+path)?|"
+            rf"{original}\s+(?:is|was)\s+not\s+(?:an?\s+)?{authority}|"
             rf"{original}\s+(?:must\s+not|cannot|never|no\s+longer)\s+"
             rf"(?:be\s+)?(?:used|treated|described|considered|serve|act)\b"
             rf".{{0,30}}\b(?:as\s+)?(?:an?\s+)?{authority}|"
@@ -258,6 +265,9 @@ def _former_identity_violations(path: Path, text: str) -> list[str]:
             historical = re.search(
                 rf"(?:\b(?:removed?|deprecated|purged)\b.{{0,80}}{escaped}"
                 rf".{{0,60}}\b(?:registration|identifier|command|name|entry\s+point)\b|"
+                rf"\b(?:removed?|deprecated|purged)\b\s+(?:the\s+)?"
+                rf"(?:legacy\s+)?(?:registration|identifier|command|name|entry\s+point)\s+"
+                rf"`?{escaped}`?|"
                 rf"\b(?:renamed|replaced)\b.{{0,80}}{escaped}|"
                 rf"\b(?:former|old|historical|deprecated)\s+"
                 rf"(?:name|identifier|command)\b.{{0,40}}{escaped}"
@@ -379,6 +389,22 @@ def test_authority_guard_rejects_adversarial_current_authority(path, text):
 
 
 @pytest.mark.parametrize(
+    "text",
+    [
+        "Removed an obsolete note and Original Stable" + " Retro is the oracle.",
+        "Do not use stale docs and install stable" + "-retro.",
+        (
+            "Prevent Stable Retro"
+            + " Turbo from being described as secondary, but Stable Retro"
+            + " Turbo is secondary."
+        ),
+    ],
+)
+def test_authority_guard_does_not_apply_unrelated_denial_to_later_claim(text):
+    assert _authority_violations(Path("policy.md"), text)
+
+
+@pytest.mark.parametrize(
     ("path", "text"),
     [
         (
@@ -415,6 +441,27 @@ def test_authority_guard_allows_negation_provenance_and_versioned_history(path, 
 
 
 @pytest.mark.parametrize(
+    "text",
+    [
+        "The Python distribution does not include stable" + "-retro.",
+        "Original Stable" + " Retro is not an oracle.",
+        "Never depend directly on stable" + "-retro.",
+    ],
+)
+def test_authority_guard_allows_reference_local_denials(text):
+    assert not _authority_violations(Path("policy.md"), text)
+
+
+def test_versioned_benchmark_records_are_scanned_for_current_authority_claims():
+    path = Path("docs/benchmarks/v9.9.9-test.md")
+
+    assert _authority_violations(path, "Original Stable" + " Retro is the oracle.")
+    assert _former_identity_violations(
+        path, "Use Breakout" + "Turbo-v0 as the command."
+    )
+
+
+@pytest.mark.parametrize(
     "identifier",
     FORMER_IDENTIFIERS,
 )
@@ -437,7 +484,18 @@ def test_former_identity_guard_rejects_unrelated_or_current_history_claims(text)
     assert _former_identity_violations(Path("README.md"), text)
 
 
+def test_former_identity_guard_rejects_unrelated_history_in_same_sentence():
+    assert _former_identity_violations(
+        Path("README.md"),
+        "Removed an obsolete note and use Breakout" + "Turbo-v0 as the command.",
+    )
+
+
 def test_former_identity_guard_allows_narrow_historical_mentions():
+    assert not _former_identity_violations(
+        Path("CHANGELOG.md"),
+        "Removed command breakout" + "-turbo-env.",
+    )
     assert not _former_identity_violations(
         Path("CHANGELOG.md"),
         "## Unreleased\n\nRemoved the legacy `Breakout" + "Turbo-v0` registration.",
@@ -534,20 +592,15 @@ def test_distributable_package_tree_contains_no_oracle_payload():
     tracked = [path.relative_to(REPO_ROOT) for path in _tracked_paths()]
     forbidden_suffixes = {".a26", ".bin", ".rom", ".sav", ".state"}
     forbidden_payloads = [
-        path
-        for path in tracked
-        if path.suffix.lower() in forbidden_suffixes
+        path for path in tracked if path.suffix.lower() in forbidden_suffixes
     ]
     package_data = [
         path
         for path in tracked
-        if path.parts[:2]
-        == ("python", "env_breakoutatari2600_turbo_native")
+        if path.parts[:2] == ("python", "env_breakoutatari2600_turbo_native")
         and "data" in path.parts
     ]
-    metadata = tomllib.loads(
-        (REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8")
-    )
+    metadata = tomllib.loads((REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8"))
 
     assert not forbidden_payloads
     assert package_data == [
@@ -607,9 +660,7 @@ def test_public_docs_use_frame_terms_from_the_domain_glossary():
 def test_benchmark_comparison_names_the_turbo_provider_explicitly():
     parser = build_parser()
     option_strings = {
-        option
-        for action in parser._actions
-        for option in action.option_strings
+        option for action in parser._actions for option in action.option_strings
     }
 
     assert "--stable-retro-turbo-repo" in option_strings
