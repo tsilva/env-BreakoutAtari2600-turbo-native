@@ -151,12 +151,24 @@ def _current_authority_text(path: Path, text: str) -> str:
     return text
 
 
-def _clauses(text: str) -> list[str]:
+def _clauses(path: Path, text: str) -> list[str]:
+    normalized = text
+    if path.suffix.lower() in {".md", ".rst", ".txt"}:
+        structural_breaks = re.sub(
+            r"\n(?=\s*(?:[-*+]\s|\d+[.)]\s|#{1,6}\s|>|```))",
+            "\n\n",
+            text,
+        )
+        normalized = re.sub(r"(?<!\n)\n(?!\n)", " ", structural_breaks)
     clauses: list[str] = []
-    for sentence in re.split(r";|\n|(?<=[.!?])\s+", text):
+    for sentence in re.split(r";|\n+|(?<=[.!?])\s+", normalized):
         clauses.extend(
             claim.strip()
-            for claim in re.split(r"\s+(?:and|but)\s+", sentence, flags=re.IGNORECASE)
+            for claim in re.split(
+                r",|\s+(?:and|but|or|yet|then|however|while|although|though)\s+",
+                sentence,
+                flags=re.IGNORECASE,
+            )
             if claim.strip()
         )
     return clauses
@@ -234,7 +246,7 @@ def _authority_violations(path: Path, text: str) -> list[str]:
     current = _current_authority_text(path, text)
     violations: list[str] = []
 
-    for clause_number, clause in enumerate(_clauses(current), start=1):
+    for clause_number, clause in enumerate(_clauses(path, current), start=1):
         if _DIRECT_STABLE_RETRO_DISTRIBUTION.search(
             clause
         ) and not _distribution_is_denied(clause):
@@ -257,7 +269,7 @@ def _former_identity_violations(path: Path, text: str) -> list[str]:
     current = _current_authority_text(path, text)
     violations: list[str] = []
 
-    for clause_number, clause in enumerate(_clauses(current), start=1):
+    for clause_number, clause in enumerate(_clauses(path, current), start=1):
         for identifier in FORMER_IDENTIFIERS:
             if identifier not in clause:
                 continue
@@ -405,6 +417,28 @@ def test_authority_guard_does_not_apply_unrelated_denial_to_later_claim(text):
 
 
 @pytest.mark.parametrize(
+    "text",
+    [
+        (
+            "Original Stable"
+            + " Retro is not an oracle, yet Original Stable"
+            + " Retro is the oracle."
+        ),
+        "Do not install stable" + "-retro, then install stable" + "-retro for releases.",
+        (
+            "Stable Retro"
+            + " Turbo is not secondary, yet Stable Retro"
+            + " Turbo is secondary."
+        ),
+        "Original Stable" + " Retro is the sole semantic\noracle for canonical behavior.",
+        "Stable Retro" + " Turbo is a\nsecondary compatibility target.",
+    ],
+)
+def test_authority_guard_handles_connectives_and_wrapped_claims(text):
+    assert _authority_violations(Path("policy.md"), text)
+
+
+@pytest.mark.parametrize(
     ("path", "text"),
     [
         (
@@ -488,6 +522,15 @@ def test_former_identity_guard_rejects_unrelated_history_in_same_sentence():
     assert _former_identity_violations(
         Path("README.md"),
         "Removed an obsolete note and use Breakout" + "Turbo-v0 as the command.",
+    )
+
+
+def test_former_identity_guard_handles_comma_connectives():
+    assert _former_identity_violations(
+        Path("README.md"),
+        "Removed command Breakout"
+        + "Turbo-v0, then use Breakout"
+        + "Turbo-v0 as the command.",
     )
 
 
