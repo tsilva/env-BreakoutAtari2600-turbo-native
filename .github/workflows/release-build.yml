@@ -7,6 +7,10 @@ on:
         description: "Exact 40-character commit SHA on main"
         required: true
         type: string
+      oracle_receipt:
+        description: "Base64-encoded sole Stable Retro Turbo oracle receipt"
+        required: true
+        type: string
 
 permissions:
   actions: read
@@ -77,6 +81,18 @@ jobs:
             --version "${{ steps.identity.outputs.version }}" > /dev/null
           .venv/bin/python .codex/skills/build-release/scripts/release_build.py \
             check-pypi --version "${{ steps.identity.outputs.version }}"
+
+      - name: Verify sole Stable Retro Turbo oracle receipt
+        env:
+          ORACLE_RECEIPT_BASE64: ${{ inputs.oracle_receipt }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf '%s' "$ORACLE_RECEIPT_BASE64" | base64 --decode > stable-retro-turbo-oracle.json
+          .venv/bin/python scripts/oracle_release_gate.py verify \
+            --receipt stable-retro-turbo-oracle.json \
+            --candidate-version "${{ steps.identity.outputs.version }}" \
+            --candidate-commit "${{ steps.identity.outputs.commit }}"
 
       - name: Run source checks
         run: |
@@ -219,7 +235,15 @@ jobs:
           upload-release-assets: false
 
       - name: Create and verify candidate ledger
+        env:
+          ORACLE_RECEIPT_BASE64: ${{ inputs.oracle_receipt }}
         run: |
+          printf '%s' "$ORACLE_RECEIPT_BASE64" | base64 --decode \
+            > candidate/stable-retro-turbo-oracle.json
+          .venv/bin/python scripts/oracle_release_gate.py verify \
+            --receipt candidate/stable-retro-turbo-oracle.json \
+            --candidate-version "${{ needs.validate.outputs.version }}" \
+            --candidate-commit "${{ needs.validate.outputs.commit }}"
           .venv/bin/python scripts/release_state.py candidate \
             --candidate candidate \
             --version "${{ needs.validate.outputs.version }}" \

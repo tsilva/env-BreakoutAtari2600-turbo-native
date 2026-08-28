@@ -96,6 +96,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          .venv/bin/python scripts/oracle_release_gate.py verify \
+            --receipt candidate/stable-retro-turbo-oracle.json \
+            --candidate-version "${{ inputs.version }}" \
+            --candidate-commit "${{ inputs.commit }}"
           .venv/bin/python scripts/release_state.py verify \
             --candidate candidate \
             --version "${{ inputs.version }}" \
@@ -205,6 +209,7 @@ jobs:
             for asset in verified-release/candidate/dist/* \
               verified-release/candidate/SHA256SUMS \
               verified-release/candidate/release-manifest.json \
+              verified-release/candidate/stable-retro-turbo-oracle.json \
               verified-release/candidate/sbom.spdx.json; do
               cmp "$asset" "published-release/$(basename "$asset")"
             done
@@ -213,6 +218,7 @@ jobs:
               verified-release/candidate/dist/* \
               verified-release/candidate/SHA256SUMS \
               verified-release/candidate/release-manifest.json \
+              verified-release/candidate/stable-retro-turbo-oracle.json \
               verified-release/candidate/sbom.spdx.json \
               --repo "$GITHUB_REPOSITORY" \
               --title "env-BreakoutAtari2600-turbo-native $tag" \

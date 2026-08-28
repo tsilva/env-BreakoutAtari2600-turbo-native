@@ -39,18 +39,27 @@ Stable Retro Turbo oracle:
 ```bash
 RETRO_DATA_PATH=/path/to/lawful/stable_retro/data \
 make test-semantic-oracle \
-  STABLE_RETRO_TURBO_REPO=/path/to/env-StableRetro-turbo
+  STABLE_RETRO_TURBO_REPO=/path/to/env-StableRetro-turbo \
+  ORACLE_CANDIDATE=checkout \
+  ORACLE_RECEIPT=/external/evidence/stable-retro-turbo-oracle.json
 ```
 
 The operational provider release and checkout revision are selected only by
 [`validation/stable-retro-turbo.json`](validation/stable-retro-turbo.json).
-The required command fails when that exact checkout, its Turbo Vector API, or
-the lawful Breakout ROM is unavailable or incompatible. It compares aligned
-and seeded-noop resets plus representative trajectories through both public
-vector APIs, including rendered frames, policy observations, rewards, score,
-lives, termination, truncation, and every shared information value. The
-provider is installed only into the local development environment and remains
-outside the project lock, runtime dependencies, and distributions.
+The required command fails when that exact pin, its Turbo Vector API, the
+lawful Breakout ROM, a clean exact candidate, the fixed one-lane and multi-lane
+workload, or any trajectory result is unavailable or incompatible. It compares
+aligned and seeded-noop resets plus representative trajectories through both
+public vector APIs, including rendered frames, policy observations, rewards,
+score, lives, termination, truncation, and every shared information value. The
+receipt binds the provider, candidate commit and version, configuration,
+workload, and exact result. Provider and candidate installations are isolated
+and remain outside the project lock, runtime dependencies, and distributions.
+
+`make test-semantic-oracle-diagnostic PYTEST_ARGS=...` retains configurable
+pytest diagnostics, but it is explicitly non-certifying and cannot generate a
+release receipt. This separation prevents options such as `--collect-only`
+from passing the release gate without executing the live workload.
 
 See
 [`docs/release-validation.md`](docs/release-validation.md).

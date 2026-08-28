@@ -715,6 +715,8 @@ def _trajectory(
             break
     return {
         "exact": True,
+        "complete": bool(executed == steps or np.any(completed)),
+        "completion": "episode-ended" if np.any(completed) else "step-limit",
         "steps": executed,
         "maximum_steps": steps,
         "completed_episodes": completed.astype(int).tolist(),

@@ -157,7 +157,7 @@ uv run --frozen env-breakoutatari2600-turbo-native benchmark               # ben
 uv run --frozen ruff check .                               # lint Python
 uv run --frozen pytest -m "not stable_retro"               # run regular Python tests
 cargo test --locked --lib                                  # run Rust tests
-RETRO_DATA_PATH=/lawful/stable_retro/data make test-semantic-oracle  # require pinned Turbo parity
+RETRO_DATA_PATH=/lawful/stable_retro/data make test-semantic-oracle ORACLE_RECEIPT=/external/oracle.json  # certify pinned Turbo parity
 ```
 
 Append `--help` to the player or benchmark command for its options.
@@ -193,6 +193,10 @@ Append `--help` to the player or benchmark command for its options.
 - Live validation requires a separately obtained lawful ROM. The sole semantic
   oracle is the Stable Retro Turbo vector provider selected by
   [`validation/stable-retro-turbo.json`](validation/stable-retro-turbo.json).
+  `make test-semantic-oracle ORACLE_RECEIPT=/external/oracle.json` is the sole
+  certifying command; its fixed workload receipt binds the exact clean checkout
+  or published candidate, configuration, provider pin, and comparison result.
+  Configurable pytest runs are diagnostic only and cannot create a receipt.
   No provider package, ROM, save state, or recorded reference frame is
   distributed by this project.
 - Only Apple-silicon macOS and x86-64 Linux are supported. See

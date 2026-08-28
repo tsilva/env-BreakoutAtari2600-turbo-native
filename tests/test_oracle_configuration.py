@@ -44,15 +44,22 @@ def test_oracle_dependencies_stay_outside_the_distributed_package():
     assert not any("stableretro" in dependency for dependency in normalized)
 
 
-def test_make_exposes_one_required_turbo_oracle_command():
+def test_make_exposes_one_certifying_turbo_oracle_command():
     makefile = (REPO_ROOT / "Makefile").read_text(encoding="utf-8")
 
     assert makefile.count("\ntest-semantic-oracle:") == 1
-    assert "BREAKOUT_REQUIRE_STABLE_RETRO_TURBO=1" in makefile
-    assert "tests/test_stable_retro_turbo_oracle.py" in makefile
+    certifying_target = makefile.split("\ntest-semantic-oracle:", 1)[1].split(
+        "\n\ntest-semantic-oracle-diagnostic:", 1
+    )[0]
+    assert "scripts/oracle_release_gate.py generate" in certifying_target
+    assert "scripts/oracle_release_gate.py verify" in certifying_target
     assert "--prepare-provider \"$$provider_source\"" in makefile
-    assert 'uv pip install --python "$(PYTHON)" "$$provider_source"' in makefile
-    assert 'BREAKOUT_STABLE_RETRO_TURBO_REPO="$$provider_source"' in makefile
+    assert 'uv pip install --python "$$candidate_python" "$$provider_source"' in makefile
+    assert "PYTEST_ARGS" not in certifying_target
+    assert "ORACLE_RECEIPT" in certifying_target
+    assert "ORACLE_CANDIDATE" in certifying_target
+    assert "test-semantic-oracle-diagnostic:" in makefile
+    assert "NON-CERTIFYING" in makefile
     assert "stable-retro@" not in makefile
     assert "TURBOBENCH" not in makefile
     assert "\ntest-stable-retro:" not in makefile
@@ -213,6 +220,7 @@ def test_canonical_command_rejects_wrong_checkout_before_install(tmp_path):
             f"PYTHON={sys.executable}",
             f"RETRO_DATA_PATH={tmp_path / 'data'}",
             f"STABLE_RETRO_TURBO_REPO={provider_repo}",
+            f"ORACLE_RECEIPT={tmp_path / 'receipt.json'}",
         ],
         cwd=REPO_ROOT,
         env={**os.environ, "PATH": f"{tmp_path}:{os.environ['PATH']}"},

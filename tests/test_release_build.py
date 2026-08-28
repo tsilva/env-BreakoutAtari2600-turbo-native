@@ -162,9 +162,14 @@ def test_release_workflow_publishes_sdist_checksums_and_github_release():
     assert "*.tar.gz" in build
     assert "uv python install 3.11 3.14" in build
     assert "release_state.py candidate" in build
+    assert "oracle_receipt" in build
+    assert "oracle_release_gate.py verify" in build
+    assert "stable-retro-turbo-oracle.json" in build
     assert "attest-build-provenance" in build
     assert "attest-sbom" in build
     assert "gh release create" in publish
+    assert "oracle_release_gate.py verify" in publish
+    assert "stable-retro-turbo-oracle.json" in publish
     assert "gh-action-pypi-publish" in publish
     assert "cp candidate/dist/env_breakoutatari2600_turbo_native-*" in publish
     assert "packages-dir: publish-primary" in publish
