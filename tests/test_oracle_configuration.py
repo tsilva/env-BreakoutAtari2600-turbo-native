@@ -384,6 +384,82 @@ def test_provider_load_rejects_shadow_module_despite_pinned_install_provenance(
         comparison._load_provider(inputs)
 
 
+def test_live_suite_exercises_one_lane_and_multiple_lanes(tmp_path, monkeypatch):
+    import compare_stable_retro_turbo as comparison
+
+    provider = SimpleNamespace(
+        __version__="1.2.3",
+        RetroVecEnv=SimpleNamespace(metadata={"turbo_api_version": 2}),
+    )
+    inputs = SimpleNamespace(
+        pin=SimpleNamespace(
+            distribution="fixture-provider",
+            module="fixture_provider",
+            revision="a" * 40,
+        ),
+        provider_data_dir=tmp_path / "provider-data",
+    )
+    environment_calls: list[tuple[int, int]] = []
+
+    class _Environment:
+        def __init__(self, lane_count: int) -> None:
+            self.num_envs = lane_count
+
+        def close(self) -> None:
+            pass
+
+    def make_environments(
+        inputs, provider, info_path, *, noop_reset_max: int, lane_count: int
+    ):
+        environment_calls.append((lane_count, noop_reset_max))
+        return _Environment(lane_count), _Environment(lane_count)
+
+    monkeypatch.setattr(comparison, "_load_provider", lambda _: provider)
+    monkeypatch.setattr(
+        comparison,
+        "_oracle_info_file",
+        lambda provider_data_dir, directory: directory / "oracle-info.json",
+    )
+    monkeypatch.setattr(comparison, "_make_environments", make_environments)
+    monkeypatch.setattr(comparison, "_compare_reset", lambda *args, **kwargs: None)
+    monkeypatch.setattr(
+        comparison,
+        "_trajectory",
+        lambda oracle, native, **kwargs: {
+            "exact": True,
+            "lane_count": oracle.num_envs,
+        },
+    )
+    monkeypatch.setattr(
+        comparison,
+        "sample_noop_reset_distribution",
+        lambda environment, **kwargs: (
+            np.ones((32, environment.num_envs), dtype=np.int64),
+            {},
+        ),
+    )
+    monkeypatch.setattr(
+        comparison,
+        "validate_noop_reset_distribution",
+        lambda oracle_counts, native_counts, **kwargs: {
+            "matches": True,
+            "lane_count": oracle_counts.shape[1],
+        },
+    )
+    monkeypatch.setattr(
+        comparison,
+        "validate_seeded_reset_semantics",
+        lambda *args, **kwargs: np.arange(1, 31, dtype=np.int64),
+    )
+
+    report = comparison.run_live_suite(inputs, steps=1)
+
+    assert environment_calls == [(1, 0), (1, 30), (2, 0), (2, 30)]
+    assert list(report["workloads"]) == ["one-lane", "multi-lane"]
+    assert report["workloads"]["one-lane"]["lane_count"] == 1
+    assert report["workloads"]["multi-lane"]["lane_count"] == 2
+
+
 def test_reset_distribution_comparison_rejects_a_wrong_distribution():
     from compare_stable_retro_turbo import (
         ObservableMismatch,

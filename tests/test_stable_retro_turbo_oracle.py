@@ -35,16 +35,22 @@ def test_representative_canonical_trajectories_match_pinned_turbo_provider():
 
     assert report["provider"]["module"] == "env_stableretro_turbo"
     assert report["provider"]["turbo_api_version"] == 2
-    assert report["aligned_reset"]["exact"]
-    assert report["seeded_reset_noops"]["exact"]
-    distribution = report["seeded_reset_noops"]["distribution"]
-    assert distribution["sample_count"] == 512
-    assert distribution["lane_sample_count"] == 256
-    assert distribution["lane_count"] == 2
-    assert distribution["seed_corpus"] == [0, 255]
-    assert distribution["maximum_cdf_distance"] == 0.15
-    assert distribution["matches"]
-    assert [lane["lane"] for lane in distribution["lanes"]] == [0, 1]
-    assert report["seeded_reset_noops"]["counts"] == list(range(1, 31))
-    assert report["trajectories"]["cycling"]["exact"]
-    assert report["trajectories"]["seeded-random"]["exact"]
+    assert list(report["workloads"]) == ["one-lane", "multi-lane"]
+    for workload_name, lane_count in (("one-lane", 1), ("multi-lane", 2)):
+        workload = report["workloads"][workload_name]
+        assert workload["lane_count"] == lane_count
+        assert workload["aligned_reset"]["exact"]
+        assert workload["seeded_reset_noops"]["exact"]
+        distribution = workload["seeded_reset_noops"]["distribution"]
+        assert distribution["sample_count"] == 256 * lane_count
+        assert distribution["lane_sample_count"] == 256
+        assert distribution["lane_count"] == lane_count
+        assert distribution["seed_corpus"] == [0, 255]
+        assert distribution["maximum_cdf_distance"] == 0.15
+        assert distribution["matches"]
+        assert [lane["lane"] for lane in distribution["lanes"]] == list(
+            range(lane_count)
+        )
+        assert workload["seeded_reset_noops"]["counts"] == list(range(1, 31))
+        assert workload["trajectories"]["cycling"]["exact"]
+        assert workload["trajectories"]["seeded-random"]["exact"]

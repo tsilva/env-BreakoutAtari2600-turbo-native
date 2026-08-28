@@ -28,10 +28,12 @@ REQUIRED_PROVIDER_INTEGRATION_FILES = (
 )
 ACTION_TABLE = ((), ("BUTTON",), ("RIGHT",), ("LEFT",))
 REQUIRED_SHARED_INFO = ("ball_y", "lives", "score")
+LIVE_WORKLOADS = (("one-lane", 1), ("multi-lane", 2))
 RESET_DISTRIBUTION_SEEDS = tuple(range(256))
-# Each of 256 independent reset seeds exercises both lanes. Each lane is checked
-# independently at effective n=256. The two-sample KS 1% critical distance is
-# approximately 1.63 * sqrt(2 / 256) = 0.144; 0.15 is conservative.
+# Each of 256 independent reset seeds exercises every lane in each live workload.
+# Each lane is checked independently at effective n=256. The two-sample KS 1%
+# critical distance is approximately 1.63 * sqrt(2 / 256) = 0.144; 0.15 is
+# conservative.
 MAX_RESET_CDF_DISTANCE = 0.15
 
 
@@ -322,6 +324,7 @@ def _make_environments(
     provider,
     info_path: Path,
     *,
+    lane_count: int,
     noop_reset_max: int,
 ):
     from env_breakoutatari2600_turbo_native import BreakoutVecEnv
@@ -329,7 +332,7 @@ def _make_environments(
     common = {
         "use_restricted_actions": ACTION_TABLE,
         "render_mode": "rgb_array",
-        "num_envs": 2,
+        "num_envs": lane_count,
         "num_threads": 1,
         "obs_copy": "copy",
         "obs_resize": (84, 84),
@@ -673,22 +676,28 @@ def _trajectory(
     steps: int,
     random_actions: bool,
 ) -> dict[str, object]:
+    lane_count = int(oracle.num_envs)
+    if lane_count <= 0 or int(native.num_envs) != lane_count:
+        raise ValueError("trajectory comparison requires equal nonempty lane counts")
     info = _compare_reset(
         oracle,
         native,
-        seed=[101, 202],
+        seed=[101 * (lane + 1) for lane in range(lane_count)],
         context=f"{name} reset",
     )
     rng = np.random.default_rng(87123)
-    completed = np.zeros(2, dtype=np.int64)
+    completed = np.zeros(lane_count, dtype=np.int64)
     executed = 0
-    cycle = np.asarray(
-        ((0, 0), (2, 3), (2, 3), (0, 0), (3, 2), (3, 2)), dtype=np.int64
+    right_cycle = np.asarray((0, 2, 2, 0, 3, 3), dtype=np.int64)
+    left_cycle = np.asarray((0, 3, 3, 0, 2, 2), dtype=np.int64)
+    cycle = np.stack(
+        [right_cycle if lane % 2 == 0 else left_cycle for lane in range(lane_count)],
+        axis=1,
     )
     for step in range(steps):
         executed = step + 1
         if random_actions:
-            actions = rng.integers(0, 4, size=2, dtype=np.int64)
+            actions = rng.integers(0, 4, size=lane_count, dtype=np.int64)
         else:
             actions = cycle[step % len(cycle)].copy()
         inactive = np.asarray(info["ball_y"]) == 0
@@ -712,6 +721,91 @@ def _trajectory(
     }
 
 
+def _run_live_workload(
+    inputs: OracleInputs,
+    provider,
+    info_path: Path,
+    *,
+    name: str,
+    lane_count: int,
+    steps: int,
+) -> dict[str, object]:
+    workload: dict[str, object] = {"lane_count": lane_count}
+    oracle, native = _make_environments(
+        inputs,
+        provider,
+        info_path,
+        lane_count=lane_count,
+        noop_reset_max=0,
+    )
+    try:
+        _compare_reset(
+            oracle,
+            native,
+            seed=[11 + 18 * lane for lane in range(lane_count)],
+            context=f"{name} aligned reset",
+        )
+        workload["aligned_reset"] = {"exact": True}
+        workload["trajectories"] = {
+            "cycling": _trajectory(
+                oracle,
+                native,
+                name=f"{name} cycling",
+                steps=steps,
+                random_actions=False,
+            ),
+            "seeded-random": _trajectory(
+                oracle,
+                native,
+                name=f"{name} seeded-random",
+                steps=steps,
+                random_actions=True,
+            ),
+        }
+    finally:
+        oracle.close()
+        native.close()
+
+    oracle, native = _make_environments(
+        inputs,
+        provider,
+        info_path,
+        lane_count=lane_count,
+        noop_reset_max=30,
+    )
+    try:
+        oracle_distribution, representative_seeds = sample_noop_reset_distribution(
+            oracle,
+            seeds=RESET_DISTRIBUTION_SEEDS,
+            maximum=30,
+        )
+        native_distribution, _ = sample_noop_reset_distribution(
+            native,
+            seeds=RESET_DISTRIBUTION_SEEDS,
+            maximum=30,
+        )
+        distribution = validate_noop_reset_distribution(
+            oracle_distribution,
+            native_distribution,
+            maximum=30,
+        )
+        counts = validate_seeded_reset_semantics(
+            oracle,
+            native,
+            representative_seeds=representative_seeds,
+            maximum=30,
+        )
+        workload["seeded_reset_noops"] = {
+            "exact": True,
+            "counts": counts.astype(int).tolist(),
+            "distribution": distribution,
+        }
+    finally:
+        oracle.close()
+        native.close()
+    return workload
+
+
 def run_live_suite(inputs: OracleInputs, *, steps: int) -> dict[str, object]:
     if steps <= 0:
         raise ValueError("steps must be positive")
@@ -725,77 +819,24 @@ def run_live_suite(inputs: OracleInputs, *, steps: int) -> dict[str, object]:
             "turbo_api_version": provider.RetroVecEnv.metadata[
                 "turbo_api_version"
             ],
-        }
+        },
+        "workloads": {},
     }
     with tempfile.TemporaryDirectory(prefix="breakout-turbo-oracle-") as temporary:
         info_path = _oracle_info_file(inputs.provider_data_dir, Path(temporary))
-
-        oracle, native = _make_environments(
-            inputs, provider, info_path, noop_reset_max=0
-        )
-        try:
-            _compare_reset(
-                oracle,
-                native,
-                seed=[11, 29],
-                context="aligned reset",
-            )
-            report["aligned_reset"] = {"exact": True}
-            report["trajectories"] = {
-                "cycling": _trajectory(
-                    oracle,
-                    native,
-                    name="cycling",
+        workloads = report["workloads"]
+        for name, lane_count in LIVE_WORKLOADS:
+            try:
+                workloads[name] = _run_live_workload(
+                    inputs,
+                    provider,
+                    info_path,
+                    name=name,
+                    lane_count=lane_count,
                     steps=steps,
-                    random_actions=False,
-                ),
-                "seeded-random": _trajectory(
-                    oracle,
-                    native,
-                    name="seeded-random",
-                    steps=steps,
-                    random_actions=True,
-                ),
-            }
-        finally:
-            oracle.close()
-            native.close()
-
-        oracle, native = _make_environments(
-            inputs, provider, info_path, noop_reset_max=30
-        )
-        try:
-            oracle_distribution, representative_seeds = (
-                sample_noop_reset_distribution(
-                    oracle,
-                    seeds=RESET_DISTRIBUTION_SEEDS,
-                    maximum=30,
                 )
-            )
-            native_distribution, _ = sample_noop_reset_distribution(
-                native,
-                seeds=RESET_DISTRIBUTION_SEEDS,
-                maximum=30,
-            )
-            distribution = validate_noop_reset_distribution(
-                oracle_distribution,
-                native_distribution,
-                maximum=30,
-            )
-            counts = validate_seeded_reset_semantics(
-                oracle,
-                native,
-                representative_seeds=representative_seeds,
-                maximum=30,
-            )
-            report["seeded_reset_noops"] = {
-                "exact": True,
-                "counts": counts.astype(int).tolist(),
-                "distribution": distribution,
-            }
-        finally:
-            oracle.close()
-            native.close()
+            except ObservableMismatch as error:
+                raise ObservableMismatch(f"{name} workload: {error}") from error
     return report
 
 
@@ -871,13 +912,15 @@ def main() -> int:
             "Stable Retro Turbo oracle exact: "
             f"{provider['version']} at {provider['revision']}"
         )
-        for name, trajectory in report["trajectories"].items():
-            print(
-                f"  {name}: {trajectory['steps']} steps, "
-                f"completed episodes {trajectory['completed_episodes']}"
-            )
-        counts = report["seeded_reset_noops"]["counts"]
-        print(f"  seeded reset noops: {counts}")
+        for workload_name, workload in report["workloads"].items():
+            print(f"  {workload_name}: {workload['lane_count']} lane(s)")
+            for name, trajectory in workload["trajectories"].items():
+                print(
+                    f"    {name}: {trajectory['steps']} steps, "
+                    f"completed episodes {trajectory['completed_episodes']}"
+                )
+            counts = workload["seeded_reset_noops"]["counts"]
+            print(f"    seeded reset noops: {counts}")
     return 0
 
 
