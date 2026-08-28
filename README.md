@@ -138,7 +138,7 @@ obs, infos = env.reset(
 env.close()
 ```
 
-Importing the package also preserves the Stable Retro-compatible
+Importing the package also preserves the Stable Retro Turbo-compatible
 `Breakout-Atari2600-v0` vector ID. The complete lifecycle, configuration,
 snapshot, and branching contract is in the
 [environment documentation](docs/environment.md).
@@ -185,7 +185,7 @@ Append `--help` to the player or benchmark command for its options.
 - The canonical `Start` state targets Stable Retro Turbo's native 160×210 Atari Breakout frame,
   lifecycle, physics, raster, rewards, collision behavior, and public trajectory
   values. In particular, `ball_y` uses the Atari RAM convention where zero
-  means the serve is waiting for FIRE. Opt into raw frames with
+  means the serve is waiting for FIRE. Opt into rendered frames with
   `render_mode="rgb_array"`; `render()` then returns lane zero's canonical Stella
   RGB frame while `render_lane(index)` selects any lane, separately from policy
   observations. Stable Retro Turbo's inherited BGR-labeled RGB565 transport is
@@ -205,6 +205,8 @@ Append `--help` to the player or benchmark command for its options.
 - Only Apple-silicon macOS and x86-64 Linux are supported. See
   [support](SUPPORT.md), [benchmarking](docs/benchmarking.md), and
   [release validation](docs/release-validation.md) for exact boundaries.
+- The [specification compliance matrix](docs/specification-compliance.md) maps
+  every project requirement to its maintained executable or non-code evidence.
 - The project is a `0.x` community preview. Public changes are recorded in the
   [changelog](CHANGELOG.md). Serialized `get_state()` snapshots are portable
   only within the same package version and compatible configuration; live

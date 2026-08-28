@@ -45,7 +45,7 @@ env = gym.make_vec(
 ```
 
 The module-qualified ID imports and registers the package. Importing the
-package also preserves the Stable Retro-compatible `Breakout-Atari2600-v0`
+package also preserves the Stable Retro Turbo-compatible `Breakout-Atari2600-v0`
 vector ID.
 
 The canonical constructor accepts the same explicit Breakout fields used by
@@ -129,7 +129,7 @@ with a lane-aligned `state_indices` int32 array in the reset options.
 
 Set `noop_reset_max=N` to reproduce the conventional Atari reset distribution:
 each static lane reset samples an inclusive count from `1..N` and advances that
-many raw emulator frames with the noop action. The count is independent of
+many native console frames with the noop action. The count is independent of
 `frame_skip`, is reported as `noop_reset_count` in reset infos, and is
 reproducible from `reset(seed=...)`. A scalar vector seed expands to
 `seed + lane_index`; lane-aligned seeds control lanes directly. Masked resets
