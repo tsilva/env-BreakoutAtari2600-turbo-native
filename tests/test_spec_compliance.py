@@ -28,22 +28,22 @@ _DIRECT_STABLE_RETRO_DISTRIBUTION = re.compile(
     r"(?<![\w-])" + "stable" + r"-retro(?!-turbo)(?![\w-])", re.IGNORECASE
 )
 _DIRECT_STABLE_RETRO_IMPORT = re.compile(
-    r"\b(?:" + "import" + r"\s+retro\b|from\s+retro(?:\.|\s+import\b))",
+    r"\b(?:"
+    + "import"
+    + r"\s+retro\b|from\s+retro(?:\.|\s+import\b)|"
+    r"importlib\.import_module\(\s*['\"]retro['\"]\s*\)|"
+    r"__import__\(\s*['\"]retro['\"]\s*\))",
     re.IGNORECASE,
 )
-_DIRECT_STABLE_RETRO_AUTHORITY = re.compile(
-    r"(?:\b(?:original\s+)?Stable\s+Retro\b(?!\s+Turbo)"
-    r".{0,120}\b(?:authoritative|authority|oracle|provider|checkout|repository|"
-    r"comparison|release\s+gate|compatibility\s+target)\b|"
-    r"\b(?:authoritative|authority|oracle|provider|checkout|repository|"
-    r"comparison|release\s+gate|compatibility\s+target)\b.{0,120}"
-    r"\b(?:original\s+)?Stable\s+Retro\b(?!\s+Turbo))",
+_LEGACY_STABLE_RETRO_REFERENCE = re.compile(
+    r"\b(?:original\s+)?Stable\s+Retro\b(?!\s+Turbo)",
     re.IGNORECASE,
 )
-_TURBO_SECONDARY = re.compile(
-    r"(?:Stable\s+Retro\s+Turbo.{0,120}\bsecondary\b|"
-    r"\bsecondary\b.{0,120}Stable\s+Retro\s+Turbo)",
-    re.IGNORECASE,
+_TURBO_REFERENCE = re.compile(r"\bStable\s+Retro\s+Turbo\b", re.IGNORECASE)
+_REFERENCE_MARKER = "\0GUARDED_REFERENCE\0"
+_TURBO_DEMOTION = (
+    r"(?:secondary|fallback|supplemental|optional|alternative|backup|non-primary|"
+    r"auxiliary|reserve|advisory)"
 )
 
 
@@ -154,89 +154,207 @@ def _current_authority_text(path: Path, text: str) -> str:
 def _clauses(path: Path, text: str) -> list[str]:
     normalized = text
     if path.suffix.lower() in {".md", ".rst", ".txt"}:
+        unquoted = re.sub(r"(?m)^[ \t]*>\s?", "", text)
         structural_breaks = re.sub(
-            r"\n(?=\s*(?:[-*+]\s|\d+[.)]\s|#{1,6}\s|>|```))",
+            r"\n(?=\s*(?:[-*+]\s|\d+[.)]\s|#{1,6}\s|```))",
             "\n\n",
-            text,
+            unquoted,
         )
         normalized = re.sub(r"(?<!\n)\n(?!\n)", " ", structural_breaks)
     clauses: list[str] = []
     for sentence in re.split(r";|\n+|(?<=[.!?])\s+", normalized):
-        clauses.extend(
-            claim.strip()
-            for claim in re.split(
-                r",|\s+(?:and|but|or|yet|then|however|while|although|though)\s+",
-                sentence,
-                flags=re.IGNORECASE,
-            )
-            if claim.strip()
-        )
+        if sentence.strip():
+            clauses.append(sentence.strip())
     return clauses
 
 
-def _distribution_is_denied(clause: str) -> bool:
+def _mark_occurrence(text: str, start: int, end: int) -> str:
+    return text[:start] + _REFERENCE_MARKER + text[end:]
+
+
+def _distribution_is_denied(marked: str) -> bool:
+    reference = re.escape(_REFERENCE_MARKER)
+    if re.search(
+        r"\b(?:but|yet|however|although|though|while|despite|nevertheless|"
+        r"nonetheless|then|even\s+though|except\s+that)\b"
+        r".{0,40}\b(?:install(?:ed|s)?|bundl(?:e|ed|es)|requir(?:e|ed|es)|"
+        r"shipp(?:ed|s)|includ(?:e|ed|es))\b",
+        marked,
+        re.IGNORECASE,
+    ):
+        return False
     return bool(
         re.search(
             r"(?:\b(?:do\s+not|must\s+not|cannot|never)\s+"
             r"(?:directly\s+)?(?:(?:install|use|require)\s+|"
             r"depend\s+(?:directly\s+)?on\s+)"
-            r"(?:the\s+)?" + "stable" + r"-retro\b|"
+            rf"(?:the\s+)?{reference}|"
             r"\b(?:does|do|must|should|can)\s+not\s+"
             r"(?:directly\s+)?(?:(?:include|install|use|require)\s+|"
             r"depend\s+(?:directly\s+)?on\s+)"
-            + "stable"
-            + r"-retro\b|"
-            + "stable"
-            + r"-retro\b.{0,80}\bnot\s+in\b|"
-            r"\bassert\s+not\b.{0,80}" + "stable" + r"-retro\b)",
-            clause,
+            rf"{reference}|{reference}.{{0,80}}\bnot\s+in\b|"
+            rf"\bassert\s+not\b.{{0,80}}{reference}|"
+            rf"{reference}\s+is\s+not\s+(?:a\s+)?required\b|"
+            rf"{reference}\s+is\s+excluded\s+from\b|"
+            rf"{reference}\s+remains\s+excluded\s+from\b|"
+            rf"{reference}\s+is\s+(?:absent|forbidden)\s+(?:from|as)\b|"
+            rf"{reference}\s+is\s+not\s+included\s+in\b|"
+            rf"{reference}\s+must\s+remain\s+outside\b|"
+            rf"{reference}\s+(?:is\s+not|must\s+not\s+be)\s+"
+            rf"(?:an?\s+)?runtime\s+dependency\b|"
+            rf"\bthe\s+runtime\s+has\s+no\s+{reference}\s+dependency\b|"
+            rf"\bno\s+runtime\s+dependency\s+on\s+{reference}\s+exists\b|"
+            rf"\b(?:do\s+not|must\s+not|cannot|never)\s+ship\s+{reference}|"
+            rf"{reference}\s+must\s+not\s+be\s+bundled\b|"
+            rf"\bno\s+{reference}\s+dependency\b.{{0,40}}\b(?:is\s+)?shipped\b)",
+            marked,
             re.IGNORECASE,
         )
     )
 
 
-def _direct_import_is_denied(clause: str) -> bool:
+def _direct_import_is_denied(marked: str) -> bool:
+    if re.search(
+        r"\b(?:but|yet|however|although|though|while|despite|nevertheless|"
+        r"nonetheless|then|even\s+though|except\s+that)\b"
+        r".{0,30}\bimports?\b",
+        marked,
+        re.IGNORECASE,
+    ):
+        return False
     return bool(
         re.search(
-            r"\b(?:do\s+not|must\s+not|cannot|never)\s+" + "import" + r"\s+retro\b",
-            clause,
+            r"(?:\b(?:do\s+not|must\s+not|cannot|never)\s+"
+            + re.escape(_REFERENCE_MARKER)
+            + r"|\b(?:does|do|must|should|can)\s+not\s+"
+            + re.escape(_REFERENCE_MARKER)
+            + r"|"
+            + re.escape(_REFERENCE_MARKER)
+            + r"\s+must\s+never\s+appear\b)",
+            marked,
             re.IGNORECASE,
         )
     )
 
 
-def _original_authority_is_denied(clause: str) -> bool:
-    original = r"(?:original\s+)?Stable\s+Retro\b(?!\s+Turbo)"
-    authority = r"(?:authoritative|authority|oracle|provider|release\s+gate)"
+def _legacy_authority_is_denied(marked: str) -> bool:
+    reference = re.escape(_REFERENCE_MARKER)
+    authority = (
+        r"(?:authoritative|authority|oracle|provider|release\s+gate|"
+        r"compatibility\s+target)"
+    )
+    if re.search(
+        rf"(?:\b(?:but|yet|however|although|though|while|despite|nevertheless|"
+        rf"nonetheless|then|because|even\s+though|except\s+that)\b|[:,—–])"
+        rf"\s*(?:it\s+)?(?:is|remains|serves|serving\s+as|acts|defines|should\s+be|"
+        rf"should\s+be\s+used\s+to\s+validate)\b.{{0,40}}"
+        rf"(?:\b{authority}\b|\bsource\s+of\s+truth\b|\bcanonical\s+behavior\b|"
+        rf"\bexpected\s+results\b|\bvalidate\s+trajectories\b)",
+        marked,
+        re.IGNORECASE,
+    ):
+        return False
     return bool(
         re.search(
             rf"(?:\b(?:remove|removed|removing|deprecate|deprecated|purge|purged)\b\s+"
-            rf"(?:the\s+)?{original}\s+{authority}(?:\s+path)?|"
-            rf"{original}\s+(?:is|was)\s+not\s+(?:an?\s+)?{authority}|"
-            rf"{original}\s+(?:must\s+not|cannot|never|no\s+longer)\s+"
+            rf"(?:the\s+)?{reference}\s+{authority}(?:\s+path)?|"
+            rf"{reference}\s+(?:is|was)\s+not\s+(?:(?:the|an?)\s+)?"
+            rf"(?:(?:project|canonical|semantic)\s+)?{authority}|"
+            rf"{reference}\s+(?:must\s+not|must\s+never|cannot|never|no\s+longer)\s+"
             rf"(?:be\s+)?(?:used|treated|described|considered|serve|act)\b"
             rf".{{0,30}}\b(?:as\s+)?(?:an?\s+)?{authority}|"
             rf"\b(?:must\s+not|cannot|never)\s+"
-            rf"(?:use|treat|describe|consider)\s+{original}.{{0,30}}"
+            rf"(?:use|treat|describe|consider)\s+{reference}.{{0,30}}"
             rf"\b(?:as\s+)?(?:an?\s+)?{authority}|"
-            rf"{original}.{{0,80}}\bonly\s+as\s+upstream\s+provenance\b"
-            rf".{{0,80}}\bnever\s+as\s+an?\s+oracle\b)",
-            clause,
+            rf"\b(?:do\s+not|must\s+not|cannot|never)\s+compare\b"
+            rf".{{0,80}}\bagainst\s+{reference}|"
+            rf"\b(?:do\s+not|must\s+not|cannot|never)\s+validate\b"
+            rf".{{0,80}}\bagainst\s+{reference}|"
+            rf"\bcanonical\b.{{0,80}}\bmust\s+not\s+match\s+{reference}|"
+            rf"{reference}\s+is\s+not\s+(?:the\s+)?"
+            rf"(?:source\s+of\s+truth|normative\s+reference|gold\s+standard)\b|"
+            rf"{reference}.{{0,80}}\bonly\s+as\s+upstream\s+provenance\b"
+            rf".{{0,80}}\bnever\s+as\s+an?\s+oracle\b|"
+            rf"{reference}\s+(?:is\s+)?(?:cited\s+for\s+)?"
+            rf"(?:upstream\s+provenance|legal\s+context)\b|"
+            rf"{reference}\s+(?:appears|is\s+mentioned)\s+only\s+"
+            rf"(?:as|for)\s+(?:upstream\s+provenance|legal\s+context)\b|"
+            rf"{reference}\s+(?:appears|is\s+mentioned)\s+(?:only|solely)\s+"
+            rf"(?:in|for)\s+(?:upstream\s+provenance|legal\s+context)\b|"
+            rf"\bfor\s+legal\s+context\s+only\b.{{0,100}}{reference}|"
+            rf"{reference}\s+is\s+retained\s+only\s+as\s+historical\s+context\b|"
+            rf"{reference}\s+was\s+formerly\s+the\s+oracle\b|"
+            rf"{reference}\s+predates\s+Stable\s+Retro\s+Turbo\b|"
+            rf"\bmust\s+require\s+no\b.{{0,100}}{reference}|"
+            rf"\b(?:does|do|must|should|can)\s+not\s+require\b.{{0,80}}{reference}|"
+            rf"\b(?:does|do|must|should|can)\s+not\s+include\b.{{0,80}}{reference}|"
+            rf"{reference}\s+is\s+not\s+required\b|"
+            rf"\bno\s+{reference}\s+installation\b.{{0,40}}\brequired\b|"
+            rf"\bno\s+installation\s+of\s+{reference}.{{0,40}}\brequired\b|"
+            rf"\bnormal\s+use\b.{{0,80}}\b(?:works\s+without|requires\s+neither)\b"
+            rf".{{0,80}}{reference}|"
+            rf"{reference}\s+remains\s+absent\s+from\b|"
+            rf"\bwithout\b.{{0,80}}{reference}\s+runtime\b|"
+            rf"\bno\b.{{0,80}}{reference}\s+(?:runtime|save\s+state|installation)\b|"
+            rf"\b_Avoid_:.{{0,100}}{reference}|"
+            rf"\bnot\s+sponsored\b.{{0,80}}{reference}|"
+            rf"\bnot\s+affiliated\b.{{0,120}}\bmaintainers\s+of\s+{reference}|"
+            rf"\blawful\s+{reference}\s+(?:data|integration\s+data)\b|"
+            rf"\bthird-party\s+notices\b.{{0,120}}{reference}.{{0,80}}\bboundaries\b|"
+            rf"{reference}(?:'s|\s+1\.0\.1)\b.{{0,120}}"
+            rf"\b(?:Stella|BGR|RGB565|rendered\s+frame|raw\s+transport)\b|"
+            rf"\bassert\b.{{0,20}}{reference}.{{0,80}}\bnot\s+in\b)",
+            marked,
             re.IGNORECASE,
         )
     )
 
 
-def _turbo_secondary_is_denied(clause: str) -> bool:
-    turbo = r"Stable\s+Retro\s+Turbo"
+def _turbo_secondary_is_denied(marked: str) -> bool:
+    reference = re.escape(_REFERENCE_MARKER)
+    if re.search(
+        rf"(?:\b(?:but|yet|however|although|though|while|despite|nevertheless|"
+        rf"nonetheless|then|because|even\s+though|except\s+that)\b|[:,—–])"
+        rf"\s*(?:it\s+)?(?:is|remains|serves(?:\s+only)?\s+as|serving\s+as|"
+        rf"may\s+be\s+used\s+as)\b.{{0,40}}"
+        rf"(?:\b{_TURBO_DEMOTION}\b|\bone\s+of\s+several\s+oracles?\b|"
+        rf"\bone\s+oracle\s+among\s+several\b)",
+        marked,
+        re.IGNORECASE,
+    ):
+        return False
     return bool(
         re.search(
             rf"(?:\b(?:prevent|prohibit|forbid|reject)(?:s|ed|ing)?\s+"
-            rf"{turbo}\s+from\s+being\s+(?:described|treated|used)\s+as\s+secondary\b|"
-            rf"{turbo}\s+(?:must\s+not|cannot|never)\s+"
-            rf"(?:be\s+)?(?:described|treated|used)\s+as\s+secondary\b|"
-            rf"{turbo}.{{0,40}}\b(?:is\s+not|is\s+never)\s+secondary\b)",
-            clause,
+            rf"{reference}\s+from\s+being\s+(?:described|treated|used)\s+as\s+"
+            rf"{_TURBO_DEMOTION}\b|"
+            rf"{reference}\s+(?:must\s+not|cannot|never)\s+"
+            rf"(?:be\s+)?(?:described|treated|used|serve)\s+as\s+(?:an?\s+)?"
+            rf"{_TURBO_DEMOTION}\b|"
+            rf"{reference}\s+(?:must\s+never|cannot)\s+be\s+"
+            rf"(?:considered|treated)\s+(?:as\s+)?(?:an?\s+)?"
+            rf"{_TURBO_DEMOTION}\b|"
+            rf"\b(?:do\s+not|must\s+not|cannot|never)\s+"
+            rf"(?:describe|treat|use)\s+{reference}\s+as\s+"
+            rf"(?:an?\s+)?{_TURBO_DEMOTION}"
+            rf"(?:\s+(?:oracle|provider|target|compatibility\s+target))?\b|"
+            rf"{reference}.{{0,40}}\b(?:is\s+not|is\s+never)\s+"
+            rf"(?:merely\s+)?(?:an?\s+)?{_TURBO_DEMOTION}"
+            rf"(?:\s+(?:oracle|provider|target|compatibility\s+target))?\b|"
+            rf"{reference}.{{0,40}}\bshould\s+not\s+be\s+{_TURBO_DEMOTION}\b|"
+            rf"{reference}.{{0,40}}\bis\s+anything\s+but\s+{_TURBO_DEMOTION}\b|"
+            rf"{reference}.{{0,40}}\bis\s+neither\s+{_TURBO_DEMOTION}\s+nor\s+"
+            rf"{_TURBO_DEMOTION}\b|"
+            rf"{reference}.{{0,50}}\bmust\s+never\s+be\s+regarded\s+as\s+"
+            rf"(?:an?\s+)?{_TURBO_DEMOTION}\b|"
+            rf"{reference}.{{0,60}}\bmust\s+under\s+no\s+circumstances\s+be\s+"
+            rf"treated\s+as\s+(?:an?\s+)?{_TURBO_DEMOTION}\b|"
+            rf"{reference}.{{0,50}}\b(?:sole\s+oracle|authoritative)\b"
+            rf".{{0,40}}\b(?:not|never|cannot\s+be|rather\s+than)\s+"
+            rf"(?:an?\s+)?{_TURBO_DEMOTION}\b|"
+            rf"{reference}.{{0,50}}\bprimary(?:\s+oracle)?\b.{{0,40}}"
+            rf"\b(?:not|never|cannot\s+be)\s+(?:an?\s+)?{_TURBO_DEMOTION}\b)",
+            marked,
             re.IGNORECASE,
         )
     )
@@ -247,20 +365,39 @@ def _authority_violations(path: Path, text: str) -> list[str]:
     violations: list[str] = []
 
     for clause_number, clause in enumerate(_clauses(path, current), start=1):
-        if _DIRECT_STABLE_RETRO_DISTRIBUTION.search(
-            clause
-        ) and not _distribution_is_denied(clause):
-            violations.append(f"clause {clause_number}: direct legacy distribution")
-        if _DIRECT_STABLE_RETRO_IMPORT.search(clause) and not _direct_import_is_denied(
-            clause
-        ):
-            violations.append(f"clause {clause_number}: direct legacy import")
-        if _DIRECT_STABLE_RETRO_AUTHORITY.search(
-            clause
-        ) and not _original_authority_is_denied(clause):
-            violations.append(f"clause {clause_number}: unapproved legacy authority")
-        if _TURBO_SECONDARY.search(clause) and not _turbo_secondary_is_denied(clause):
-            violations.append(f"clause {clause_number}: sole-oracle demotion")
+        for match in _DIRECT_STABLE_RETRO_DISTRIBUTION.finditer(clause):
+            marked = _mark_occurrence(clause, match.start(), match.end())
+            if not _distribution_is_denied(marked):
+                violations.append(
+                    f"clause {clause_number}: direct legacy distribution"
+                )
+        for match in _DIRECT_STABLE_RETRO_IMPORT.finditer(clause):
+            marked = _mark_occurrence(clause, match.start(), match.end())
+            if not _direct_import_is_denied(marked):
+                violations.append(f"clause {clause_number}: direct legacy import")
+        for match in _LEGACY_STABLE_RETRO_REFERENCE.finditer(clause):
+            marked = _mark_occurrence(clause, match.start(), match.end())
+            if not _legacy_authority_is_denied(marked):
+                violations.append(
+                    f"clause {clause_number}: unapproved legacy authority"
+                )
+        for match in _TURBO_REFERENCE.finditer(clause):
+            marked = _mark_occurrence(clause, match.start(), match.end())
+            if re.search(
+                rf"(?:{re.escape(_REFERENCE_MARKER)}.{{0,120}}\b{_TURBO_DEMOTION}\b|"
+                rf"\b{_TURBO_DEMOTION}\b.{{0,120}}{re.escape(_REFERENCE_MARKER)}|"
+                rf"{re.escape(_REFERENCE_MARKER)}.{{0,80}}\bnot\s+authoritative\b|"
+                rf"{re.escape(_REFERENCE_MARKER)}.{{0,80}}\bone\s+of\b"
+                rf".{{0,40}}\boracles?\b|"
+                rf"{re.escape(_REFERENCE_MARKER)}.{{0,80}}\bone\s+oracle\s+among\s+several\b|"
+                rf"{re.escape(_REFERENCE_MARKER)}.{{0,80}}\bsecond\s+oracle\b|"
+                rf"{re.escape(_REFERENCE_MARKER)}.{{0,80}}\bneed\s+not\s+be\s+used\s+"
+                rf"for\s+releases\b|"
+                rf"{re.escape(_REFERENCE_MARKER)}.{{0,80}}\bdiagnostic\s+oracle\s+only\b)",
+                marked,
+                re.IGNORECASE,
+            ) and not _turbo_secondary_is_denied(marked):
+                violations.append(f"clause {clause_number}: sole-oracle demotion")
 
     return violations
 
@@ -271,32 +408,71 @@ def _former_identity_violations(path: Path, text: str) -> list[str]:
 
     for clause_number, clause in enumerate(_clauses(path, current), start=1):
         for identifier in FORMER_IDENTIFIERS:
-            if identifier not in clause:
-                continue
             escaped = re.escape(identifier)
-            historical = re.search(
-                rf"(?:\b(?:removed?|deprecated|purged)\b.{{0,80}}{escaped}"
-                rf".{{0,60}}\b(?:registration|identifier|command|name|entry\s+point)\b|"
-                rf"\b(?:removed?|deprecated|purged)\b\s+(?:the\s+)?"
-                rf"(?:legacy\s+)?(?:registration|identifier|command|name|entry\s+point)\s+"
-                rf"`?{escaped}`?|"
-                rf"\b(?:renamed|replaced)\b.{{0,80}}{escaped}|"
-                rf"\b(?:former|old|historical|deprecated)\s+"
-                rf"(?:name|identifier|command)\b.{{0,40}}{escaped}"
-                rf".{{0,60}}\b(?:appears?\s+only\s+as\s+)?"
-                rf"(?:legal|upstream)\s+provenance\b)",
-                clause,
-                re.IGNORECASE,
-            )
-            current_support = re.search(
-                r"\b(?:remain(?:s|ed)?|supported|accepted|current|register(?:ed)?|"
-                r"restore(?:d)?|reintroduc(?:e|ed)|publish(?:ed)?|run)\b",
-                clause,
-                re.IGNORECASE,
-            )
-            if historical and not current_support:
-                continue
-            violations.append(f"clause {clause_number}: {identifier}")
+            for match in re.finditer(escaped, clause):
+                marked = _mark_occurrence(clause, match.start(), match.end())
+                reference = re.escape(_REFERENCE_MARKER)
+                historical = re.search(
+                    rf"(?:\b(?:removed?|deprecated|purged|retired)\b.{{0,80}}{reference}"
+                    rf".{{0,60}}\b(?:registration|identifier|command|name|entry\s+point)\b|"
+                    rf"\b(?:removed?|deprecated|purged)\b\s+(?:the\s+)?"
+                    rf"(?:legacy\s+)?(?:registration|identifier|command|name|entry\s+point)\s+"
+                    rf"`?{reference}`?|"
+                    rf"\b(?:renamed|replaced)\b.{{0,80}}{reference}|"
+                    rf"{reference}\s+was\s+removed\s+as\s+(?:an?\s+)?"
+                    rf"(?:registration|identifier|command|name|entry\s+point)\b|"
+                    rf"{reference}\s+has\s+been\s+removed\s+as\s+(?:an?\s+)?"
+                    rf"(?:registration|identifier|command|name|entry\s+point)\b|"
+                    rf"{reference}\s+was\s+retired\s+as\s+(?:an?\s+)?"
+                    rf"(?:registration|identifier|command|name|entry\s+point)\b|"
+                    rf"\bsupport\s+for\s+{reference}\s+was\s+removed\b|"
+                    rf"{reference}\s+is\s+no\s+longer\s+supported\b|"
+                    rf"{reference}\s+is\s+unsupported\b|"
+                    rf"{reference}\s+is\s+obsolete\b|"
+                    rf"\b(?:do\s+not|must\s+not|cannot|never)\s+use\s+"
+                    rf"{reference}\s+as\s+(?:the\s+)?(?:identifier|command|name)\b|"
+                    rf"\bnever\s+invoke\s+{reference}|"
+                    rf"\bdo\s+not\s+invoke\s+{reference}|"
+                    rf"\bnever\s+run\s+{reference}|"
+                    rf"{reference}\s+must\s+(?:not|never)\s+be\s+used\s+as\s+"
+                    rf"(?:the\s+)?(?:identifier|command|name)\b|"
+                    rf"\b(?:former|old|historical|deprecated)\s+"
+                    rf"(?:name|identifier|command)\b.{{0,40}}{reference}"
+                    rf".{{0,60}}\b(?:appears?\s+only\s+as\s+)?"
+                    rf"(?:legal|upstream)\s+provenance\b)",
+                    marked,
+                    re.IGNORECASE,
+                )
+                current_support = re.search(
+                    rf"(?:\b(?:register(?:ed)?|restore(?:d)?|reintroduc(?:e|ed)|"
+                    rf"publish(?:ed)?|run|use|invoke)\b.{{0,80}}{reference}|"
+                    rf"{reference}.{{0,80}}\b(?:remain(?:s|ed)?\s+supported|"
+                    rf"(?:it\s+)?remain(?:s|ed)?\s+(?:accepted|active|valid)|"
+                    rf"is\s+(?:accepted|active|valid|current|registered|restored|"
+                    rf"reintroduced|published)|(?:it\s+)?still\s+works|"
+                    rf"(?:callers?|users?)\s+(?:can|may)\s+still\s+invoke\s+it)\b)",
+                    marked,
+                    re.IGNORECASE,
+                )
+                denied = re.search(
+                    rf"(?:{reference}\s+is\s+no\s+longer\s+supported\b|"
+                    rf"{reference}\s+is\s+unsupported\b|"
+                    rf"{reference}\s+is\s+obsolete\b|"
+                    rf"\b(?:do\s+not|must\s+not|cannot|never)\s+use\s+"
+                    rf"{reference}\s+as\s+(?:the\s+)?(?:identifier|command|name)\b|"
+                    rf"\bnever\s+invoke\s+{reference}|"
+                    rf"\bdo\s+not\s+invoke\s+{reference}|"
+                    rf"\bnever\s+run\s+{reference}|"
+                    rf"{reference}\s+must\s+(?:not|never)\s+be\s+used\s+as\s+"
+                    rf"(?:the\s+)?(?:identifier|command|name)\b)",
+                    marked,
+                    re.IGNORECASE,
+                )
+                if denied:
+                    continue
+                if historical and not current_support:
+                    continue
+                violations.append(f"clause {clause_number}: {identifier}")
 
     return violations
 
@@ -368,11 +544,11 @@ def test_tracked_text_enumeration_has_no_suffix_or_executable_name_allowlist(
         (Path("release-tool"), "import" + " retro"),
         (
             Path("CHANGELOG.md"),
-            "# Changelog\n\n## Unreleased\n\nStable Retro" + " Turbo is secondary.",
+            "# Changelog\n\n## Unreleased\n\nStable" + " Retro Turbo is secondary.",
         ),
         (
             Path("docs/specification-compliance.md"),
-            "Stable Retro" + " Turbo remains a secondary parity target.",
+            "Stable" + " Retro Turbo remains a secondary parity target.",
         ),
         (
             Path("policy.md"),
@@ -384,7 +560,7 @@ def test_tracked_text_enumeration_has_no_suffix_or_executable_name_allowlist(
         ),
         (
             Path("policy.md"),
-            "Prevent unrelated drift; Stable Retro" + " Turbo is secondary.",
+            "Prevent unrelated drift; Stable" + " Retro Turbo is secondary.",
         ),
         (
             Path("policy.md"),
@@ -406,9 +582,9 @@ def test_authority_guard_rejects_adversarial_current_authority(path, text):
         "Removed an obsolete note and Original Stable" + " Retro is the oracle.",
         "Do not use stale docs and install stable" + "-retro.",
         (
-            "Prevent Stable Retro"
-            + " Turbo from being described as secondary, but Stable Retro"
-            + " Turbo is secondary."
+            "Prevent Stable"
+            + " Retro Turbo from being described as secondary, but Stable"
+            + " Retro Turbo is secondary."
         ),
     ],
 )
@@ -439,11 +615,161 @@ def test_authority_guard_handles_connectives_and_wrapped_claims(text):
 
 
 @pytest.mark.parametrize(
+    "text",
+    [
+        (
+            "Original Stable"
+            + " Retro is not an oracle: Original Stable"
+            + " Retro is the oracle."
+        ),
+        (
+            "Stable"
+            + " Retro Turbo is not secondary — Stable"
+            + " Retro Turbo is secondary."
+        ),
+        (
+            "Original Stable"
+            + " Retro is not an oracle because Original Stable"
+            + " Retro is the oracle."
+        ),
+        "> Original Stable" + " Retro is the sole semantic\n> oracle for behavior.",
+        "> Stable" + " Retro Turbo is a\n> secondary compatibility target.",
+        "Compare canonical `Start` against Original Stable" + " Retro.",
+        "Canonical `Start` must match Original Stable" + " Retro.",
+        "Original Stable" + " Retro defines the expected canonical behavior.",
+        "Original Stable" + " Retro is the source of truth for Breakout behavior.",
+        "Original Stable" + " Retro is the normative reference implementation.",
+        "Breakout trajectories must be identical to Original Stable" + " Retro.",
+        "Validate trajectories against Original Stable" + " Retro.",
+        "Use Original Stable" + " Retro to certify releases.",
+        "Original Stable" + " Retro is the gold standard.",
+        "Stable" + " Retro Turbo is only a fallback oracle.",
+        "Stable" + " Retro Turbo is a supplemental oracle.",
+        (
+            "__GUARDED_REFERENCE__ is not an oracle: Original Stable"
+            + " Retro is the oracle."
+        ),
+        (
+            "__GUARDED_REFERENCE__ is not secondary: Stable"
+            + " Retro Turbo is secondary."
+        ),
+        "Do not install __GUARDED_REFERENCE__: install stable" + "-retro.",
+        "Original Stable" + " Retro is not an oracle but is the oracle.",
+        "Stable" + " Retro Turbo is not secondary but is secondary.",
+        "> Original Stable" + " Retro is not an\n> oracle but is the oracle.",
+        "Stable" + " Retro supplies the baseline for acceptance.",
+        "Breakout trajectories must be identical to Stable" + " Retro.",
+        "Expected results come from Stable" + " Retro.",
+        "Treat Stable" + " Retro as the reference implementation.",
+        "Stable" + " Retro defines canonical behavior.",
+        "Stable" + " Retro determines expected behavior.",
+        "Stable" + " Retro is the ground truth.",
+        "Original Stable"
+        + " Retro is not an oracle because it defines canonical behavior.",
+        "Original Stable"
+        + " Retro is not an oracle but should be used to validate trajectories.",
+        "Original Stable" + " Retro is not an oracle although it is the oracle.",
+        "Original Stable"
+        + " Retro is not an oracle while it serves as the oracle.",
+        "Original Stable" + " Retro is not an oracle but is the source of truth.",
+        "Stable" + " Retro Turbo is not authoritative.",
+        "Stable" + " Retro Turbo is one of two equivalent oracles.",
+        "Stable" + " Retro Turbo is a diagnostic oracle only.",
+        "Stable"
+        + " Retro Turbo is not secondary, although it remains a fallback oracle.",
+        "Stable"
+        + " Retro Turbo should not be secondary but may be used as a fallback oracle.",
+        "Stable"
+        + " Retro Turbo is not secondary although it is a fallback oracle.",
+        "Stable" + " Retro Turbo is a backup oracle.",
+        "Stable" + " Retro Turbo is a non-primary oracle.",
+        "stable" + "-retro is not required but it is installed for releases.",
+        "stable"
+        + "-retro must remain outside runtime dependencies but is bundled with releases.",
+        "The code does not import" + " retro but imports it for releases.",
+    ],
+)
+def test_authority_guard_evaluates_each_reference_occurrence(text):
+    assert _authority_violations(Path("policy.md"), text)
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Original Stable" + " Retro is not an oracle though it remains the oracle.",
+        "Original Stable"
+        + " Retro is not an oracle despite serving as the oracle.",
+        "Original Stable"
+        + " Retro is not an oracle even though it is authoritative.",
+        "Original Stable"
+        + " Retro is not the oracle except that it defines canonical behavior.",
+        "Original Stable"
+        + " Retro is not an oracle but remains the compatibility target.",
+        "Original Stable"
+        + " Retro is not the source of truth but defines expected results.",
+        "Stable" + " Retro Turbo is not secondary though it remains a backup oracle.",
+        "Stable"
+        + " Retro Turbo is not a fallback oracle despite serving as an alternative oracle.",
+        "Stable" + " Retro Turbo is the auxiliary oracle.",
+        "Stable" + " Retro Turbo is a reserve oracle.",
+        "Stable" + " Retro Turbo is a second oracle.",
+        "Stable" + " Retro Turbo is one oracle among several.",
+        "Stable" + " Retro Turbo is merely advisory.",
+        "Stable" + " Retro Turbo need not be used for releases.",
+        "Stable"
+        + " Retro Turbo is not secondary because it serves only as a fallback oracle.",
+        "Stable"
+        + " Retro Turbo is not secondary but is one of several oracles.",
+        "stable" + "-retro is not required, although releases install it.",
+        "stable" + "-retro is not required though it is installed for releases.",
+        "No stable" + "-retro dependency is shipped although the package includes it.",
+        "retro = importlib." + 'import_module("retro")',
+        "retro = __" + 'import__("retro")',
+    ],
+)
+def test_authority_guard_blocks_final_reviewer_examples(text):
+    assert _authority_violations(Path("policy.md"), text)
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Stable" + " Retro Turbo is anything but secondary.",
+        "Stable" + " Retro Turbo is neither secondary nor optional.",
+        "Stable" + " Retro Turbo must never be regarded as secondary.",
+        "Stable"
+        + " Retro Turbo must under no circumstances be treated as secondary.",
+        "Stable" + " Retro Turbo is the sole oracle, never a fallback.",
+        "Stable" + " Retro Turbo is the sole oracle and cannot be a fallback.",
+        "Stable" + " Retro Turbo is the primary oracle, never a backup.",
+        "Stable" + " Retro Turbo is primary, not optional.",
+        "stable" + "-retro is absent from runtime dependencies.",
+        "stable" + "-retro is forbidden as a runtime dependency.",
+        "stable" + "-retro is not included in runtime dependencies.",
+        "No runtime dependency on stable" + "-retro exists.",
+        "Original Stable" + " Retro appears only in upstream provenance.",
+        "Original Stable" + " Retro is mentioned solely for legal context.",
+        "For legal context only, this document mentions Original Stable" + " Retro.",
+        "The runtime does not include Original Stable" + " Retro.",
+        "No installation of Original Stable" + " Retro is required.",
+        "Normal use requires neither Original Stable"
+        + " Retro nor Stable Retro Turbo.",
+        "Normal use works without an Original Stable" + " Retro installation.",
+        "Original Stable" + " Retro remains absent from runtime dependencies.",
+        "Original Stable" + " Retro is retained only as historical context.",
+        "Original Stable" + " Retro was formerly the oracle.",
+    ],
+)
+def test_authority_guard_allows_final_reviewer_examples(text):
+    assert not _authority_violations(Path("policy.md"), text)
+
+
+@pytest.mark.parametrize(
     ("path", "text"),
     [
         (
             Path("CHANGELOG.md"),
-            "## [0.5.3] - 2026-08-12\n\nStable Retro" + " Turbo was secondary.",
+            "## [0.5.3] - 2026-08-12\n\nStable" + " Retro Turbo was secondary.",
         ),
         (
             Path("CHANGELOG.md"),
@@ -462,7 +788,7 @@ def test_authority_guard_handles_connectives_and_wrapped_claims(text):
         (Path("provider.py"), "import env_stableretro_turbo as retro"),
         (
             Path("docs/policy.md"),
-            "Prevent Stable Retro" + " Turbo from being described as secondary.",
+            "Prevent Stable" + " Retro Turbo from being described as secondary.",
         ),
         (
             Path("docs/policy.md"),
@@ -479,7 +805,56 @@ def test_authority_guard_allows_negation_provenance_and_versioned_history(path, 
     [
         "The Python distribution does not include stable" + "-retro.",
         "Original Stable" + " Retro is not an oracle.",
+        "Original Stable" + " Retro is not the project oracle.",
+        "Original Stable" + " Retro is not the canonical oracle.",
+        "Original Stable" + " Retro is not a semantic oracle.",
+        "Original Stable" + " Retro is not the canonical provider.",
+        "Do not compare canonical Start against Original Stable" + " Retro.",
+        "Canonical Start must not match Original Stable" + " Retro.",
         "Never depend directly on stable" + "-retro.",
+        "Stable" + " Retro Turbo is not a secondary oracle.",
+        "Stable" + " Retro Turbo must never be considered secondary.",
+        "Never describe Stable"
+        + " Retro Turbo as a secondary compatibility target.",
+        "Stable" + " Retro Turbo should not be secondary.",
+        "Stable"
+        + " Retro Turbo cannot be used as a secondary compatibility target.",
+        "Original Stable"
+        + " Retro is upstream provenance because Stable Retro Turbo is the canonical oracle.",
+        "Original Stable"
+        + " Retro is cited for legal context because Stable Retro Turbo is the semantic oracle.",
+        "Original Stable"
+        + " Retro predates Stable Retro Turbo which is the sole oracle.",
+        "stable" + "-retro is not required by the runtime.",
+        "stable" + "-retro is excluded from core dependencies.",
+        "No stable" + "-retro dependency is shipped.",
+        "stable" + "-retro must remain outside runtime dependencies.",
+        "The code does not import" + " retro.",
+        "Original Stable" + " Retro must never serve as the semantic oracle.",
+        "Do not validate against Original Stable" + " Retro.",
+        "Original Stable" + " Retro is not the source of truth.",
+        "Original Stable" + " Retro appears only as upstream provenance.",
+        "Original Stable" + " Retro is mentioned only for legal context.",
+        "Original Stable"
+        + " Retro must never be treated as the canonical provider.",
+        "The runtime does not require Original Stable" + " Retro.",
+        "Original Stable" + " Retro is not required for normal use.",
+        "No Original Stable" + " Retro installation is required.",
+        "stable" + "-retro remains excluded from core dependencies.",
+        "stable" + "-retro is not a runtime dependency.",
+        "The runtime has no stable" + "-retro dependency.",
+        "Do not ship stable" + "-retro.",
+        "stable" + "-retro must not be bundled.",
+        "stable" + "-retro must not be a runtime dependency.",
+        "The phrase import" + " retro must never appear.",
+        "Do not treat Stable" + " Retro Turbo as secondary.",
+        "Never use Stable" + " Retro Turbo as a fallback oracle.",
+        "Stable" + " Retro Turbo cannot serve as an alternative oracle.",
+        "Stable" + " Retro Turbo is the sole oracle, not a fallback.",
+        "Stable" + " Retro Turbo is authoritative rather than secondary.",
+        "Stable"
+        + " Retro Turbo must never be treated as a secondary provider.",
+        "Stable" + " Retro Turbo is never merely secondary.",
     ],
 )
 def test_authority_guard_allows_reference_local_denials(text):
@@ -523,6 +898,16 @@ def test_former_identity_guard_rejects_unrelated_history_in_same_sentence():
         Path("README.md"),
         "Removed an obsolete note and use Breakout" + "Turbo-v0 as the command.",
     )
+    assert _former_identity_violations(
+        Path("README.md"),
+        "Removed command Breakout"
+        + "Turbo-v0 but it remains supported.",
+    )
+    assert _former_identity_violations(
+        Path("README.md"),
+        "Removed command __GUARDED_REFERENCE__: Breakout"
+        + "Turbo-v0 is the active environment ID.",
+    )
 
 
 def test_former_identity_guard_handles_comma_connectives():
@@ -532,6 +917,34 @@ def test_former_identity_guard_handles_comma_connectives():
         + "Turbo-v0, then use Breakout"
         + "Turbo-v0 as the command.",
     )
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Removed command Breakout" + "Turbo-v0 although it remains accepted.",
+        "Removed command Breakout" + "Turbo-v0 but it remains active.",
+        "Removed command Breakout" + "Turbo-v0 but it remains valid.",
+        "Removed command Breakout" + "Turbo-v0 but it still works.",
+        "Removed command Breakout" + "Turbo-v0 but users may still invoke it.",
+    ],
+)
+def test_former_identity_guard_blocks_final_reviewer_examples(text):
+    assert _former_identity_violations(Path("policy.md"), text)
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Breakout" + "Turbo-v0 was retired as a command.",
+        "Breakout" + "Turbo-v0 is obsolete.",
+        "Do not invoke Breakout" + "Turbo-v0.",
+        "Never run Breakout" + "Turbo-v0.",
+        "Breakout" + "Turbo-v0 must never be used as the command.",
+    ],
+)
+def test_former_identity_guard_allows_final_reviewer_examples(text):
+    assert not _former_identity_violations(Path("policy.md"), text)
 
 
 def test_former_identity_guard_allows_narrow_historical_mentions():
@@ -551,6 +964,28 @@ def test_former_identity_guard_allows_narrow_historical_mentions():
         Path("THIRD_PARTY_NOTICES.md"),
         "The former name `Breakout" + " Turbo` appears only as legal provenance.",
     )
+    assert not _former_identity_violations(
+        Path("CHANGELOG.md"),
+        "Breakout" + "Turbo-v0 was removed as a command.",
+    )
+    assert not _former_identity_violations(
+        Path("policy.md"),
+        "Breakout" + "Turbo-v0 is no longer supported.",
+    )
+    assert not _former_identity_violations(
+        Path("policy.md"),
+        "Do not use Breakout" + "Turbo-v0 as the command.",
+    )
+    for text in (
+        "Renamed Breakout" + "Turbo-v0 to the new command, which users now use.",
+        "Removed command Breakout" + "Turbo-v0: use env-current instead.",
+        "Breakout" + "Turbo-v0 has been removed as a command.",
+        "Support for Breakout" + "Turbo-v0 was removed.",
+        "Breakout" + "Turbo-v0 is unsupported.",
+        "Never invoke Breakout" + "Turbo-v0.",
+        "Breakout" + "Turbo-v0 must not be used as the command.",
+    ):
+        assert not _former_identity_violations(Path("policy.md"), text)
 
 
 def test_documented_pytest_selectors_collect_and_release_commands_parse():
