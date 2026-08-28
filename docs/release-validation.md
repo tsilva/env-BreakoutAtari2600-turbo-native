@@ -152,7 +152,7 @@ approval, and disallows administrator bypass.
 
 The publish workflow uses its repository-scoped `GITHUB_TOKEN` with
 `contents: write` to create the exact `v<version>` tag and GitHub Release. It
-does not require a self-hosted parity runner, a Stable Retro repository
+does not require a self-hosted parity runner, a Stable Retro Turbo repository
 variable, GitHub App secrets, or a tag ruleset.
 
 PyPI remains OIDC-only. Never add an API token or use a manual upload as a

@@ -10,10 +10,13 @@ releases; changes will be recorded here.
 
 - Promoted the pinned Stable Retro Turbo vector provider to the sole live
   semantic oracle and removed the original Stable Retro authority path.
+- Added a literal project-requirement compliance matrix with repository drift
+  guards, and named Stable Retro Turbo explicitly throughout current public
+  documentation and the comparison-only provider-repository option.
 
 ### Fixed
 
-- Point repository links and sibling Stable Retro checkout defaults at the
+- Point repository links and sibling Stable Retro Turbo checkout defaults at the
   standardized repository names.
 
 ## [0.5.7] - 2026-08-20

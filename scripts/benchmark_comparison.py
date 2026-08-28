@@ -89,8 +89,8 @@ def build_turbo(num_threads: int):
     )
 
 
-def build_stable(num_threads: int, stable_retro_repo: Path):
-    sys.path.insert(0, str(stable_retro_repo))
+def build_stable(num_threads: int, stable_retro_turbo_repo: Path):
+    sys.path.insert(0, str(stable_retro_turbo_repo))
     import env_stableretro_turbo as retro
 
     os.environ.setdefault("ENV_STABLERETRO_TURBO_DISABLE_AUDIO", "1")
@@ -140,7 +140,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--repeats", type=int, default=5)
     parser.add_argument("--threads", type=int, default=8)
     parser.add_argument(
-        "--stable-retro-repo",
+        "--stable-retro-turbo-repo",
         type=Path,
         default=Path(__file__).resolve().parents[2] / "env-StableRetro-turbo",
     )
@@ -152,9 +152,11 @@ def main(argv=None) -> None:
     args = build_parser().parse_args(argv)
     if min(args.steps, args.repeats, args.threads) <= 0 or args.warmup < 0:
         raise SystemExit("steps, repeats, and threads must be positive")
-    stable_repo = args.stable_retro_repo.resolve()
-    if not stable_repo.is_dir():
-        raise SystemExit(f"Stable Retro checkout not found: {stable_repo}")
+    stable_retro_turbo_repo = args.stable_retro_turbo_repo.resolve()
+    if not stable_retro_turbo_repo.is_dir():
+        raise SystemExit(
+            f"Stable Retro Turbo checkout not found: {stable_retro_turbo_repo}"
+        )
 
     native_actions, stable_actions = action_batches(NUM_ENVS)
     turbo_rates = benchmark(
@@ -165,7 +167,7 @@ def main(argv=None) -> None:
         repeats=args.repeats,
     )
     stable_rates = benchmark(
-        lambda: build_stable(args.threads, stable_repo),
+        lambda: build_stable(args.threads, stable_retro_turbo_repo),
         stable_actions,
         steps=args.steps,
         warmup=args.warmup,

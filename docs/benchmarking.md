@@ -30,13 +30,13 @@ Always report:
 - whether power management or other workloads could affect the run.
 
 Do not compare a policy-facing result with a physics-only result. Comparisons
-with ALE, Stable Retro, EnvPool, or another environment must use equivalent
+with ALE, Stable Retro Turbo, EnvPool, or another environment must use equivalent
 frame skip, preprocessing, observation ownership, information collection, and
 reset behavior. Include the exact script and configuration needed to reproduce
 both sides.
 
 For the closest live cartridge comparison, configure a lawful Breakout ROM in a
-sibling Stable Retro checkout and run:
+sibling Stable Retro Turbo checkout and run:
 
 ```bash
 uv run python scripts/benchmark_comparison.py --steps 30000 --warmup 1000 --repeats 5 --threads 8

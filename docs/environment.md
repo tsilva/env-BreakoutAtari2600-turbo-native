@@ -45,7 +45,7 @@ env = gym.make_vec(
 ```
 
 The module-qualified ID imports and registers the package. Importing the
-package also preserves the Stable Retro-compatible `Breakout-Atari2600-v0`
+package also preserves the Stable Retro Turbo-compatible `Breakout-Atari2600-v0`
 vector ID.
 
 The canonical constructor accepts the same explicit Breakout fields used by
@@ -65,10 +65,10 @@ immediately.
   filtered option and accepts `(num_envs,)` values: `0` noop, `1` FIRE, `2`
   right, and `3` left.
 - The default policy observation has shape `(num_envs, 4, 84, 84)`, CHW layout,
-  grayscale `uint8` values, four stacked frames, and four native frames per
-  environment step.
+  grayscale `uint8` values, four stacked frames, and four native console frames
+  per environment step.
 - Rendering is disabled by default. With `render_mode="rgb_array"`, `render()`
-  returns lane zero as the canonical 160×210 Stella RGB frame and
+  returns lane zero as the canonical 160×210 Stella RGB rendered frame and
   `render_lane(index)` selects any lane. Stable Retro Turbo's inherited BGR-labeled
   RGB565 frame transport is normalized at this human-facing boundary only.
   Rendering never advances the game and remains separate from policy
@@ -129,7 +129,7 @@ with a lane-aligned `state_indices` int32 array in the reset options.
 
 Set `noop_reset_max=N` to reproduce the conventional Atari reset distribution:
 each static lane reset samples an inclusive count from `1..N` and advances that
-many raw emulator frames with the noop action. The count is independent of
+many native console frames with the noop action. The count is independent of
 `frame_skip`, is reported as `noop_reset_count` in reset infos, and is
 reproducible from `reset(seed=...)`. A scalar vector seed expands to
 `seed + lane_index`; lane-aligned seeds control lanes directly. Masked resets
@@ -152,9 +152,9 @@ identify which lanes contain each value.
 
 The cartridge lifecycle contains two walls, not independently terminating
 levels. Clearing wall one reaches 432 points; the selected layout reappears one
-native frame after the ball's next paddle return. Clearing wall two reaches the
-Atari maximum score of 864 and leaves the board empty permanently. Play
-continues on that empty board until all five lives have been lost. The
+native console frame after the ball's next paddle return. Clearing wall two
+reaches the Atari maximum score of 864 and leaves the board empty permanently.
+Play continues on that empty board until all five lives have been lost. The
 `walls_cleared` signal distinguishes this progress from `bricks_remaining`,
 which describes only the current wall. `brick_mask` contains the signed low 64
 bits and `brick_mask_high` contains the remaining high 44 bits.

@@ -10,7 +10,7 @@ vector-environment API. Add it to a uv project from PyPI, create
 `BreakoutVecEnv`, and step every lane with one NumPy action batch.
 
 Fixed-point Rust physics owns game state and parallel stepping. Python exposes
-manual reset, policy-ready observations, native rendering, exact snapshots, and
+manual reset, policy-ready observations, rendered frames, exact snapshots, and
 side-effect-free action branching.
 
 <div align="center">
@@ -138,7 +138,7 @@ obs, infos = env.reset(
 env.close()
 ```
 
-Importing the package also preserves the Stable Retro-compatible
+Importing the package also preserves the Stable Retro Turbo-compatible
 `Breakout-Atari2600-v0` vector ID. The complete lifecycle, configuration,
 snapshot, and branching contract is in the
 [environment documentation](docs/environment.md).
@@ -178,16 +178,17 @@ Append `--help` to the player or benchmark command for its options.
   refill, and only losing all five lives terminates the episode.
 - Autoreset is disabled. Reset terminated lanes explicitly with a Boolean
   `reset_mask`; unselected lanes remain byte-exact.
-- `noop_reset_max=N` samples `1..N` seeded raw-frame noops for each static
-  reset, matching the conventional Atari reset distribution. FIRE is not
+- With `noop_reset_max=N`, each static reset samples a seeded inclusive count
+  from `1..N` and advances that many native console frames with noop, matching
+  the conventional Atari reset distribution. FIRE is not
   issued automatically: `use_fire_reset` remains unavailable and the policy
   must start each serve.
-- The canonical `Start` state targets Stable Retro Turbo's native 160×210 Atari Breakout frame,
+- The canonical `Start` state targets Stable Retro Turbo's 160×210 native indexed frame,
   lifecycle, physics, raster, rewards, collision behavior, and public trajectory
   values. In particular, `ball_y` uses the Atari RAM convention where zero
-  means the serve is waiting for FIRE. Opt into raw frames with
+  means the serve is waiting for FIRE. Opt into rendered frames with
   `render_mode="rgb_array"`; `render()` then returns lane zero's canonical Stella
-  RGB frame while `render_lane(index)` selects any lane, separately from policy
+  RGB rendered frame while `render_lane(index)` selects any lane, separately from policy
   observations. Stable Retro Turbo's inherited BGR-labeled RGB565 transport is
   normalized only at this human-facing boundary.
 - Live validation requires a separately obtained lawful ROM. The sole semantic
@@ -205,6 +206,8 @@ Append `--help` to the player or benchmark command for its options.
 - Only Apple-silicon macOS and x86-64 Linux are supported. See
   [support](SUPPORT.md), [benchmarking](docs/benchmarking.md), and
   [release validation](docs/release-validation.md) for exact boundaries.
+- The [specification compliance matrix](docs/specification-compliance.md) maps
+  every project requirement to its maintained executable or non-code evidence.
 - The project is a `0.x` community preview. Public changes are recorded in the
   [changelog](CHANGELOG.md). Serialized `get_state()` snapshots are portable
   only within the same package version and compatible configuration; live

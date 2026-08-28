@@ -728,7 +728,7 @@ def final_check(args: argparse.Namespace) -> None:
     )
 
 
-def main() -> None:
+def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
 
@@ -783,6 +783,12 @@ def main() -> None:
     final = commands.add_parser("final-check")
     final.add_argument("--version")
     final.set_defaults(func=final_check)
+
+    return parser
+
+
+def main() -> None:
+    parser = build_parser()
 
     args = parser.parse_args()
     args.func(args)
