@@ -63,9 +63,13 @@ make test-semantic-oracle \
 
 For release evidence, dispatch `.github/workflows/oracle-evidence.yml` with the
 exact commit SHA and wait for success. Its protected `oracle` environment must
-provide the lawful `BREAKOUT_ROM_BASE64` secret. Record the run id. The workflow
-runs the command itself and provenance-attests its receipt; it accepts no
-receipt or comparison-result input. Do not use a local receipt,
+provide bucket-scoped, read-only `R2_ACCESS_KEY_ID` and
+`R2_SECRET_ACCESS_KEY` secrets and the `R2_ACCOUNT_ID` and `R2_BUCKET`
+variables. The private object must match `validation/oracle-roms.json`. Record
+the run id. The workflow downloads the lawful ROM into runner-temporary
+storage, runs the command itself, removes private inputs, and provenance-attests
+its receipt; it accepts no receipt or comparison-result input. Do not use a
+local receipt,
 `test-semantic-oracle-diagnostic`, `PYTEST_ARGS`, a dirty checkout, or an
 unpinned provider as release evidence.
 

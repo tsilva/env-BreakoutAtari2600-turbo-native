@@ -56,13 +56,39 @@ jobs:
 
       - name: Prepare pinned provider and lawful ROM
         env:
-          BREAKOUT_ROM_BASE64: ${{ secrets.BREAKOUT_ROM_BASE64 }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_EC2_METADATA_DISABLED: "true"
+          AWS_REGION: auto
+          R2_ACCOUNT_ID: ${{ vars.R2_ACCOUNT_ID }}
+          R2_BUCKET: ${{ vars.R2_BUCKET }}
         shell: bash
         run: |
           set -euo pipefail
-          test -n "$BREAKOUT_ROM_BASE64"
-          mkdir -p "$RUNNER_TEMP/retro-data/stable/Breakout-Atari2600-v0"
-          .venv/bin/python -c 'import base64, os, pathlib; pathlib.Path(os.environ["RUNNER_TEMP"], "retro-data/stable/Breakout-Atari2600-v0/rom.a26").write_bytes(base64.b64decode(os.environ["BREAKOUT_ROM_BASE64"], validate=True))'
+          test -n "$AWS_ACCESS_KEY_ID"
+          test -n "$AWS_SECRET_ACCESS_KEY"
+          [[ "$R2_ACCOUNT_ID" =~ ^[0-9a-f]{32}$ ]]
+          [[ "$R2_BUCKET" =~ ^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$ ]]
+
+          manifest=validation/oracle-roms.json
+          object_key="$(jq -er '.roms["Breakout-Atari2600-v0"].object_key' "$manifest")"
+          expected_sha256="$(jq -er '.roms["Breakout-Atari2600-v0"].sha256' "$manifest")"
+          expected_size="$(jq -er '.roms["Breakout-Atari2600-v0"].size' "$manifest")"
+          [[ "$expected_sha256" =~ ^[0-9a-f]{64}$ ]]
+          [[ "$expected_size" =~ ^[0-9]+$ ]]
+
+          rom_dir="$RUNNER_TEMP/retro-data/stable/Breakout-Atari2600-v0"
+          rom_path="$rom_dir/rom.a26"
+          mkdir -p "$rom_dir"
+          aws s3 cp \
+            "s3://$R2_BUCKET/$object_key" \
+            "$rom_path" \
+            --endpoint-url "https://$R2_ACCOUNT_ID.r2.cloudflarestorage.com" \
+            --no-progress \
+            --only-show-errors
+          test "$(stat -f %z "$rom_path")" = "$expected_size"
+          test "$(shasum -a 256 "$rom_path" | awk '{print $1}')" = "$expected_sha256"
+
           repository="$(jq -r .repository validation/stable-retro-turbo.json)"
           revision="$(jq -r .revision validation/stable-retro-turbo.json)"
           git clone --quiet --filter=blob:none --no-checkout "$repository" "$RUNNER_TEMP/provider"
@@ -77,6 +103,13 @@ jobs:
             ORACLE_RECEIPT="$RUNNER_TEMP/stable-retro-turbo-oracle.json"
           mkdir oracle-evidence
           cp "$RUNNER_TEMP/stable-retro-turbo-oracle.json" oracle-evidence/
+
+      - name: Remove transient private inputs
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          rm -f "$RUNNER_TEMP/retro-data/stable/Breakout-Atari2600-v0/rom.a26"
+          rm -rf "$RUNNER_TEMP/retro-data" "$RUNNER_TEMP/provider"
 
       - name: Attest sole-oracle receipt
         uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a # v3.0.0
