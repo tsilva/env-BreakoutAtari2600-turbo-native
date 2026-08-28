@@ -104,11 +104,18 @@ published distribution into its isolated candidate environment and rejects a
 local path or sibling-checkout substitution.
 
 Release authority comes only from the protected manual `Stable Retro Turbo
-oracle evidence` workflow. Its `oracle` environment supplies the separately
-and lawfully obtained ROM as `BREAKOUT_ROM_BASE64`; the workflow checks out the
-exact current `main` commit, fetches the content-pinned provider, runs the same
-canonical command, and creates GitHub build provenance for the resulting
-receipt. It accepts no caller-provided report or receipt JSON:
+oracle evidence` workflow. Its `oracle` environment supplies bucket-scoped,
+read-only Cloudflare R2 credentials as `R2_ACCESS_KEY_ID` and
+`R2_SECRET_ACCESS_KEY`, plus the non-secret `R2_ACCOUNT_ID` and `R2_BUCKET`
+variables. The private bucket remains the external source of the separately and
+lawfully obtained ROM. [`validation/oracle-roms.json`](../validation/oracle-roms.json)
+binds each supported game to its generic bucket object key, byte size, and
+SHA-256 digest. The workflow checks out the exact current `main` commit,
+downloads only that object into runner-temporary storage, rejects a digest or
+size mismatch, fetches the content-pinned provider, runs the same canonical
+command, deletes the ROM and provider checkout, and creates GitHub build
+provenance for the resulting receipt. It accepts no caller-provided report or
+receipt JSON:
 
 ```bash
 gh workflow run oracle-evidence.yml -f ref="$(git rev-parse HEAD)"
@@ -124,6 +131,12 @@ embeds it in the candidate ledger, and allows publication to verify it again.
 Duplicate-key JSON is rejected. Ordinary public CI cannot generate this
 private-ROM evidence; only the protected manual workflow can access the lawful
 ROM. The receipt contains no ROM, frame, save state, or provider package.
+
+The R2 bucket is private and reusable for other lawful ROMs. Add another object
+under a system/game-specific key and pin it in `validation/oracle-roms.json`;
+never enable the managed public domain or a custom public domain. R2 credentials
+belong only in the protected `oracle` environment. The workflow never caches or
+uploads a ROM, and GitHub decommissions the hosted runner after the job.
 
 ## Candidate artifacts
 
