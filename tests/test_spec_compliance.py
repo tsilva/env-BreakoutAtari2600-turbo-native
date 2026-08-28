@@ -426,12 +426,12 @@ def test_authority_guard_does_not_apply_unrelated_denial_to_later_claim(text):
         ),
         "Do not install stable" + "-retro, then install stable" + "-retro for releases.",
         (
-            "Stable Retro"
-            + " Turbo is not secondary, yet Stable Retro"
-            + " Turbo is secondary."
+            "Stable"
+            + " Retro Turbo is not secondary, yet Stable"
+            + " Retro Turbo is secondary."
         ),
         "Original Stable" + " Retro is the sole semantic\noracle for canonical behavior.",
-        "Stable Retro" + " Turbo is a\nsecondary compatibility target.",
+        "Stable" + " Retro Turbo is a\nsecondary compatibility target.",
     ],
 )
 def test_authority_guard_handles_connectives_and_wrapped_claims(text):
