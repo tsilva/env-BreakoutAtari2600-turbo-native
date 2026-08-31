@@ -168,7 +168,7 @@ def test_release_workflow_publishes_sdist_checksums_and_github_release():
     assert "parity_run_id" in build
     assert ".github/workflows/parity-evidence.yml" in build
     assert 'test "$(jq -r .head_sha <<< "$run")"' in build
-    assert "environment: parity" in parity
+    assert "environment: oracle" in parity
     assert "secrets.R2_ACCESS_KEY_ID" in parity
     assert "secrets.R2_SECRET_ACCESS_KEY" in parity
     assert "vars.R2_ACCOUNT_ID" in parity
