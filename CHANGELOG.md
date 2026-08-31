@@ -6,6 +6,8 @@ releases; changes will be recorded here.
 
 ## Unreleased
 
+## [0.5.9] - 2026-08-31
+
 ### Changed
 
 - Restore original `stable-retro==1.0.1` as the pinned parity authority and
@@ -239,6 +241,7 @@ releases; changes will be recorded here.
 
 - Initial public release.
 
+[0.5.9]: https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/compare/v0.5.8...v0.5.9
 [0.5.8]: https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/compare/v0.5.7...v0.5.8
 [0.5.7]: https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/compare/v0.5.6...v0.5.7
 [0.5.6]: https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/compare/v0.5.5...v0.5.6
