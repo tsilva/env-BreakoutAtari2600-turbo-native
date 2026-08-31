@@ -1,9 +1,0 @@
-{
-  "distribution": "env-stableretro-turbo",
-  "module": "env_stableretro_turbo",
-  "repository": "https://github.com/tsilva/env-StableRetro-turbo",
-  "revision": "c443cf56003f881042312653a92b17220d1c8459",
-  "tree": "668104110e5a471e9766b83210ffb8fee40e5139",
-  "turbo_api_version": 2,
-  "version": "1.0.1.post44"
-}

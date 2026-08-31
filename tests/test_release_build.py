@@ -157,40 +157,33 @@ def test_release_workflow_publishes_sdist_checksums_and_github_release():
     publish = (
         REPO_ROOT / ".github" / "workflows" / "release.yml"
     ).read_text(encoding="utf-8")
-    oracle = (
-        REPO_ROOT / ".github" / "workflows" / "oracle-evidence.yml"
+    parity = (
+        REPO_ROOT / ".github" / "workflows" / "parity-evidence.yml"
     ).read_text(encoding="utf-8")
 
     assert "build-sdist" in build
     assert "*.tar.gz" in build
     assert "uv python install 3.11 3.14" in build
     assert "release_state.py candidate" in build
-    assert "oracle_run_id" in build
-    assert "oracle_receipt" not in build
-    assert ".github/workflows/oracle-evidence.yml" in build
+    assert "parity_run_id" in build
+    assert ".github/workflows/parity-evidence.yml" in build
     assert 'test "$(jq -r .head_sha <<< "$run")"' in build
-    assert "oracle_release_gate.py verify-release" in build
-    assert '--repository "$GITHUB_REPOSITORY"' in build
-    assert "environment: oracle" in oracle
-    assert "secrets.R2_ACCESS_KEY_ID" in oracle
-    assert "secrets.R2_SECRET_ACCESS_KEY" in oracle
-    assert "vars.R2_ACCOUNT_ID" in oracle
-    assert "vars.R2_BUCKET" in oracle
-    assert "aws s3 cp" in oracle
-    assert "validation/oracle-roms.json" in oracle
-    assert "BREAKOUT_ROM_BASE64" not in oracle
-    assert "--filter=blob:none" not in oracle
-    assert "make test-semantic-oracle" in oracle
-    assert "actions/attest-build-provenance" in oracle
-    assert "oracle_receipt" not in oracle
-    assert "oracle_release_gate.py verify-local" not in build
-    assert "stable-retro-turbo-oracle.json" in build
+    assert "environment: parity" in parity
+    assert "secrets.R2_ACCESS_KEY_ID" in parity
+    assert "secrets.R2_SECRET_ACCESS_KEY" in parity
+    assert "vars.R2_ACCOUNT_ID" in parity
+    assert "vars.R2_BUCKET" in parity
+    assert "aws s3 cp" in parity
+    assert "validation/parity-assets.json" in parity
+    assert "BREAKOUT_ROM_BASE64" not in parity
+    assert "turbobench parity breakout/start-v2" in parity
+    assert "actions/attest-build-provenance" in parity
+    assert "turbobench-parity-receipt.tar.gz" in build
     assert "attest-build-provenance" in build
     assert "attest-sbom" in build
     assert "gh release create" in publish
-    assert "oracle_release_gate.py verify-release" in publish
-    assert "stable-retro-turbo-oracle.json" in publish
-    assert "oracle_release_gate.py verify-local" not in publish
+    assert "verify-parity" in publish
+    assert "turbobench-parity-receipt.tar.gz" in publish
     assert "gh-action-pypi-publish" in publish
     assert "cp candidate/dist/env_breakoutatari2600_turbo_native-*" in publish
     assert "packages-dir: publish-primary" in publish
@@ -198,7 +191,7 @@ def test_release_workflow_publishes_sdist_checksums_and_github_release():
     assert "contents: write" in publish
     assert "create-github-app-token" not in publish
     assert "RELEASE_APP_ID" not in publish
-    assert "parity_run_id" not in build
+    assert "oracle_run_id" not in build
     assert "push:\n    tags:" not in build + publish
 
 

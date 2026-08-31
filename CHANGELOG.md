@@ -6,6 +6,13 @@ releases; changes will be recorded here.
 
 ## Unreleased
 
+### Changed
+
+- Restore original `stable-retro==1.0.1` as the pinned parity authority and
+  delegate all cross-provider comparison logic to TurboBench.
+- Remove the duplicated comparator and release-gate implementation; releases
+  now consume a self-verifying receipt for the exact final wheel.
+
 ## [0.5.8] - 2026-08-28
 
 ### Changed

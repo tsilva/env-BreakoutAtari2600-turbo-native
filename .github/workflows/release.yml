@@ -98,11 +98,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          .venv/bin/python scripts/oracle_release_gate.py verify-release \
-            --receipt candidate/stable-retro-turbo-oracle.json \
-            --candidate-version "${{ inputs.version }}" \
-            --candidate-commit "${{ inputs.commit }}" \
-            --repository "$GITHUB_REPOSITORY"
+          uv tool install --exclude-newer "7 days" turbobench-cli==2.0.0
+          mkdir "$RUNNER_TEMP/parity-receipt"
+          tar -xzf candidate/turbobench-parity-receipt.tar.gz \
+            -C "$RUNNER_TEMP/parity-receipt"
+          turbobench verify-parity "$RUNNER_TEMP/parity-receipt/receipt" \
+            --require-canonical \
+            --require-provider env-breakoutatari2600-turbo-native
           .venv/bin/python scripts/release_state.py verify \
             --candidate candidate \
             --version "${{ inputs.version }}" \
@@ -216,7 +218,7 @@ jobs:
             for asset in verified-release/candidate/dist/* \
               verified-release/candidate/SHA256SUMS \
               verified-release/candidate/release-manifest.json \
-              verified-release/candidate/stable-retro-turbo-oracle.json \
+              verified-release/candidate/turbobench-parity-receipt.tar.gz \
               verified-release/candidate/sbom.spdx.json; do
               cmp "$asset" "published-release/$(basename "$asset")"
             done
@@ -225,7 +227,7 @@ jobs:
               verified-release/candidate/dist/* \
               verified-release/candidate/SHA256SUMS \
               verified-release/candidate/release-manifest.json \
-              verified-release/candidate/stable-retro-turbo-oracle.json \
+              verified-release/candidate/turbobench-parity-receipt.tar.gz \
               verified-release/candidate/sbom.spdx.json \
               --repo "$GITHUB_REPOSITORY" \
               --title "env-BreakoutAtari2600-turbo-native $tag" \

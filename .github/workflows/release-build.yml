@@ -7,8 +7,8 @@ on:
         description: "Exact 40-character commit SHA on main"
         required: true
         type: string
-      oracle_run_id:
-        description: "Successful Stable Retro Turbo oracle evidence workflow run id"
+      parity_run_id:
+        description: "Successful TurboBench parity evidence workflow run id"
         required: true
         type: string
 
@@ -38,7 +38,7 @@ jobs:
       - name: Validate immutable ref
         run: |
           [[ "${{ inputs.ref }}" =~ ^[0-9a-f]{40}$ ]]
-          [[ "${{ inputs.oracle_run_id }}" =~ ^[0-9]+$ ]]
+          [[ "${{ inputs.parity_run_id }}" =~ ^[0-9]+$ ]]
 
       - name: Checkout exact candidate
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -84,36 +84,31 @@ jobs:
           .venv/bin/python .codex/skills/build-release/scripts/release_build.py \
             check-pypi --version "${{ steps.identity.outputs.version }}"
 
-      - name: Validate sole-oracle evidence workflow
+      - name: Validate parity evidence workflow
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
-          run="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${{ inputs.oracle_run_id }}")"
+          run="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${{ inputs.parity_run_id }}")"
           test "$(jq -r .conclusion <<< "$run")" = success
           test "$(jq -r .event <<< "$run")" = workflow_dispatch
-          test "$(jq -r .path <<< "$run")" = .github/workflows/oracle-evidence.yml
+          test "$(jq -r .path <<< "$run")" = .github/workflows/parity-evidence.yml
           test "$(jq -r .head_sha <<< "$run")" = "${{ steps.identity.outputs.commit }}"
 
-      - name: Download exact sole-oracle receipt
+      - name: Download exact parity receipt and wheel
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: stable-retro-turbo-oracle-${{ steps.identity.outputs.commit }}
-          path: oracle-evidence
-          run-id: ${{ inputs.oracle_run_id }}
+          name: breakout-parity-${{ steps.identity.outputs.commit }}
+          path: parity-evidence
+          run-id: ${{ inputs.parity_run_id }}
           github-token: ${{ github.token }}
 
-      - name: Verify attested sole-oracle receipt
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Verify parity receipt
         run: |
-          cp oracle-evidence/stable-retro-turbo-oracle.json stable-retro-turbo-oracle.json
-          .venv/bin/python scripts/oracle_release_gate.py verify-release \
-            --receipt stable-retro-turbo-oracle.json \
-            --candidate-version "${{ steps.identity.outputs.version }}" \
-            --candidate-commit "${{ steps.identity.outputs.commit }}" \
-            --repository "$GITHUB_REPOSITORY"
+          uv tool install --exclude-newer "7 days" turbobench-cli==2.0.0
+          turbobench verify-parity parity-evidence/receipt --require-canonical \
+            --require-provider env-breakoutatari2600-turbo-native
 
       - name: Run source checks
         run: |
@@ -226,23 +221,19 @@ jobs:
           path: wheels
           merge-multiple: true
 
-      - name: Download exact sole-oracle receipt
+      - name: Download exact parity receipt and wheel
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: stable-retro-turbo-oracle-${{ needs.validate.outputs.commit }}
-          path: oracle-evidence
-          run-id: ${{ inputs.oracle_run_id }}
+          name: breakout-parity-${{ needs.validate.outputs.commit }}
+          path: parity-evidence
+          run-id: ${{ inputs.parity_run_id }}
           github-token: ${{ github.token }}
 
-      - name: Verify attested sole-oracle receipt
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Verify parity receipt
         run: |
-          .venv/bin/python scripts/oracle_release_gate.py verify-release \
-            --receipt oracle-evidence/stable-retro-turbo-oracle.json \
-            --candidate-version "${{ needs.validate.outputs.version }}" \
-            --candidate-commit "${{ needs.validate.outputs.commit }}" \
-            --repository "$GITHUB_REPOSITORY"
+          uv tool install --exclude-newer "7 days" turbobench-cli==2.0.0
+          turbobench verify-parity parity-evidence/receipt --require-canonical \
+            --require-provider env-breakoutatari2600-turbo-native
 
       - name: Build source distribution
         run: |
@@ -255,6 +246,8 @@ jobs:
           set -euo pipefail
           mkdir -p candidate/dist
           cp wheels/*.whl candidate/dist/
+          rm candidate/dist/*macosx*.whl
+          cp parity-evidence/*.whl candidate/dist/
           cp wheelhouse-v${{ needs.validate.outputs.version }}-sdist/*.tar.gz candidate/dist/
           mkdir -p wheelhouse-v${{ needs.validate.outputs.version }}-macos-arm64
           mkdir -p wheelhouse-v${{ needs.validate.outputs.version }}-linux-x86_64
@@ -277,13 +270,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp oracle-evidence/stable-retro-turbo-oracle.json \
-            candidate/stable-retro-turbo-oracle.json
-          .venv/bin/python scripts/oracle_release_gate.py verify-release \
-            --receipt candidate/stable-retro-turbo-oracle.json \
-            --candidate-version "${{ needs.validate.outputs.version }}" \
-            --candidate-commit "${{ needs.validate.outputs.commit }}" \
-            --repository "$GITHUB_REPOSITORY"
+          cp parity-evidence/turbobench-parity-receipt.tar.gz candidate/
           .venv/bin/python scripts/release_state.py candidate \
             --candidate candidate \
             --version "${{ needs.validate.outputs.version }}" \

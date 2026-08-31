@@ -1,77 +1,40 @@
 # Contributing
 
-Thanks for helping make env-BreakoutAtari2600-turbo-native more useful and trustworthy for the
-reinforcement-learning community.
+Keep changes focused, add provider-local regression tests for changed behavior,
+and never add ROMs, save states, extracted assets, or recorded reference frames.
 
-## Before opening a change
-
-- Search existing issues and discussions first.
-- Use an issue for a bug report or proposed user-facing change.
-- Do not submit ROMs, extracted game assets, reference frames, or save states.
-- Keep the supported distribution boundary to Apple-silicon macOS and x86-64
-  Linux.
-
-## Development setup
-
-Install [uv](https://docs.astral.sh/uv/) and a Rust toolchain, then run:
+## Development
 
 ```bash
-git clone https://github.com/tsilva/env-BreakoutAtari2600-turbo-native.git
-cd env-BreakoutAtari2600-turbo-native
 uv sync --locked --extra dev --extra play
 make develop-release
-```
-
-## Required checks
-
-```bash
 uv run ruff check .
 cargo fmt --check
 cargo clippy --locked --all-targets -- -D warnings
 cargo test --locked --lib
-uv run pytest -m "not stable_retro"
+uv run pytest
 ```
 
-Changes that can affect the `Start` state's physics, rewards, lifecycle,
-observations, rendering, or shared information must pass the sole live
-Stable Retro Turbo oracle:
+Changes that can affect canonical `Start` behavior must also run:
+
+```bash
+RETRO_DATA_PATH=/path/to/lawful/stable_retro/data make parity
+```
+
+This thin command delegates cross-provider comparison to TurboBench's immutable
+`breakout/start-v2` profile. It snapshots tracked changes and nonignored
+untracked source, so committing first is unnecessary. Quick and checkout runs
+are diagnostic.
+
+Release certification runs against the exact final wheel:
 
 ```bash
 RETRO_DATA_PATH=/path/to/lawful/stable_retro/data \
-make test-semantic-oracle \
-  STABLE_RETRO_TURBO_REPO=/path/to/env-StableRetro-turbo \
-  ORACLE_CANDIDATE=checkout \
-  ORACLE_RECEIPT=/external/evidence/stable-retro-turbo-oracle.json
+make parity-release \
+  PARITY_WHEEL=/absolute/path/to/final.whl \
+  PARITY_OUTPUT=/external/evidence/breakout-parity
 ```
 
-The operational provider release and checkout tree are selected only by
-[`validation/stable-retro-turbo.json`](validation/stable-retro-turbo.json).
-The required command fails when that exact pin, its Turbo Vector API, the
-lawful Breakout ROM, a clean exact candidate, the fixed one-lane and multi-lane
-workload, or any trajectory result is unavailable or incompatible. It compares
-aligned and seeded-noop resets plus representative trajectories through both
-public vector APIs, including rendered frames, policy observations, rewards,
-score, lives, termination, truncation, and every shared information value. The
-receipt binds the provider, candidate commit and version, configuration,
-workload, and exact result. Provider and candidate installations are isolated
-and remain outside the project lock, runtime dependencies, and distributions.
-
-`make test-semantic-oracle-diagnostic PYTEST_ARGS=...` retains configurable
-pytest diagnostics, but it is explicitly non-certifying and cannot generate a
-release receipt. This separation prevents options such as `--collect-only`
-from passing the release gate without executing the live workload.
-
-Local receipts exercise the same fixed command, but release authority is
-reserved for the repository's protected manual `Stable Retro Turbo oracle
-evidence` workflow. The release candidate workflow accepts only that exact
-successful run and its GitHub-attested receipt, never caller-supplied JSON.
-
-See
-[`docs/release-validation.md`](docs/release-validation.md).
-
-## Pull requests
-
-Keep each pull request focused. Explain the user-visible result, tests run, and
-any compatibility impact. Add or update tests for behavior changes and update
-documentation when the public API changes. By contributing, you agree that your
-contribution is distributed under this repository's MIT license.
+The protected parity workflow owns lawful asset injection and publishes the
+exact certified wheel with its self-verifying receipt. Provider-local tests may
+check internal consistency, but cross-provider logic belongs in TurboBench.
