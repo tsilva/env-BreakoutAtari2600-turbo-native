@@ -98,7 +98,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          uv tool install --exclude-newer "7 days" turbobench-cli==2.0.0
+          uv tool install --exclude-newer "7 days" \
+            --exclude-newer-package turbobench-cli=2026-09-01T00:00:00Z \
+            turbobench-cli==2.0.1
           mkdir "$RUNNER_TEMP/parity-receipt"
           tar -xzf candidate/turbobench-parity-receipt.tar.gz \
             -C "$RUNNER_TEMP/parity-receipt"
@@ -138,7 +140,7 @@ jobs:
 
       - name: Publish exact primary candidate to PyPI
         if: steps.pypi.outputs.primary_publish_needed == 'true'
-        uses: pypa/gh-action-pypi-publish@ba38be9e461d3875417946c167d0b5f3d385a247 # release/v1
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
         with:
           packages-dir: publish-primary
 
