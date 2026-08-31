@@ -21,7 +21,7 @@ jobs:
   evidence:
     name: Certify exact final wheel
     runs-on: macos-15
-    environment: parity
+    environment: oracle
     steps:
       - name: Validate immutable ref
         run: '[[ "${{ inputs.ref }}" =~ ^[0-9a-f]{40}$ ]]'
@@ -65,7 +65,7 @@ jobs:
           rom_dir="$RUNNER_TEMP/retro-data/stable/Breakout-Atari2600-v0"
           mkdir -p "$rom_dir"
           metadata_dir="$(.venv/bin/python -c \
-            'from importlib.util import find_spec; from pathlib import Path; print(Path(find_spec("env_stableretro_turbo").origin).parent / "data" / "stable" / "Breakout-Atari2600-v0")')"
+            'from importlib.util import find_spec; from pathlib import Path; print(Path(find_spec("stable_retro").origin).parent / "data" / "stable" / "Breakout-Atari2600-v0")')"
           cp "$metadata_dir/Start.state" "$rom_dir/Start.state"
           cp "$metadata_dir/data.json" "$rom_dir/data.json"
           cp "$metadata_dir/scenario.json" "$rom_dir/scenario.json"
