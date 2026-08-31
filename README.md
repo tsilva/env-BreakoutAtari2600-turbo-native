@@ -154,9 +154,9 @@ remains a separate install and is not part of the core dependency set.
 uv run --frozen --extra play env-breakoutatari2600-turbo-native play       # open the player
 uv run --frozen --extra play env-breakoutatari2600-turbo-native play --uncapped
 uv run --frozen ruff check .                               # lint Python
-uv run --frozen pytest -m "not stable_retro"               # run regular Python tests
+uv run --frozen pytest                                      # run Python tests
 cargo test --locked --lib                                  # run Rust tests
-RETRO_DATA_PATH=/lawful/stable_retro/data make test-semantic-oracle ORACLE_RECEIPT=/external/oracle.json  # certify pinned Turbo parity
+RETRO_DATA_PATH=/lawful/stable_retro/data make parity       # diagnostic current-work parity
 ```
 
 Append `--help` to the player command for its options. Matched performance
@@ -184,24 +184,20 @@ not by this repository.
   the conventional Atari reset distribution. FIRE is not
   issued automatically: `use_fire_reset` remains unavailable and the policy
   must start each serve.
-- The canonical `Start` state targets Stable Retro Turbo's 160×210 native indexed frame,
+- The canonical `Start` state targets original Stable Retro's 160×210 native indexed frame,
   lifecycle, physics, raster, rewards, collision behavior, and public trajectory
   values. In particular, `ball_y` uses the Atari RAM convention where zero
   means the serve is waiting for FIRE. Opt into rendered frames with
   `render_mode="rgb_array"`; `render()` then returns lane zero's canonical Stella
   RGB rendered frame while `render_lane(index)` selects any lane, separately from policy
-  observations. Stable Retro Turbo's inherited BGR-labeled RGB565 transport is
+  observations. Stable Retro's BGR-labeled RGB565 transport is
   normalized only at this human-facing boundary.
-- Live validation requires a separately obtained lawful ROM. The sole semantic
-  oracle is the Stable Retro Turbo vector provider selected by
-  [`validation/stable-retro-turbo.json`](validation/stable-retro-turbo.json).
-  `make test-semantic-oracle ORACLE_RECEIPT=/external/oracle.json` is the sole
-  certifying command; its fixed workload receipt binds the exact clean checkout
-  or published candidate, configuration, provider pin, and comparison result.
-  Configurable pytest runs are diagnostic only and cannot create a receipt.
-  Releases accept only receipts generated and provenance-attested by the
-  protected manual `Stable Retro Turbo oracle evidence` workflow; arbitrary
-  uploaded or caller-authored JSON has no release authority.
+- Live validation requires a separately obtained lawful ROM. TurboBench owns
+  cross-provider parity against pinned original `stable-retro==1.0.1`.
+  `make parity` checks the current worktree diagnostically; `make parity-release`
+  certifies the exact final wheel and produces a self-verifying receipt.
+  Releases accept only the wheel and receipt produced by the protected parity
+  workflow.
   No provider package, ROM, save state, or recorded reference frame is
   distributed by this project.
 - Only Apple-silicon macOS and x86-64 Linux are supported. See

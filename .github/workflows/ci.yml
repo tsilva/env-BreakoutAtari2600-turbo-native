@@ -65,7 +65,7 @@ jobs:
       - name: Run Python checks
         run: |
           .venv/bin/python -m ruff check .
-          .venv/bin/python -m pytest -m "not stable_retro"
+          .venv/bin/python -m pytest
 
   minimum-dependencies:
     name: Minimum runtime dependencies

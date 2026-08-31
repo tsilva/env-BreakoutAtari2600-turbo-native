@@ -70,9 +70,6 @@ include = [
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-markers = [
-  "stable_retro: live differential tests against pinned Stable Retro Turbo requiring a lawful local Breakout ROM",
-]
 
 [tool.ruff]
 target-version = "py311"

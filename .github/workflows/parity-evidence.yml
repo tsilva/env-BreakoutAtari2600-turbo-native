@@ -1,0 +1,100 @@
+name: TurboBench parity evidence
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Exact 40-character candidate commit SHA on main"
+        required: true
+        type: string
+
+permissions:
+  attestations: write
+  contents: read
+  id-token: write
+
+concurrency:
+  group: parity-evidence-${{ inputs.ref }}
+  cancel-in-progress: false
+
+jobs:
+  evidence:
+    name: Certify exact final wheel
+    runs-on: macos-15
+    environment: parity
+    steps:
+      - name: Validate immutable ref
+        run: '[[ "${{ inputs.ref }}" =~ ^[0-9a-f]{40}$ ]]'
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+          ref: ${{ inputs.ref }}
+      - name: Require current main candidate
+        run: |
+          git fetch origin main
+          test "$(git rev-parse HEAD)" = "${{ inputs.ref }}"
+          test "$(git rev-parse origin/main)" = "${{ inputs.ref }}"
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.14"
+      - uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
+        with:
+          version: "0.11.13"
+      - name: Install build and parity tools
+        run: |
+          uv sync --locked --extra dev
+          uv pip install --exclude-newer "7 days" --python .venv/bin/python \
+            "env-stableretro-turbo==1.0.1.post44"
+          uv tool install --exclude-newer "7 days" turbobench-cli==2.0.0
+      - name: Fetch lawful canonical ROM
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_EC2_METADATA_DISABLED: "true"
+          AWS_REGION: auto
+          R2_ACCOUNT_ID: ${{ vars.R2_ACCOUNT_ID }}
+          R2_BUCKET: ${{ vars.R2_BUCKET }}
+        run: |
+          set -euo pipefail
+          manifest=validation/parity-assets.json
+          object_key="$(jq -er '.roms["Breakout-Atari2600-v0"].object_key' "$manifest")"
+          expected_sha256="$(jq -er '.roms["Breakout-Atari2600-v0"].sha256' "$manifest")"
+          rom_dir="$RUNNER_TEMP/retro-data/stable/Breakout-Atari2600-v0"
+          mkdir -p "$rom_dir"
+          metadata_dir="$(.venv/bin/python -c \
+            'from importlib.util import find_spec; from pathlib import Path; print(Path(find_spec("env_stableretro_turbo").origin).parent / "data" / "stable" / "Breakout-Atari2600-v0")')"
+          cp "$metadata_dir/Start.state" "$rom_dir/Start.state"
+          cp "$metadata_dir/data.json" "$rom_dir/data.json"
+          cp "$metadata_dir/scenario.json" "$rom_dir/scenario.json"
+          aws s3 cp "s3://$R2_BUCKET/$object_key" "$rom_dir/rom.a26" \
+            --endpoint-url "https://$R2_ACCOUNT_ID.r2.cloudflarestorage.com" \
+            --no-progress --only-show-errors
+          test "$(shasum -a 256 "$rom_dir/rom.a26" | awk '{print $1}')" = "$expected_sha256"
+      - name: Build and certify exact wheel
+        run: |
+          mkdir -p "$RUNNER_TEMP/dist" parity-evidence
+          .venv/bin/python -m maturin build --release --locked --out "$RUNNER_TEMP/dist"
+          wheel=("$RUNNER_TEMP"/dist/*.whl)
+          test "${#wheel[@]}" -eq 1
+          RETRO_DATA_PATH="$RUNNER_TEMP/retro-data" turbobench parity breakout/start-v2 \
+            --candidate "env-breakoutatari2600-turbo-native@artifact:${wheel[0]}" \
+            --output parity-evidence/receipt
+          turbobench verify-parity parity-evidence/receipt --require-canonical \
+            --require-provider env-breakoutatari2600-turbo-native
+          cp "${wheel[0]}" parity-evidence/
+          tar -czf parity-evidence/turbobench-parity-receipt.tar.gz \
+            -C parity-evidence receipt
+      - name: Remove private input
+        if: ${{ always() }}
+        run: rm -rf "$RUNNER_TEMP/retro-data"
+      - name: Attest exact wheel
+        uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a # v3.0.0
+        with:
+          subject-path: parity-evidence/*.whl
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: breakout-parity-${{ inputs.ref }}
+          path: parity-evidence
+          if-no-files-found: error
+          retention-days: 90

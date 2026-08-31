@@ -8,7 +8,7 @@
 
 - Use `env-BreakoutAtari2600-turbo-native` as the project and GitHub repository name, `env-breakoutatari2600-turbo-native` as the Python distribution name, and `env_breakoutatari2600_turbo_native` as the public Python import package; current project-owned identities must not use any former project, distribution, import, or command identifier.
 - Normal environment use must require no Atari ROM, emulator, original Stable Retro, or Stable Retro Turbo installation.
-- The project must distribute no Atari ROM, cartridge dump, provider save state, recorded reference frame, or extracted game asset; oracle validation may use a separately and lawfully obtained ROM.
+- The project must distribute no Atari ROM, cartridge dump, provider save state, recorded reference frame, or extracted game asset; parity validation may use a separately and lawfully obtained ROM.
 - Training implementations must remain outside this repository.
 - Stable-Baselines3 and interactive-player dependencies must remain optional rather than core dependencies.
 - Supported binary platforms must be limited to Apple-silicon macOS and x86-64 Linux.
@@ -33,15 +33,17 @@
 ### Canonical compatibility
 
 - Within the documented reproducible subset, callers must be able to replace Stable Retro Turbo with `env-BreakoutAtari2600-turbo-native` for `Breakout-Atari2600-v0` without changing game, state, observation, action, reward, reset, termination, truncation, or shared-information semantics; unsupported provider options must fail immediately.
-- The pinned Stable Retro Turbo release must be the sole semantic oracle and compatibility target for canonical `Start` behavior.
-- After aligning the starting state or reset outcome, every externally observable canonical `Start` trajectory detail must match the oracle under equivalent configuration and actions, including rendered frames, policy observations, rewards, score, lives, termination, truncation, and shared information values.
-- Equivalent seeds need not select identical stochastic reset traces, but seeded reset distributions and semantics must match the oracle.
-- Changes capable of affecting canonical `Start` physics, rewards, lifecycle, observations, rendering, or shared information must be acceptance-tested side by side against the pinned Stable Retro Turbo oracle.
-- The canonical `Breakout-Atari2600-v0` `Start` state must reproduce the oracle’s 160×210 geometry, 18×6 brick wall, 2×4 ball, initially 16×4 ceiling-narrowing paddle, five-life counter, FIRE-gated serves, paddle inertia, delayed collision latches, breakthrough speed, score raster, scanline priority, and wall and corner behavior.
+- The pinned original Stable Retro release, exercised through an immutable TurboBench profile, must be the sole semantic authority for canonical `Start` behavior; Stable Retro Turbo remains a supported replacement contract rather than the authority.
+- After aligning the starting state or reset outcome, every externally observable canonical `Start` trajectory detail must match the authority under equivalent configuration and actions, including rendered frames, policy observations, rewards, score, lives, termination, truncation, and shared information values.
+- Equivalent seeds need not select identical stochastic reset traces, but seeded reset distributions and semantics must match the authority.
+- Every release’s exact final wheel for the canonical parity host must pass the pinned TurboBench parity profile, while repository, quick, dirty, shortened, and overridden runs remain diagnostic.
+- Provide a thin TurboBench command for isolated quick parity of current repository work, and keep cross-provider comparison logic out of this repository.
+- Changes capable of affecting canonical `Start` physics, rewards, lifecycle, observations, rendering, or shared information must be acceptance-tested side by side against the authority through the pinned TurboBench profile.
+- The canonical `Breakout-Atari2600-v0` `Start` state must reproduce the authority’s 160×210 geometry, 18×6 brick wall, 2×4 ball, initially 16×4 ceiling-narrowing paddle, five-life counter, FIRE-gated serves, paddle inertia, delayed collision latches, breakthrough speed, score raster, scanline priority, and wall and corner behavior.
 - With `noop_reset_max=N`, each selected static reset must reproducibly sample an inclusive `1..N` raw-frame noop count independently of frame skip, must never issue FIRE, and must leave unselected lanes unchanged.
 - Rewards must equal the score change over each environment step using Atari row scoring, without life-loss or board-clear shaping.
 - Clearing the first brick wall must refill the same layout one native frame after the next paddle return.
 - Clearing the second brick wall must leave the board permanently empty at the Atari maximum score of 864.
 - Canonical play must terminate only after all five lives are lost, and the environment itself must never generate truncation.
-- Shared information values must match the oracle’s Atari conventions, including reporting inactive `ball_y` as zero.
+- Shared information values must match the authority’s Atari conventions, including reporting inactive `ball_y` as zero.
 - Canonical gameplay semantics and the supported replacement contract must remain protected even when auxiliary public APIs evolve during `0.x`.

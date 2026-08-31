@@ -8,9 +8,8 @@ Describe the user-visible result and why it belongs in env-BreakoutAtari2600-tur
 - [ ] `cargo fmt --check`
 - [ ] `cargo clippy --all-targets -- -D warnings`
 - [ ] `cargo test --lib`
-- [ ] `uv run pytest -m "not stable_retro"`
-- [ ] Pinned Stable Retro Turbo sole-oracle run, or not applicable:
-  `RETRO_DATA_PATH=/path/to/lawful/stable_retro/data make test-semantic-oracle ORACLE_CANDIDATE=checkout ORACLE_RECEIPT=/external/oracle.json`
+- [ ] `uv run pytest`
+- [ ] `RETRO_DATA_PATH=/path/to/lawful/stable_retro/data make parity`, or not applicable
 
 ## Compatibility and provenance
 

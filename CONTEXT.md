@@ -9,7 +9,7 @@ One independently stepped Breakout game within the vector environment.
 _Avoid_: Game instance, sub-environment
 
 **Canonical `Start`**:
-The catalog state named `Start` for `Breakout-Atari2600-v0`, whose behavior is compared with the Stable Retro Turbo oracle.
+The catalog state named `Start` for `Breakout-Atari2600-v0`, whose cross-provider behavior is checked by TurboBench.
 _Avoid_: Full start, default start, starting state
 
 **Native indexed frame**:
@@ -36,9 +36,9 @@ _Avoid_: Filtered action, button vector
 One Stable-compatible eight-button vector whose exact row represents noop, FIRE, right, or left; other rows are unsupported.
 _Avoid_: Native action, normalized action
 
-**Stable Retro Turbo**:
-The pinned provider used as the sole semantic oracle and compatibility target for canonical `Start` behavior.
-_Avoid_: Original Stable Retro, Stable Retro
+**Parity authority**:
+The original Stable Retro release pinned by TurboBench's immutable profile.
+_Avoid_: Choosing an authority inside this repository
 
 **Serialized snapshot**:
 Opaque bytes that preserve exact continuation within the same package version and a compatible environment configuration.
