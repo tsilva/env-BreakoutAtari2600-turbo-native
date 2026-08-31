@@ -46,7 +46,9 @@ jobs:
           uv sync --locked --extra dev
           uv pip install --exclude-newer "7 days" --python .venv/bin/python \
             "env-stableretro-turbo==1.0.1.post44"
-          uv tool install --exclude-newer "7 days" turbobench-cli==2.0.0
+          uv tool install --exclude-newer "7 days" \
+            --exclude-newer-package turbobench-cli=2026-09-01T00:00:00Z \
+            turbobench-cli==2.0.1
       - name: Fetch lawful canonical ROM
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}

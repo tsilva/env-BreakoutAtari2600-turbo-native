@@ -106,7 +106,9 @@ jobs:
 
       - name: Verify parity receipt
         run: |
-          uv tool install --exclude-newer "7 days" turbobench-cli==2.0.0
+          uv tool install --exclude-newer "7 days" \
+            --exclude-newer-package turbobench-cli=2026-09-01T00:00:00Z \
+            turbobench-cli==2.0.1
           turbobench verify-parity parity-evidence/receipt --require-canonical \
             --require-provider env-breakoutatari2600-turbo-native
 
@@ -231,7 +233,9 @@ jobs:
 
       - name: Verify parity receipt
         run: |
-          uv tool install --exclude-newer "7 days" turbobench-cli==2.0.0
+          uv tool install --exclude-newer "7 days" \
+            --exclude-newer-package turbobench-cli=2026-09-01T00:00:00Z \
+            turbobench-cli==2.0.1
           turbobench verify-parity parity-evidence/receipt --require-canonical \
             --require-provider env-breakoutatari2600-turbo-native
 
