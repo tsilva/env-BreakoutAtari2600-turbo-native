@@ -176,7 +176,10 @@ def test_release_workflow_publishes_sdist_checksums_and_github_release():
     assert "aws s3 cp" in parity
     assert "validation/parity-assets.json" in parity
     assert "BREAKOUT_ROM_BASE64" not in parity
-    assert "turbobench parity breakout/start-v2" in parity
+    assert "turbobench parity breakout/start-v1" in parity
+    for workflow in (build, publish, parity):
+        assert "turbobench-cli==2.0.6" in workflow
+        assert "turbobench-cli=2026-09-02T14:27:04.219491Z" in workflow
     assert "actions/attest-build-provenance" in parity
     assert "turbobench-parity-receipt.tar.gz" in build
     assert "attest-build-provenance" in build
@@ -193,6 +196,12 @@ def test_release_workflow_publishes_sdist_checksums_and_github_release():
     assert "RELEASE_APP_ID" not in publish
     assert "oracle_run_id" not in build
     assert "push:\n    tags:" not in build + publish
+
+
+def test_diagnostic_parity_propagates_turbobench_failures():
+    makefile = (REPO_ROOT / "Makefile").read_text(encoding="utf-8")
+
+    assert 'parity:\n\t@set -e; \\' in makefile
 
 
 def test_publish_workflow_rejects_wrong_candidate_run_head_ref_or_workflow():

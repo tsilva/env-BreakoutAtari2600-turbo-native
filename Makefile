@@ -33,9 +33,10 @@ test-python:
 	$(PYTHON) -m pytest $(PYTEST_ARGS)
 
 parity:
-	@output="$(PARITY_OUTPUT)"; \
+	@set -e; \
+	output="$(PARITY_OUTPUT)"; \
 	if [ -z "$$output" ]; then output="$$(mktemp -d)/breakout-parity"; fi; \
-	$(TURBOBENCH) parity breakout/start-v2 \
+	$(TURBOBENCH) parity breakout/start-v1 \
 		--candidate env-breakoutatari2600-turbo-native@checkout:$(CURDIR) \
 		--output "$$output" --allow-dirty --quick; \
 	echo "Diagnostic parity receipt: $$output"
@@ -43,7 +44,7 @@ parity:
 parity-release:
 	@test -f "$(PARITY_WHEEL)" || (echo "Set PARITY_WHEEL to the exact final wheel" >&2; exit 2)
 	@test -n "$(PARITY_OUTPUT)" || (echo "Set PARITY_OUTPUT to an external receipt path" >&2; exit 2)
-	$(TURBOBENCH) parity breakout/start-v2 \
+	$(TURBOBENCH) parity breakout/start-v1 \
 		--candidate env-breakoutatari2600-turbo-native@artifact:$(abspath $(PARITY_WHEEL)) \
 		--output "$(PARITY_OUTPUT)"
 	$(TURBOBENCH) verify-parity "$(PARITY_OUTPUT)" --require-canonical \

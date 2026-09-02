@@ -7,7 +7,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def test_cross_provider_parity_is_delegated_to_turbobench() -> None:
     makefile = (ROOT / "Makefile").read_text(encoding="utf-8")
-    assert "$(TURBOBENCH) parity breakout/start-v2" in makefile
+    assert "$(TURBOBENCH) parity breakout/start-v1" in makefile
     assert "--candidate env-breakoutatari2600-turbo-native@checkout:" in makefile
     assert "--candidate env-breakoutatari2600-turbo-native@artifact:" in makefile
     assert "verify-parity" in makefile

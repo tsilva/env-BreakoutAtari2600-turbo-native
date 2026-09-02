@@ -47,8 +47,8 @@ jobs:
           uv pip install --exclude-newer "7 days" --python .venv/bin/python \
             "env-stableretro-turbo==1.0.1.post44"
           uv tool install --exclude-newer "7 days" \
-            --exclude-newer-package turbobench-cli=2026-09-01T00:00:00Z \
-            turbobench-cli==2.0.1
+            --exclude-newer-package turbobench-cli=2026-09-02T14:27:04.219491Z \
+            turbobench-cli==2.0.6
       - name: Fetch lawful canonical ROM
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
@@ -79,7 +79,7 @@ jobs:
           .venv/bin/python -m maturin build --release --locked --out "$RUNNER_TEMP/dist"
           wheel=("$RUNNER_TEMP"/dist/*.whl)
           test "${#wheel[@]}" -eq 1
-          RETRO_DATA_PATH="$RUNNER_TEMP/retro-data" turbobench parity breakout/start-v2 \
+          RETRO_DATA_PATH="$RUNNER_TEMP/retro-data" turbobench parity breakout/start-v1 \
             --candidate "env-breakoutatari2600-turbo-native@artifact:${wheel[0]}" \
             --output parity-evidence/receipt
           turbobench verify-parity parity-evidence/receipt --require-canonical \

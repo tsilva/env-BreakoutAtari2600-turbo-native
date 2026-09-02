@@ -22,7 +22,7 @@ RETRO_DATA_PATH=/path/to/lawful/stable_retro/data make parity
 ```
 
 This thin command delegates cross-provider comparison to TurboBench's immutable
-`breakout/start-v2` profile. It snapshots tracked changes and nonignored
+`breakout/start-v1` profile. It snapshots tracked changes and nonignored
 untracked source, so committing first is unnecessary. Quick and checkout runs
 are diagnostic.
 

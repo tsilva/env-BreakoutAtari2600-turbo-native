@@ -99,8 +99,8 @@ jobs:
         run: |
           set -euo pipefail
           uv tool install --exclude-newer "7 days" \
-            --exclude-newer-package turbobench-cli=2026-09-01T00:00:00Z \
-            turbobench-cli==2.0.1
+            --exclude-newer-package turbobench-cli=2026-09-02T14:27:04.219491Z \
+            turbobench-cli==2.0.6
           mkdir "$RUNNER_TEMP/parity-receipt"
           tar -xzf candidate/turbobench-parity-receipt.tar.gz \
             -C "$RUNNER_TEMP/parity-receipt"
