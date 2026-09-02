@@ -2,7 +2,7 @@
 
 Provider-local unit, Rust, deterministic trace, wheel smoke, and supported-host
 checks remain in this repository. Cross-provider behavior is certified by
-TurboBench's immutable `breakout/start-v2` profile against original
+TurboBench's immutable `breakout/start-v1` profile against original
 `stable-retro==1.0.1`.
 
 During development, run `make parity` with a lawful `RETRO_DATA_PATH`. The
