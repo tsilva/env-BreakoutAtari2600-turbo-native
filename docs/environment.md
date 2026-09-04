@@ -178,6 +178,7 @@ zero or one.
 | `score` | `score_normalized` | selected layout's two-wall maximum score |
 | `lives` | `lives_normalized` | `5` |
 | `bricks_remaining` | `bricks_remaining_normalized` | selected layout's initial brick count |
+| `bricks_destroyed` | `bricks_destroyed_normalized` | twice the selected layout's initial brick count |
 | `walls_cleared` | `walls_cleared_normalized` | `2` |
 
 `ball_y` remains the Stable-compatible Atari RAM value: zero means the
@@ -187,8 +188,9 @@ sentinel. `paddle_width` is 16 pixels initially and 12 after a ceiling contact.
 `ball_paddle_offset` is the signed fixed-point distance from paddle center to
 ball center. `brick_grid` is a logical `uint8` array shaped `(6, 18)` whose sum
 equals `bricks_remaining`; unlike rendering, it does not model the startup
-raster reveal. `serve_phase` is `-1` while the ball is active and `0..3` while
-waiting for FIRE.
+raster reveal. `bricks_destroyed` counts brick removals across both walls and
+does not reset when the second wall appears. `serve_phase` is `-1` while the
+ball is active and `0..3` while waiting for FIRE.
 
 The four layouts use initial brick counts of 108, 54, 98, and 36 and two-wall
 maximum scores of 864, 432, 796, and 288, respectively. `signal_schema`

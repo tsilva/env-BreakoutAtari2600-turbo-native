@@ -117,9 +117,9 @@ full-cap research recipes rather than short timed demos.
   lifetime of returned observations; `signal_ownership` and
   `signal_buffer_depth` do the same for info values. The exported
   `POLICY_INFO_KEYS` tuple opts into paired raw and normalized ball, paddle,
-  score, life, and wall signals plus a 6×18 brick grid and serve phase without
-  changing the default Stable-compatible infos; `signal_metadata` documents
-  their units and normalization. Rendering is opt-in: with
+  score, life, and brick-progress signals plus a 6×18 brick grid and serve
+  phase without changing the default Stable-compatible infos;
+  `signal_metadata` documents their units and normalization. Rendering is opt-in: with
   `render_mode="rgb_array"`, `render_lane(index)` renders one lane,
   `get_images()` renders all lanes, and `render()` renders lane zero. With the
   default `render_mode=None`, the first two methods return `None` and
