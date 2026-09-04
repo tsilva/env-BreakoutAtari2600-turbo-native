@@ -83,6 +83,15 @@ def test_lane_infos_honors_gymnasium_presence_masks():
     assert _lane_infos(infos, 2) == [{"score": 7}, {}]
 
 
+def test_lane_infos_owns_array_shaped_values():
+    grid = np.ones((2, 6, 18), dtype=np.uint8)
+    retained = _lane_infos(
+        {"brick_grid": grid, "_brick_grid": np.ones(2, dtype=np.bool_)}, 2
+    )
+    grid.fill(0)
+    assert retained[0]["brick_grid"].sum() == 108
+
+
 def test_adapter_preserves_terminal_observation_and_resets_only_done_lane(monkeypatch):
     install_fake_sb3(monkeypatch)
     native = FakeBreakout()

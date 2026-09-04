@@ -6,6 +6,21 @@ releases; changes will be recorded here.
 
 ## Unreleased
 
+### Added
+
+- Add the opt-in `POLICY_INFO_KEYS` signal selection with paired raw and
+  unclipped normalized policy features, logical brick grids, and serve phase.
+- Describe signal units, normalization, nominal ranges, validity, source,
+  ownership, and rotating-buffer depth through the public environment metadata.
+
+### Fixed
+
+- Reset hidden collision-speed state in `configure_lane`, return independent
+  Gymnasium presence masks, preserve info values in copy mode, avoid native
+  signal writes for an empty key selection, and reject accidental string key
+  sequences.
+- Copy array-shaped infos retained by the Stable-Baselines3 adapter.
+
 ## [0.5.9] - 2026-08-31
 
 ### Changed

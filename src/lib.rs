@@ -19,7 +19,30 @@ const FULL_BRICKS: u128 = (1u128 << (BRICK_COLS * BRICK_ROWS)) - 1;
 const FULL_WALL_SCORE: i32 = 18 * (7 + 7 + 4 + 4 + 1 + 1);
 const ATARI_TOP_SCORE: i32 = 2 * FULL_WALL_SCORE;
 const BREAKTHROUGH_VY: i32 = 27 * FP / 8;
-const SIGNALS: usize = 16;
+const NATIVE_SIGNAL_NAMES: [&str; 21] = [
+    "paddle_x",
+    "ball_x",
+    "ball_y",
+    "ball_vx",
+    "ball_vy",
+    "brick_mask",
+    "brick_mask_high",
+    "score",
+    "lives",
+    "tick",
+    "bricks_remaining",
+    "walls_cleared",
+    "layout_id",
+    "collision_events",
+    "pending_reset",
+    "_awaiting_fire",
+    "ball_screen_y",
+    "paddle_width",
+    "ball_paddle_offset",
+    "_layout_initial_bricks",
+    "_layout_max_score",
+];
+const SIGNALS: usize = NATIVE_SIGNAL_NAMES.len();
 // The cartridge's ball-Y RAM byte is the rendered top-edge coordinate minus
 // nine and reserves zero to mean that the serve is waiting for FIRE. Keep the
 // simulation in fixed point, but expose the Atari RAM value.
@@ -312,6 +335,31 @@ const fn sparse_mask() -> u128 {
 }
 
 const LAYOUT_MASKS: [u128; 4] = [FULL_BRICKS, checker_mask(), tunnel_mask(), sparse_mask()];
+
+const fn layout_wall_score(mask: u128) -> i64 {
+    let mut total = 0;
+    let mut index = 0;
+    while index < BRICK_COLS * BRICK_ROWS {
+        if mask & (1u128 << index) != 0 {
+            total += BRICK_ROW_POINTS[index / BRICK_COLS] as i64;
+        }
+        index += 1;
+    }
+    total
+}
+
+const LAYOUT_INITIAL_BRICKS: [i64; 4] = [
+    LAYOUT_MASKS[0].count_ones() as i64,
+    LAYOUT_MASKS[1].count_ones() as i64,
+    LAYOUT_MASKS[2].count_ones() as i64,
+    LAYOUT_MASKS[3].count_ones() as i64,
+];
+const LAYOUT_MAX_SCORES: [i64; 4] = [
+    2 * layout_wall_score(LAYOUT_MASKS[0]),
+    2 * layout_wall_score(LAYOUT_MASKS[1]),
+    2 * layout_wall_score(LAYOUT_MASKS[2]),
+    2 * layout_wall_score(LAYOUT_MASKS[3]),
+];
 
 fn layout_mask(layout_id: i32) -> Option<u128> {
     match layout_id {
@@ -1018,22 +1066,33 @@ fn atari_ball_y(lane: &Lane) -> i64 {
 }
 
 fn write_signals(lane: &Lane, dst: &mut [i64]) {
-    dst[0] = lane.paddle_x as i64;
-    dst[1] = lane.ball_x as i64;
-    dst[2] = atari_ball_y(lane);
-    dst[3] = lane.ball_vx as i64;
-    dst[4] = lane.ball_vy as i64;
-    dst[5] = lane.bricks as u64 as i64;
-    dst[6] = (lane.bricks >> 64) as i64;
-    dst[7] = lane.score as i64;
-    dst[8] = lane.lives as i64;
-    dst[9] = lane.tick as i64;
-    dst[10] = lane.bricks.count_ones() as i64;
-    dst[11] = lane.wall_phase.walls_cleared();
-    dst[12] = lane.layout_id as i64;
-    dst[13] = lane.last_collision;
-    dst[14] = lane.pending_reset as i64;
-    dst[15] = lane.awaiting_fire as i64;
+    let paddle_width = if lane.narrow_paddle { 12 } else { 16 };
+    let layout_index = lane.layout_id as usize;
+    let values = [
+        lane.paddle_x as i64,
+        lane.ball_x as i64,
+        atari_ball_y(lane),
+        lane.ball_vx as i64,
+        lane.ball_vy as i64,
+        lane.bricks as u64 as i64,
+        (lane.bricks >> 64) as i64,
+        lane.score as i64,
+        lane.lives as i64,
+        lane.tick as i64,
+        lane.bricks.count_ones() as i64,
+        lane.wall_phase.walls_cleared(),
+        lane.layout_id as i64,
+        lane.last_collision,
+        lane.pending_reset as i64,
+        lane.awaiting_fire as i64,
+        lane.ball_y as i64,
+        paddle_width,
+        i64::from(lane.ball_x) + i64::from(FP)
+            - (i64::from(lane.paddle_x) + paddle_width * i64::from(FP) / 2),
+        LAYOUT_INITIAL_BRICKS[layout_index],
+        LAYOUT_MAX_SCORES[layout_index],
+    ];
+    dst.copy_from_slice(&values);
 }
 
 fn put_i32(dst: &mut Vec<u8>, value: i32) {
@@ -1957,6 +2016,8 @@ impl NativeBreakoutVecEnv {
         target.last_collision = 0;
         target.awaiting_fire = false;
         target.collision_latches = 0;
+        target.collision_count = 0;
+        target.steep_angle = true;
         target.breakthrough = false;
         target.narrow_paddle = false;
         target.brick_contact = false;
@@ -2028,6 +2089,7 @@ fn _env_breakoutatari2600_turbo_native(module: &Bound<'_, PyModule>) -> PyResult
     module.add("RENDER_WIDTH", RENDER_W)?;
     module.add("RENDER_HEIGHT", RENDER_H)?;
     module.add("FIXED_POINT_ONE", FP)?;
+    module.add("NATIVE_SIGNAL_NAMES", NATIVE_SIGNAL_NAMES.to_vec())?;
     Ok(())
 }
 

@@ -8,6 +8,7 @@ import gymnasium as gym
 from .action_tables import ACTION_SETS, ACTION_TABLES, BUTTONS, ActionTable
 from .env import (
     FIXED_POINT_ONE,
+    POLICY_INFO_KEYS,
     RAW_HEIGHT,
     RAW_WIDTH,
     RENDER_HEIGHT,
@@ -80,6 +81,7 @@ __all__ = [
     "ActionTable",
     "BUTTONS",
     "FIXED_POINT_ONE",
+    "POLICY_INFO_KEYS",
     "RAW_HEIGHT",
     "RAW_WIDTH",
     "RENDER_HEIGHT",

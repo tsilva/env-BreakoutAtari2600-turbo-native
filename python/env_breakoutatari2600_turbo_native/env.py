@@ -18,9 +18,12 @@ from ._env_breakoutatari2600_turbo_native import (
     RENDER_WIDTH,
     NativeBreakoutVecEnv,
 )
+from ._env_breakoutatari2600_turbo_native import (
+    NATIVE_SIGNAL_NAMES as _NATIVE_EXTENSION_SIGNAL_NAMES,
+)
 from .action_tables import ACTION_TABLES, BUTTONS, ActionTable, resolve_custom_action
 
-_SIGNAL_NAMES = (
+_STABLE_SIGNAL_NAMES = (
     "paddle_x",
     "ball_x",
     "ball_y",
@@ -37,10 +40,65 @@ _SIGNAL_NAMES = (
     "collision_events",
     "pending_reset",
 )
-# The native kernel retains its FIRE-wait flag as private simulation state.
-# Public infos intentionally mirror the Atari cartridge contract, where
-# ``ball_y == 0`` represents that state.
-_NATIVE_SIGNAL_NAMES = (*_SIGNAL_NAMES, "_awaiting_fire")
+_NATIVE_SIGNAL_NAMES = tuple(_NATIVE_EXTENSION_SIGNAL_NAMES)
+_NATIVE_SIGNAL_INDEX = {name: index for index, name in enumerate(_NATIVE_SIGNAL_NAMES)}
+POLICY_INFO_KEYS = (
+    "paddle_x",
+    "paddle_x_normalized",
+    "ball_x",
+    "ball_x_normalized",
+    "ball_y",
+    "ball_y_normalized",
+    "ball_screen_y",
+    "ball_screen_y_normalized",
+    "ball_vx",
+    "ball_vx_normalized",
+    "ball_vy",
+    "ball_vy_normalized",
+    "paddle_width",
+    "paddle_width_normalized",
+    "ball_paddle_offset",
+    "ball_paddle_offset_normalized",
+    "score",
+    "score_normalized",
+    "lives",
+    "lives_normalized",
+    "bricks_remaining",
+    "bricks_remaining_normalized",
+    "walls_cleared",
+    "walls_cleared_normalized",
+    "brick_grid",
+    "serve_phase",
+)
+_NORMALIZED_SOURCES = {
+    "paddle_x_normalized": ("paddle_x", FIXED_POINT_ONE * RAW_WIDTH),
+    "ball_x_normalized": ("ball_x", FIXED_POINT_ONE * RAW_WIDTH),
+    "ball_y_normalized": ("ball_y", 255),
+    "ball_screen_y_normalized": (
+        "ball_screen_y",
+        FIXED_POINT_ONE * RAW_HEIGHT,
+    ),
+    "ball_vx_normalized": ("ball_vx", 2 * FIXED_POINT_ONE),
+    "ball_vy_normalized": ("ball_vy", 27 * FIXED_POINT_ONE // 8),
+    "paddle_width_normalized": ("paddle_width", 16),
+    "ball_paddle_offset_normalized": (
+        "ball_paddle_offset",
+        FIXED_POINT_ONE * RAW_WIDTH,
+    ),
+    "lives_normalized": ("lives", 5),
+    "walls_cleared_normalized": ("walls_cleared", 2),
+}
+_DYNAMIC_NORMALIZED_SOURCES = {
+    "score_normalized": ("score", "_layout_max_score"),
+    "bricks_remaining_normalized": (
+        "bricks_remaining",
+        "_layout_initial_bricks",
+    ),
+}
+_AUXILIARY_INFO_KEYS = tuple(
+    key for key in POLICY_INFO_KEYS if key not in _STABLE_SIGNAL_NAMES
+)
+_AVAILABLE_INFO_KEYS = (*_STABLE_SIGNAL_NAMES, *_AUXILIARY_INFO_KEYS)
 _CANONICAL_GAME = "Breakout-Atari2600-v0"
 _START_IDS = ("Start", "checker", "tunnel", "sparse")
 _RETRO_BUTTON_COUNT = 8
@@ -70,6 +128,167 @@ _ATARI_2600_NTSC_PALETTE = np.array(
     ],
     dtype=np.uint8,
 )
+
+
+def _signal_spec(key: str) -> dict[str, Any]:
+    dtype = "int64"
+    shape: tuple[int, ...] = ()
+    units = "count"
+    normalization: str | None = None
+    nominal_range: tuple[float | int, float | int] | None = None
+    source = "stable" if key in _STABLE_SIGNAL_NAMES else "auxiliary"
+
+    if key in _NORMALIZED_SOURCES:
+        raw, divisor = _NORMALIZED_SOURCES[key]
+        dtype = "float32"
+        units = "ratio"
+        normalization = f"{raw} / {divisor}; not clipped"
+        nominal_range = (
+            (-1.0, 1.0)
+            if raw
+            in {
+                "ball_vx",
+                "ball_vy",
+                "ball_paddle_offset",
+            }
+            else (0.0, 1.0)
+        )
+    elif key in _DYNAMIC_NORMALIZED_SOURCES:
+        raw, divisor = _DYNAMIC_NORMALIZED_SOURCES[key]
+        dtype = "float32"
+        units = "ratio"
+        normalization = f"{raw} / layout-specific {divisor}; not clipped"
+        nominal_range = (0.0, 1.0)
+    elif key == "brick_grid":
+        dtype = "uint8"
+        shape = (6, 18)
+        units = "occupied"
+        nominal_range = (0, 1)
+    elif key == "serve_phase":
+        dtype = "int8"
+        units = "phase"
+        nominal_range = (-1, 3)
+    elif key in {
+        "paddle_x",
+        "ball_x",
+        "ball_screen_y",
+        "ball_vx",
+        "ball_vy",
+        "ball_paddle_offset",
+    }:
+        units = "fixed_point_pixels"
+    elif key == "ball_y":
+        units = "atari_ram_coordinate"
+        nominal_range = (0, 255)
+    elif key == "paddle_width":
+        units = "pixels"
+        nominal_range = (12, 16)
+
+    return {
+        "dtype": dtype,
+        "shape": shape,
+        "units": units,
+        "normalization": normalization,
+        "nominal_range": nominal_range,
+        "valid_when": "the corresponding Gymnasium presence mask is true",
+        "source": source,
+    }
+
+
+_SIGNAL_SPECS = {key: _signal_spec(key) for key in _AVAILABLE_INFO_KEYS}
+
+
+class _InfoProjector:
+    """Project one native integer state row into selected public policy signals."""
+
+    def __init__(
+        self,
+        keys: tuple[str, ...],
+        *,
+        num_envs: int,
+        buffer_count: int,
+        enabled: bool,
+    ) -> None:
+        self.keys = keys
+        self.needs_native = enabled and bool(keys)
+        derived = tuple(key for key in keys if key not in _NATIVE_SIGNAL_INDEX)
+        self._buffers = [
+            {
+                key: np.empty(
+                    (num_envs, *_SIGNAL_SPECS[key]["shape"]),
+                    dtype=_SIGNAL_SPECS[key]["dtype"],
+                )
+                for key in derived
+            }
+            for _ in range(buffer_count)
+        ]
+
+    @staticmethod
+    def _derived_array(key: str, count: int) -> np.ndarray:
+        spec = _SIGNAL_SPECS[key]
+        return np.empty((count, *spec["shape"]), dtype=spec["dtype"])
+
+    @staticmethod
+    def _fill_derived(key: str, out: np.ndarray, signals: np.ndarray) -> None:
+        if key in _NORMALIZED_SOURCES:
+            source, divisor = _NORMALIZED_SOURCES[key]
+            np.divide(
+                signals[:, _NATIVE_SIGNAL_INDEX[source]],
+                np.float32(divisor),
+                out=out,
+                casting="unsafe",
+            )
+            return
+        if key in _DYNAMIC_NORMALIZED_SOURCES:
+            source, divisor = _DYNAMIC_NORMALIZED_SOURCES[key]
+            np.divide(
+                signals[:, _NATIVE_SIGNAL_INDEX[source]],
+                signals[:, _NATIVE_SIGNAL_INDEX[divisor]],
+                out=out,
+                casting="unsafe",
+            )
+            return
+        if key == "serve_phase":
+            out[:] = ((signals[:, _NATIVE_SIGNAL_INDEX["tick"]] + 2) & 3).astype(
+                np.int8
+            )
+            out[signals[:, _NATIVE_SIGNAL_INDEX["_awaiting_fire"]] == 0] = -1
+            return
+        if key == "brick_grid":
+            words = np.stack(
+                (
+                    signals[:, _NATIVE_SIGNAL_INDEX["brick_mask"]].view(np.uint64),
+                    signals[:, _NATIVE_SIGNAL_INDEX["brick_mask_high"]].view(np.uint64),
+                ),
+                axis=1,
+            )
+            bits = np.unpackbits(words.view(np.uint8), axis=1, bitorder="little")
+            out[:] = bits[:, : 6 * 18].reshape((-1, 6, 18))
+            return
+        raise AssertionError(f"missing derived info implementation for {key!r}")
+
+    def project(
+        self,
+        signals: np.ndarray,
+        *,
+        buffer_index: int | None,
+        keys: tuple[str, ...] | None = None,
+        copy_values: bool = False,
+    ) -> dict[str, np.ndarray]:
+        selected = self.keys if keys is None else keys
+        result: dict[str, np.ndarray] = {}
+        for key in selected:
+            if key in _NATIVE_SIGNAL_INDEX:
+                value = signals[:, _NATIVE_SIGNAL_INDEX[key]]
+            else:
+                value = (
+                    self._derived_array(key, signals.shape[0])
+                    if buffer_index is None
+                    else self._buffers[buffer_index][key]
+                )
+                self._fill_derived(key, value, signals)
+            result[key] = value.copy() if copy_values else value
+        return result
 
 
 def _enum_name(value: Any) -> str:
@@ -379,15 +598,31 @@ class BreakoutVecEnv(VectorEnv):
         if isinstance(info_filter, Mapping):
             self._info_mode = str(info_filter.get("mode", "all"))
             keys = info_filter.get("keys")
-            self._info_keys = tuple(_SIGNAL_NAMES if keys is None else map(str, keys))
+            if keys is None:
+                self._info_keys = _STABLE_SIGNAL_NAMES
+            else:
+                if isinstance(keys, (str, bytes, bytearray)):
+                    raise TypeError("info_filter keys must be a sequence of strings")
+                try:
+                    selected_keys = tuple(keys)
+                except TypeError as exc:
+                    raise TypeError(
+                        "info_filter keys must be a sequence of strings"
+                    ) from exc
+                if not all(isinstance(key, str) for key in selected_keys):
+                    raise TypeError("info_filter keys must be a sequence of strings")
+                self._info_keys = selected_keys
         else:
             self._info_mode = str(info_filter)
-            self._info_keys = _SIGNAL_NAMES
+            self._info_keys = _STABLE_SIGNAL_NAMES
         if self._info_mode not in {"all", "terminal", "none"}:
             raise ValueError("info_filter mode must be 'all', 'terminal', or 'none'")
-        unknown = set(self._info_keys) - set(_SIGNAL_NAMES)
+        if len(set(self._info_keys)) != len(self._info_keys):
+            raise ValueError("info_filter keys must be unique")
+        unknown = set(self._info_keys) - set(_AVAILABLE_INFO_KEYS)
         if unknown:
             raise ValueError(f"unknown info keys: {sorted(unknown)}")
+        self._stable_info_keys = _STABLE_SIGNAL_NAMES
 
         self.num_envs = num_envs
         self.frame_skip = frame_skip
@@ -407,6 +642,8 @@ class BreakoutVecEnv(VectorEnv):
         self.observation_buffer_depth = (
             None if obs_copy == "copy" else 1 if obs_copy == "unsafe_view" else 2
         )
+        self.signal_ownership = self.observation_ownership
+        self.signal_buffer_depth = self.observation_buffer_depth
         self.autoreset_mode = AutoresetMode.DISABLED
         self.transport = transport
         self.render_mode = render_mode
@@ -464,6 +701,12 @@ class BreakoutVecEnv(VectorEnv):
             np.empty((num_envs, len(_NATIVE_SIGNAL_NAMES)), dtype=np.int64)
             for _ in range(count)
         ]
+        self._info_projector = _InfoProjector(
+            self._info_keys,
+            num_envs=num_envs,
+            buffer_count=count,
+            enabled=self._info_mode != "none",
+        )
         self._buffer_index = 0
         self._active_state_indices = np.zeros(num_envs, dtype=np.int32)
         self._active_state_indices.setflags(write=False)
@@ -509,10 +752,24 @@ class BreakoutVecEnv(VectorEnv):
             {
                 key: MappingProxyType(
                     {
-                        "dtype": "int64",
-                        "shape": (),
+                        "dtype": _SIGNAL_SPECS[key]["dtype"],
+                        "shape": _SIGNAL_SPECS[key]["shape"],
                         "available_on_reset": self._info_mode == "all",
                         "available_on_step": self._info_mode != "none",
+                    }
+                )
+                for key in self._info_keys
+            }
+            if self._info_mode != "none"
+            else {}
+        )
+        self.signal_metadata = MappingProxyType(
+            {
+                key: MappingProxyType(
+                    {
+                        metadata_key: value
+                        for metadata_key, value in _SIGNAL_SPECS[key].items()
+                        if metadata_key not in {"dtype", "shape"}
                     }
                 )
                 for key in self._info_keys
@@ -530,13 +787,17 @@ class BreakoutVecEnv(VectorEnv):
             self._terminated_buffers[index],
             self._truncated_buffers[index],
             self._signal_buffers[index],
+            index,
         )
 
     def _obs(self, observations: np.ndarray) -> np.ndarray:
         return observations.copy() if self.obs_copy == "copy" else observations
 
     def _infos(
-        self, signals: np.ndarray, present: np.ndarray | None = None
+        self,
+        signals: np.ndarray,
+        buffer_index: int,
+        present: np.ndarray | None = None,
     ) -> dict[str, np.ndarray]:
         if self._info_mode == "none":
             return {}
@@ -544,13 +805,17 @@ class BreakoutVecEnv(VectorEnv):
             present = np.ones(self.num_envs, dtype=np.bool_)
         if self._info_mode == "terminal":
             present = present & signals[
-                :, _NATIVE_SIGNAL_NAMES.index("pending_reset")
+                :, _NATIVE_SIGNAL_INDEX["pending_reset"]
             ].astype(bool)
         result: dict[str, np.ndarray] = {}
-        for key in self._info_keys:
-            index = _NATIVE_SIGNAL_NAMES.index(key)
-            result[key] = signals[:, index]
-            result[f"_{key}"] = present
+        values = self._info_projector.project(
+            signals,
+            buffer_index=buffer_index,
+            copy_values=self.obs_copy == "copy",
+        )
+        for key, value in values.items():
+            result[key] = value
+            result[f"_{key}"] = present.copy()
         return result
 
     def reset(self, *, seed: int | Sequence[int | None] | None = None, options=None):
@@ -629,7 +894,9 @@ class BreakoutVecEnv(VectorEnv):
                     1, self.noop_reset_max + 1, dtype=np.uint64
                 )
             next_reset_rngs[lane] = generator
-        observations, rewards, terminated, truncated, signals = self._next_buffers()
+        observations, rewards, terminated, truncated, signals, buffer_index = (
+            self._next_buffers()
+        )
         engine_starts = np.full(self.num_envs, -1, dtype=np.int32)
         engine_starts[static_mask] = self._catalog_to_engine[starts[static_mask]]
         if snapshots is None:
@@ -667,7 +934,7 @@ class BreakoutVecEnv(VectorEnv):
             self._active_state_indices[snapshot_mask] = restored_indices[snapshot_mask]
         self._active_state_indices.setflags(write=writable)
         self._initialized[mask] = True
-        infos = self._infos(signals, mask.copy())
+        infos = self._infos(signals, buffer_index, mask.copy())
         infos["state_index"] = self._active_state_indices.copy()
         infos["_state_index"] = mask.copy()
         start_source = snapshot_mask.astype(np.int8, copy=True)
@@ -687,7 +954,9 @@ class BreakoutVecEnv(VectorEnv):
         values = self._native_actions(actions)
         if values.shape != (self.num_envs,):
             raise ValueError(f"actions must have shape ({self.num_envs},)")
-        observations, rewards, terminated, truncated, signals = self._next_buffers()
+        observations, rewards, terminated, truncated, signals, buffer_index = (
+            self._next_buffers()
+        )
         self.native.step_into(
             values,
             observations,
@@ -695,14 +964,14 @@ class BreakoutVecEnv(VectorEnv):
             terminated,
             truncated,
             signals,
-            self._info_mode != "none",
+            self._info_projector.needs_native,
         )
         return (
             self._obs(observations),
             rewards,
             terminated,
             truncated,
-            self._infos(signals),
+            self._infos(signals, buffer_index),
         )
 
     def _native_actions(self, actions: Any) -> np.ndarray:
@@ -797,7 +1066,7 @@ class BreakoutVecEnv(VectorEnv):
         if np.any(restored_indices[reset_mask] < 0):
             raise ValueError("restored state layout is absent from state_catalog")
 
-        observations, rewards, terminated, truncated, signals = self._next_buffers()
+        observations, rewards, terminated, truncated, signals, _ = self._next_buffers()
         self.native.set_states_into(state_values, reset_mask, observations, signals)
         rewards[reset_mask] = 0.0
         terminated[reset_mask] = False
@@ -839,14 +1108,21 @@ class BreakoutVecEnv(VectorEnv):
         signals = np.asarray(flat_signals, dtype=np.int64).reshape(
             (count, len(_NATIVE_SIGNAL_NAMES))
         )
+        branch_keys = (
+            *_STABLE_SIGNAL_NAMES,
+            *(key for key in self._info_keys if key not in _STABLE_SIGNAL_NAMES),
+        )
         return {
             "next_states": [bytes(value) for value in next_states],
             "observations": observations,
             "rewards": np.asarray(rewards, dtype=np.float32),
             "terminated": np.asarray(terminated, dtype=np.bool_),
-            "signals": {
-                name: signals[:, index] for index, name in enumerate(_SIGNAL_NAMES)
-            },
+            "signals": self._info_projector.project(
+                signals,
+                buffer_index=None,
+                keys=branch_keys,
+                copy_values=True,
+            ),
             "source_index": np.repeat(np.arange(len(states)), len(action_values)),
             "actions": np.tile(action_values, len(states)),
         }
@@ -887,6 +1163,7 @@ class BreakoutVecEnv(VectorEnv):
 __all__ = [
     "BreakoutVecEnv",
     "FIXED_POINT_ONE",
+    "POLICY_INFO_KEYS",
     "RAW_HEIGHT",
     "RAW_WIDTH",
     "RENDER_HEIGHT",
