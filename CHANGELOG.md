@@ -6,6 +6,8 @@ releases; changes will be recorded here.
 
 ## Unreleased
 
+## [0.5.10] - 2026-09-04
+
 ### Added
 
 - Add the opt-in `POLICY_INFO_KEYS` signal selection with paired raw and
@@ -256,6 +258,7 @@ releases; changes will be recorded here.
 
 - Initial public release.
 
+[0.5.10]: https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/compare/v0.5.9...v0.5.10
 [0.5.9]: https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/compare/v0.5.8...v0.5.9
 [0.5.8]: https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/compare/v0.5.7...v0.5.8
 [0.5.7]: https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/compare/v0.5.6...v0.5.7
