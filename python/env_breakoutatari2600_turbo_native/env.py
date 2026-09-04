@@ -65,6 +65,8 @@ POLICY_INFO_KEYS = (
     "lives_normalized",
     "bricks_remaining",
     "bricks_remaining_normalized",
+    "bricks_destroyed",
+    "bricks_destroyed_normalized",
     "walls_cleared",
     "walls_cleared_normalized",
     "brick_grid",
@@ -89,10 +91,16 @@ _NORMALIZED_SOURCES = {
     "walls_cleared_normalized": ("walls_cleared", 2),
 }
 _DYNAMIC_NORMALIZED_SOURCES = {
-    "score_normalized": ("score", "_layout_max_score"),
+    "score_normalized": ("score", "_layout_max_score", 1),
     "bricks_remaining_normalized": (
         "bricks_remaining",
         "_layout_initial_bricks",
+        1,
+    ),
+    "bricks_destroyed_normalized": (
+        "bricks_destroyed",
+        "_layout_initial_bricks",
+        2,
     ),
 }
 _AUXILIARY_INFO_KEYS = tuple(
@@ -154,10 +162,15 @@ def _signal_spec(key: str) -> dict[str, Any]:
             else (0.0, 1.0)
         )
     elif key in _DYNAMIC_NORMALIZED_SOURCES:
-        raw, divisor = _DYNAMIC_NORMALIZED_SOURCES[key]
+        raw, divisor, multiplier = _DYNAMIC_NORMALIZED_SOURCES[key]
         dtype = "float32"
         units = "ratio"
-        normalization = f"{raw} / layout-specific {divisor}; not clipped"
+        divisor_description = (
+            f"layout-specific {divisor}"
+            if multiplier == 1
+            else f"(layout-specific {divisor} * {multiplier})"
+        )
+        normalization = f"{raw} / {divisor_description}; not clipped"
         nominal_range = (0.0, 1.0)
     elif key == "brick_grid":
         dtype = "uint8"
@@ -240,13 +253,15 @@ class _InfoProjector:
             )
             return
         if key in _DYNAMIC_NORMALIZED_SOURCES:
-            source, divisor = _DYNAMIC_NORMALIZED_SOURCES[key]
+            source, divisor, multiplier = _DYNAMIC_NORMALIZED_SOURCES[key]
             np.divide(
                 signals[:, _NATIVE_SIGNAL_INDEX[source]],
                 signals[:, _NATIVE_SIGNAL_INDEX[divisor]],
                 out=out,
                 casting="unsafe",
             )
+            if multiplier != 1:
+                np.divide(out, np.float32(multiplier), out=out)
             return
         if key == "serve_phase":
             out[:] = ((signals[:, _NATIVE_SIGNAL_INDEX["tick"]] + 2) & 3).astype(

@@ -1,4 +1,4 @@
 interface:
   display_name: "Build Release"
-  short_description: "Publish validated Breakout PyPI wheels"
-  default_prompt: "Use $build-release to publish validated macOS and Linux env-breakoutatari2600-turbo-native wheels."
+  short_description: "Release through protected parity and PyPI gates"
+  default_prompt: "Use $build-release to certify, publish, and verify an env-breakoutatari2600-turbo-native release."

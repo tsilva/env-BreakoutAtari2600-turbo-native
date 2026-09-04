@@ -19,7 +19,7 @@ const FULL_BRICKS: u128 = (1u128 << (BRICK_COLS * BRICK_ROWS)) - 1;
 const FULL_WALL_SCORE: i32 = 18 * (7 + 7 + 4 + 4 + 1 + 1);
 const ATARI_TOP_SCORE: i32 = 2 * FULL_WALL_SCORE;
 const BREAKTHROUGH_VY: i32 = 27 * FP / 8;
-const NATIVE_SIGNAL_NAMES: [&str; 21] = [
+const NATIVE_SIGNAL_NAMES: [&str; 22] = [
     "paddle_x",
     "ball_x",
     "ball_y",
@@ -31,6 +31,7 @@ const NATIVE_SIGNAL_NAMES: [&str; 21] = [
     "lives",
     "tick",
     "bricks_remaining",
+    "bricks_destroyed",
     "walls_cleared",
     "layout_id",
     "collision_events",
@@ -246,6 +247,15 @@ impl WallPhase {
             Self::First => 0,
             Self::FirstCleared | Self::RefillArmed | Self::Second => 1,
             Self::SecondCleared => 2,
+        }
+    }
+
+    fn bricks_destroyed(self, bricks_remaining: i64, initial_bricks: i64) -> i64 {
+        match self {
+            Self::First => initial_bricks - bricks_remaining,
+            Self::FirstCleared | Self::RefillArmed => initial_bricks,
+            Self::Second => 2 * initial_bricks - bricks_remaining,
+            Self::SecondCleared => 2 * initial_bricks,
         }
     }
 
@@ -1068,6 +1078,8 @@ fn atari_ball_y(lane: &Lane) -> i64 {
 fn write_signals(lane: &Lane, dst: &mut [i64]) {
     let paddle_width = if lane.narrow_paddle { 12 } else { 16 };
     let layout_index = lane.layout_id as usize;
+    let initial_bricks = LAYOUT_INITIAL_BRICKS[layout_index];
+    let bricks_remaining = lane.bricks.count_ones() as i64;
     let values = [
         lane.paddle_x as i64,
         lane.ball_x as i64,
@@ -1079,7 +1091,9 @@ fn write_signals(lane: &Lane, dst: &mut [i64]) {
         lane.score as i64,
         lane.lives as i64,
         lane.tick as i64,
-        lane.bricks.count_ones() as i64,
+        bricks_remaining,
+        lane.wall_phase
+            .bricks_destroyed(bricks_remaining, initial_bricks),
         lane.wall_phase.walls_cleared(),
         lane.layout_id as i64,
         lane.last_collision,
@@ -1089,7 +1103,7 @@ fn write_signals(lane: &Lane, dst: &mut [i64]) {
         paddle_width,
         i64::from(lane.ball_x) + i64::from(FP)
             - (i64::from(lane.paddle_x) + paddle_width * i64::from(FP) / 2),
-        LAYOUT_INITIAL_BRICKS[layout_index],
+        initial_bricks,
         LAYOUT_MAX_SCORES[layout_index],
     ];
     dst.copy_from_slice(&values);
@@ -2370,6 +2384,16 @@ mod parity_tests {
         step_native(lane, 0)
     }
 
+    fn signal_value(lane: &Lane, name: &str) -> i64 {
+        let mut signals = [0; SIGNALS];
+        write_signals(lane, &mut signals);
+        let index = NATIVE_SIGNAL_NAMES
+            .iter()
+            .position(|candidate| *candidate == name)
+            .expect("test signal name must exist");
+        signals[index]
+    }
+
     #[test]
     fn cartridge_has_two_walls_max_score_864_and_lives_only_termination() {
         assert_eq!(FULL_WALL_SCORE, 432);
@@ -2377,6 +2401,7 @@ mod parity_tests {
         let mut lane = active_lane();
         lane.score = 431;
         lane.hud_score = 431;
+        assert_eq!(signal_value(&lane, "bricks_destroyed"), 0);
 
         let (reward, done, refilled) = clear_last_bottom_brick(&mut lane);
         assert_eq!(reward, 1.0);
@@ -2385,6 +2410,7 @@ mod parity_tests {
         assert_eq!(lane.score, 432);
         assert_eq!(lane.wall_phase, WallPhase::FirstCleared);
         assert_eq!(lane.bricks, 0);
+        assert_eq!(signal_value(&lane, "bricks_destroyed"), 108);
 
         lane.ball_x = lane.paddle_x + 6 * FP;
         lane.ball_y = 187 * FP;
@@ -2395,12 +2421,14 @@ mod parity_tests {
         assert!(!refilled);
         assert_eq!(lane.wall_phase, WallPhase::RefillArmed);
         assert_eq!(lane.bricks, 0);
+        assert_eq!(signal_value(&lane, "bricks_destroyed"), 108);
 
         let (_, done, refilled) = step_native(&mut lane, 0);
         assert!(!done);
         assert!(refilled);
         assert_eq!(lane.wall_phase, WallPhase::Second);
         assert_eq!(lane.bricks, FULL_BRICKS);
+        assert_eq!(signal_value(&lane, "bricks_destroyed"), 108);
 
         lane.score = 863;
         lane.hud_score = 863;
@@ -2411,6 +2439,7 @@ mod parity_tests {
         assert_eq!(lane.score, 864);
         assert_eq!(lane.wall_phase, WallPhase::SecondCleared);
         assert_eq!(lane.bricks, 0);
+        assert_eq!(signal_value(&lane, "bricks_destroyed"), 216);
 
         lane.ball_x = lane.paddle_x + 6 * FP;
         lane.ball_y = 187 * FP;

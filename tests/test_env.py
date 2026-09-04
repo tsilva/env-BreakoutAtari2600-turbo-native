@@ -590,6 +590,8 @@ def test_policy_info_is_opt_in_and_exposes_raw_normalized_pairs():
         ),
     )
     np.testing.assert_allclose(infos["bricks_remaining_normalized"], 1.0)
+    np.testing.assert_array_equal(infos["bricks_destroyed"], 0)
+    np.testing.assert_allclose(infos["bricks_destroyed_normalized"], 0.0)
 
     *_, active_infos = env.step(np.ones(4, dtype=np.uint8))
     np.testing.assert_array_equal(
@@ -620,6 +622,11 @@ def test_policy_info_is_opt_in_and_exposes_raw_normalized_pairs():
         active_infos["bricks_remaining_normalized"],
         active_infos["bricks_remaining"]
         / np.asarray([108, 54, 98, 36], dtype=np.float32),
+    )
+    np.testing.assert_allclose(
+        active_infos["bricks_destroyed_normalized"],
+        active_infos["bricks_destroyed"]
+        / np.asarray([216, 108, 196, 72], dtype=np.float32),
     )
 
     collision_state = {
@@ -1434,3 +1441,37 @@ def test_board_clear_returns_only_the_score_delta_without_bonus():
     assert not terminated[0]
     assert info["bricks_remaining"][0] == 0
     assert info["walls_cleared"][0] == 1
+
+
+def test_bricks_destroyed_counts_cumulative_two_wall_progress():
+    env = make_env(
+        frame_skip=1,
+        info_filter={
+            "mode": "all",
+            "keys": (
+                "bricks_destroyed",
+                "bricks_destroyed_normalized",
+                "bricks_remaining",
+                "walls_cleared",
+            ),
+        },
+    )
+    env.reset()
+    env.configure_lane(
+        0,
+        paddle_x=40 * FIXED_POINT_ONE,
+        ball_x=80 * FIXED_POINT_ONE,
+        ball_y=63 * FIXED_POINT_ONE,
+        ball_vx=0,
+        ball_vy=-FIXED_POINT_ONE,
+        bricks=1 << 9,
+        lives=5,
+    )
+
+    env.step(np.zeros(4, dtype=np.uint8))
+    *_, info = env.step(np.zeros(4, dtype=np.uint8))
+
+    assert info["bricks_remaining"][0] == 0
+    assert info["walls_cleared"][0] == 1
+    assert info["bricks_destroyed"][0] == 108
+    assert info["bricks_destroyed_normalized"][0] == np.float32(0.5)
