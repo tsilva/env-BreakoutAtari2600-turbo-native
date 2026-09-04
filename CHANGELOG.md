@@ -6,6 +6,16 @@ releases; changes will be recorded here.
 
 ## Unreleased
 
+### Added
+
+- Add opt-in cumulative `bricks_destroyed` and
+  `bricks_destroyed_normalized` policy info across both brick walls.
+
+### Changed
+
+- Bind the release runbook to protected TurboBench evidence for the exact
+  final macOS wheel and require external candidate and publication checks.
+
 ## [0.5.10] - 2026-09-04
 
 ### Added
