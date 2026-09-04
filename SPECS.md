@@ -27,6 +27,7 @@
 - Stable-compatible filtered actions must retain the eight-button transport, accept only exact noop, FIRE, right, and left rows, disclose those valid rows, and reject every unsupported button or combination without normalization.
 - The default policy observation per lane must be a grayscale `uint8` CHW stack of four 84×84 frames produced using four native frames per environment step.
 - Policy observations and rendered frames must derive independently from the same native 160×210 indexed frame.
+- The environment must expose opt-in policy information without changing the default Stable-compatible shared-information contract, and every normalized numeric field must be paired with its non-normalized source field.
 - Rendering must be opt-in, must never advance or mutate game state, must support selecting an individual lane, and must produce the canonical 160×210 Stella RGB rendered frame.
 - The interactive player must support a configurable display-rate limit and visible uncapped play.
 

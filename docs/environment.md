@@ -143,12 +143,63 @@ changes the cartridge's hidden serve phase.
 ## Info filtering
 
 `info_filter` accepts `"all"`, `"terminal"`, `"none"`, or a mapping containing
-`mode` and `keys`. Available signals are paddle and ball coordinates and
-velocity, brick mask, score, lives, tick, remaining bricks, layout, collision
-events, and pending reset. `ball_y` matches Stable Retro Turbo's Atari RAM info value:
-it is zero while the cartridge is waiting for FIRE and uses the cartridge's
-integer coordinate while the ball is active. Gymnasium-style underscore masks
-identify which lanes contain each value.
+`mode` and a sequence of unique `keys`. The string modes retain the exact
+Stable-compatible signal set: paddle and ball coordinates and velocity, brick
+mask, score, lives, tick, remaining bricks, wall progress, layout, collision
+events, and pending reset. Gymnasium-style underscore masks identify which
+lanes contain each value, and each mask is an independent array.
+
+The exported `POLICY_INFO_KEYS` tuple is an opt-in policy-oriented selection:
+
+```python
+from env_breakoutatari2600_turbo_native import POLICY_INFO_KEYS, BreakoutVecEnv
+
+env = BreakoutVecEnv(
+    "Breakout-Atari2600-v0",
+    info_filter={"mode": "all", "keys": POLICY_INFO_KEYS},
+)
+```
+
+Every normalized numeric field in this selection is accompanied by its raw
+field. Normalized values are `float32` and are deliberately not clipped: values
+outside the nominal game viewport remain visible instead of being collapsed at
+zero or one.
+
+| Raw field | Normalized field | Divisor |
+| --- | --- | --- |
+| `paddle_x` | `paddle_x_normalized` | `FIXED_POINT_ONE * 160` |
+| `ball_x` | `ball_x_normalized` | `FIXED_POINT_ONE * 160` |
+| `ball_y` | `ball_y_normalized` | `255` |
+| `ball_screen_y` | `ball_screen_y_normalized` | `FIXED_POINT_ONE * 210` |
+| `ball_vx` | `ball_vx_normalized` | `FIXED_POINT_ONE * 2` |
+| `ball_vy` | `ball_vy_normalized` | `FIXED_POINT_ONE * 27 / 8` |
+| `paddle_width` | `paddle_width_normalized` | `16` |
+| `ball_paddle_offset` | `ball_paddle_offset_normalized` | `FIXED_POINT_ONE * 160` |
+| `score` | `score_normalized` | selected layout's two-wall maximum score |
+| `lives` | `lives_normalized` | `5` |
+| `bricks_remaining` | `bricks_remaining_normalized` | selected layout's initial brick count |
+| `walls_cleared` | `walls_cleared_normalized` | `2` |
+
+`ball_y` remains the Stable-compatible Atari RAM value: zero means the
+cartridge is waiting for FIRE, otherwise it is the integer RAM coordinate.
+`ball_screen_y` is the raw fixed-point simulation coordinate and has no such
+sentinel. `paddle_width` is 16 pixels initially and 12 after a ceiling contact.
+`ball_paddle_offset` is the signed fixed-point distance from paddle center to
+ball center. `brick_grid` is a logical `uint8` array shaped `(6, 18)` whose sum
+equals `bricks_remaining`; unlike rendering, it does not model the startup
+raster reveal. `serve_phase` is `-1` while the ball is active and `0..3` while
+waiting for FIRE.
+
+The four layouts use initial brick counts of 108, 54, 98, and 36 and two-wall
+maximum scores of 864, 432, 796, and 288, respectively. `signal_schema`
+describes every selected field's portable dtype, shape, and reset/step
+availability. `signal_metadata` adds its units, normalization, nominal range,
+validity, and source without changing the Turbo Vector API schema.
+
+Info values follow the observation copy mode. `obs_copy="copy"` returns owned
+values; `"safe_view"` uses two rotating buffers; and `"unsafe_view"` uses one.
+Inspect `signal_ownership` and `signal_buffer_depth` for this contract. The SB3
+adapter copies array-valued lane infos before retaining them.
 
 The cartridge lifecycle contains two walls, not independently terminating
 levels. Clearing wall one reaches 432 points; the selected layout reappears one

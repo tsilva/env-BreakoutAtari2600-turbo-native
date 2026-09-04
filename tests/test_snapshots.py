@@ -4,7 +4,7 @@ import hashlib
 
 import numpy as np
 import pytest
-from env_breakoutatari2600_turbo_native import BreakoutVecEnv
+from env_breakoutatari2600_turbo_native import POLICY_INFO_KEYS, BreakoutVecEnv
 
 GAME_ID = "Breakout-Atari2600-v0"
 
@@ -171,6 +171,31 @@ def test_branch_results_are_exactly_the_same_as_real_environment_steps():
         for key, expected in branches["signals"].items():
             np.testing.assert_array_equal(infos[key], expected)
         assert source.get_state()[:2] == states
+    finally:
+        source.close()
+        actual.close()
+
+
+def test_branch_policy_signals_match_real_environment_steps():
+    options = {
+        "frame_skip": 1,
+        "info_filter": {"mode": "all", "keys": POLICY_INFO_KEYS},
+    }
+    source = BreakoutVecEnv(GAME_ID, num_envs=1, num_threads=1, **options)
+    actual = BreakoutVecEnv(GAME_ID, num_envs=4, num_threads=1, **options)
+    try:
+        source.reset()
+        source.step(np.ones(1, dtype=np.uint8))
+        states = source.get_state()
+        actions = np.arange(4, dtype=np.uint8)
+        branches = source.branch(states, actions)
+
+        actual.reset()
+        actual.set_state(states * 4)
+        *_, infos = actual.step(actions)
+
+        for key in POLICY_INFO_KEYS:
+            np.testing.assert_array_equal(branches["signals"][key], infos[key])
     finally:
         source.close()
         actual.close()

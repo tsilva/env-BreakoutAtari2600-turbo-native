@@ -15,6 +15,7 @@ import numpy as np
 import pytest
 from env_breakoutatari2600_turbo_native import (
     FIXED_POINT_ONE,
+    POLICY_INFO_KEYS,
     RAW_HEIGHT,
     RENDER_HEIGHT,
     RENDER_WIDTH,
@@ -495,6 +496,217 @@ def test_info_presence_masks_follow_the_configured_filter():
     assert not infos["_lives"].any()
 
 
+def test_info_presence_masks_do_not_alias_each_other():
+    env = make_env()
+    _, infos = env.reset()
+    infos["_score"][0] = False
+    assert infos["_lives"][0]
+
+
+def test_copy_mode_returns_owned_info_values():
+    env = make_env(obs_copy="copy")
+    _, infos = env.reset()
+    reset_ticks = infos["tick"]
+    env.step(np.zeros(4, dtype=np.uint8))
+    env.step(np.zeros(4, dtype=np.uint8))
+    np.testing.assert_array_equal(reset_ticks, np.zeros(4, dtype=np.int64))
+
+
+def test_info_filter_rejects_a_string_as_a_key_sequence():
+    with pytest.raises(TypeError, match="keys.*sequence"):
+        make_env(info_filter={"mode": "all", "keys": "ball_x"})
+
+
+def test_empty_info_key_selection_skips_native_signal_writes():
+    env = make_env(info_filter={"mode": "all", "keys": []})
+    assert not env._info_projector.needs_native
+    env.reset()
+    *_, infos = env.step(np.zeros(4, dtype=np.uint8))
+    assert infos == {}
+
+
+def test_policy_info_is_opt_in_and_exposes_raw_normalized_pairs():
+    default = make_env()
+    _, default_infos = default.reset()
+    assert tuple(default.signal_schema) == (
+        "paddle_x",
+        "ball_x",
+        "ball_y",
+        "ball_vx",
+        "ball_vy",
+        "brick_mask",
+        "brick_mask_high",
+        "score",
+        "lives",
+        "tick",
+        "bricks_remaining",
+        "walls_cleared",
+        "layout_id",
+        "collision_events",
+        "pending_reset",
+    )
+    assert "paddle_width" not in default_infos
+    assert "ball_x_normalized" not in default_infos
+
+    env = make_env(
+        frame_skip=1,
+        info_filter={"mode": "all", "keys": POLICY_INFO_KEYS},
+    )
+    _, infos = env.reset(options={"state_indices": np.arange(4, dtype=np.int32)})
+
+    normalized = [key for key in POLICY_INFO_KEYS if key.endswith("_normalized")]
+    for key in normalized:
+        assert key.removesuffix("_normalized") in POLICY_INFO_KEYS
+        assert infos[key].dtype == np.float32
+    for key in set(POLICY_INFO_KEYS) - set(normalized) - {"brick_grid", "serve_phase"}:
+        assert infos[key].dtype == np.int64
+
+    assert infos["brick_grid"].shape == (4, 6, 18)
+    assert infos["brick_grid"].dtype == np.uint8
+    np.testing.assert_array_equal(
+        infos["brick_grid"].sum(axis=(1, 2)), infos["bricks_remaining"]
+    )
+    np.testing.assert_array_equal(infos["serve_phase"], np.full(4, 2, dtype=np.int8))
+
+    np.testing.assert_allclose(
+        infos["paddle_x_normalized"],
+        infos["paddle_x"] / np.float32(FIXED_POINT_ONE * 160),
+    )
+    np.testing.assert_allclose(
+        infos["ball_screen_y_normalized"],
+        infos["ball_screen_y"] / np.float32(FIXED_POINT_ONE * 210),
+    )
+    np.testing.assert_allclose(
+        infos["ball_paddle_offset_normalized"],
+        infos["ball_paddle_offset"] / np.float32(FIXED_POINT_ONE * 160),
+    )
+    np.testing.assert_array_equal(
+        infos["ball_paddle_offset"],
+        infos["ball_x"]
+        + FIXED_POINT_ONE
+        - (
+            infos["paddle_x"]
+            + infos["paddle_width"] * FIXED_POINT_ONE // 2
+        ),
+    )
+    np.testing.assert_allclose(infos["bricks_remaining_normalized"], 1.0)
+
+    *_, active_infos = env.step(np.ones(4, dtype=np.uint8))
+    np.testing.assert_array_equal(
+        active_infos["serve_phase"], np.full(4, -1, dtype=np.int8)
+    )
+    fixed_divisors = {
+        "paddle_x": FIXED_POINT_ONE * 160,
+        "ball_x": FIXED_POINT_ONE * 160,
+        "ball_y": 255,
+        "ball_screen_y": FIXED_POINT_ONE * 210,
+        "ball_vx": FIXED_POINT_ONE * 2,
+        "ball_vy": FIXED_POINT_ONE * 27 // 8,
+        "paddle_width": 16,
+        "ball_paddle_offset": FIXED_POINT_ONE * 160,
+        "lives": 5,
+        "walls_cleared": 2,
+    }
+    for raw, divisor in fixed_divisors.items():
+        np.testing.assert_allclose(
+            active_infos[f"{raw}_normalized"],
+            active_infos[raw] / np.float32(divisor),
+        )
+    np.testing.assert_allclose(
+        active_infos["score_normalized"],
+        active_infos["score"] / np.asarray([864, 432, 796, 288], dtype=np.float32),
+    )
+    np.testing.assert_allclose(
+        active_infos["bricks_remaining_normalized"],
+        active_infos["bricks_remaining"]
+        / np.asarray([108, 54, 98, 36], dtype=np.float32),
+    )
+
+    collision_state = {
+        "paddle_x": 40 * FIXED_POINT_ONE,
+        "ball_x": 80 * FIXED_POINT_ONE,
+        "ball_y": 63 * FIXED_POINT_ONE,
+        "ball_vx": 0,
+        "ball_vy": -FIXED_POINT_ONE,
+        "bricks": (1 << 9) | (1 << 107),
+        "lives": 5,
+    }
+    for lane in range(4):
+        env.configure_lane(lane, **collision_state)
+    env.step(np.zeros(4, dtype=np.uint8))
+    *_, scored_infos = env.step(np.zeros(4, dtype=np.uint8))
+    np.testing.assert_array_equal(scored_infos["score"], np.full(4, 7))
+    np.testing.assert_allclose(
+        scored_infos["score_normalized"],
+        scored_infos["score"]
+        / np.asarray([864, 432, 796, 288], dtype=np.float32),
+    )
+
+    assert env.signal_ownership == env.observation_ownership == "safe_view"
+    assert env.signal_buffer_depth == env.observation_buffer_depth == 2
+    for key in POLICY_INFO_KEYS:
+        assert env.signal_metadata[key]["valid_when"]
+        assert env.signal_metadata[key]["source"] in {"stable", "auxiliary"}
+
+
+def test_policy_paddle_width_tracks_the_ceiling_narrowing_mode():
+    env = BreakoutVecEnv(
+        GAME_ID,
+        num_envs=1,
+        num_threads=1,
+        frame_skip=1,
+        info_filter={
+            "mode": "all",
+            "keys": ("paddle_width", "paddle_width_normalized"),
+        },
+    )
+    env.reset()
+    env.configure_lane(
+        0,
+        paddle_x=40 * FIXED_POINT_ONE,
+        ball_x=80 * FIXED_POINT_ONE,
+        ball_y=34 * FIXED_POINT_ONE + FIXED_POINT_ONE // 2,
+        ball_vx=0,
+        ball_vy=-(3 * FIXED_POINT_ONE // 2),
+        bricks=(1 << 108) - 1,
+        lives=5,
+    )
+    env.step(np.zeros(1, dtype=np.uint8))
+    *_, infos = env.step(np.zeros(1, dtype=np.uint8))
+    assert infos["paddle_width"][0] == 12
+    assert infos["paddle_width_normalized"][0] == np.float32(0.75)
+
+
+def test_position_normalization_preserves_values_outside_nominal_bounds():
+    env = BreakoutVecEnv(
+        GAME_ID,
+        num_envs=1,
+        num_threads=1,
+        frame_skip=1,
+        info_filter={
+            "mode": "all",
+            "keys": ("ball_screen_y", "ball_screen_y_normalized"),
+        },
+    )
+    env.reset()
+    env.configure_lane(
+        0,
+        paddle_x=40 * FIXED_POINT_ONE,
+        ball_x=80 * FIXED_POINT_ONE,
+        ball_y=216 * FIXED_POINT_ONE,
+        ball_vx=0,
+        ball_vy=27 * FIXED_POINT_ONE // 8,
+        bricks=1,
+        lives=5,
+    )
+    *_, infos = env.step(np.zeros(1, dtype=np.uint8))
+    assert infos["ball_screen_y_normalized"][0] > 1.0
+    np.testing.assert_allclose(
+        infos["ball_screen_y_normalized"],
+        infos["ball_screen_y"] / np.float32(FIXED_POINT_ONE * 210),
+    )
+
+
 def test_snapshot_replay_is_byte_exact():
     env = make_env(frame_skip=1)
     env.reset()
@@ -620,6 +832,7 @@ def test_branches_cover_all_actions_without_mutating_source():
     before = env.get_state()
     result = env.branch(states)
     assert result["observations"].shape == (8, 4, 84, 84)
+    assert tuple(result["signals"]) == tuple(env.signal_schema)
     np.testing.assert_array_equal(result["actions"], [0, 1, 2, 3, 0, 1, 2, 3])
     assert env.get_state() == before
 
@@ -1118,6 +1331,36 @@ def test_atari_digital_paddle_inertia_trace():
         84,
         89,
     ]
+
+
+def test_configure_lane_resets_hidden_collision_history():
+    fresh = BreakoutVecEnv(GAME_ID, num_envs=1, num_threads=1, frame_skip=1)
+    experienced = BreakoutVecEnv(GAME_ID, num_envs=1, num_threads=1, frame_skip=1)
+    fresh.reset()
+    experienced.reset()
+
+    collision_state = {
+        "paddle_x": 40 * FIXED_POINT_ONE,
+        "ball_x": 46 * FIXED_POINT_ONE,
+        "ball_y": 189 * FIXED_POINT_ONE,
+        "ball_vx": FIXED_POINT_ONE,
+        "ball_vy": FIXED_POINT_ONE,
+        "bricks": 1,
+        "lives": 5,
+    }
+    for _ in range(3):
+        experienced.configure_lane(0, **collision_state)
+        experienced.step(np.zeros(1, dtype=np.uint8))
+        experienced.step(np.zeros(1, dtype=np.uint8))
+
+    fresh.configure_lane(0, **collision_state)
+    experienced.configure_lane(0, **collision_state)
+    fresh.step(np.zeros(1, dtype=np.uint8))
+    experienced.step(np.zeros(1, dtype=np.uint8))
+    fresh_info = fresh.step(np.zeros(1, dtype=np.uint8))[4]
+    experienced_info = experienced.step(np.zeros(1, dtype=np.uint8))[4]
+    for key in ("paddle_x", "ball_x", "ball_y", "ball_vx", "ball_vy"):
+        np.testing.assert_array_equal(fresh_info[key], experienced_info[key])
 
 
 @pytest.mark.parametrize(

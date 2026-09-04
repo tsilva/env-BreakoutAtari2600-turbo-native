@@ -32,7 +32,10 @@ def _lane_infos(infos: dict[str, np.ndarray], num_envs: int) -> list[dict[str, A
         present = infos.get(f"_{key}")
         for lane in range(num_envs):
             if present is None or bool(present[lane]):
-                result[lane][key] = values[lane]
+                value = values[lane]
+                result[lane][key] = (
+                    value.copy() if isinstance(value, np.ndarray) else value
+                )
     return result
 
 
