@@ -547,6 +547,8 @@ def test_policy_info_is_opt_in_and_exposes_raw_normalized_pairs():
     )
     assert "paddle_width" not in default_infos
     assert "ball_x_normalized" not in default_infos
+    assert "paddle_vx" not in default_infos
+    assert "paddle_vx_normalized" not in default_infos
 
     env = make_env(
         frame_skip=1,
@@ -599,6 +601,7 @@ def test_policy_info_is_opt_in_and_exposes_raw_normalized_pairs():
     )
     fixed_divisors = {
         "paddle_x": FIXED_POINT_ONE * 160,
+        "paddle_vx": FIXED_POINT_ONE * 160,
         "ball_x": FIXED_POINT_ONE * 160,
         "ball_y": 255,
         "ball_screen_y": FIXED_POINT_ONE * 210,
@@ -712,6 +715,111 @@ def test_position_normalization_preserves_values_outside_nominal_bounds():
         infos["ball_screen_y_normalized"],
         infos["ball_screen_y"] / np.float32(FIXED_POINT_ONE * 210),
     )
+
+
+@pytest.mark.parametrize("frame_skip", [1, 4])
+def test_paddle_velocity_tracks_last_native_frame_with_inertia_and_clamping(frame_skip):
+    options = {
+        "num_envs": 2,
+        "obs_copy": "copy",
+        "info_filter": {"mode": "all", "keys": POLICY_INFO_KEYS},
+    }
+    env = BreakoutVecEnv(GAME_ID, frame_skip=frame_skip, **options)
+    reference = BreakoutVecEnv(GAME_ID, frame_skip=1, **options)
+    try:
+        _, initial = env.reset()
+        _, reference_info = reference.reset()
+        np.testing.assert_array_equal(initial["paddle_vx"], 0)
+        np.testing.assert_array_equal(initial["paddle_vx_normalized"], 0.0)
+        assert env.signal_metadata["paddle_vx"]["units"] == (
+            "fixed_point_pixels_per_native_frame"
+        )
+        assert env.signal_metadata["paddle_vx"]["source"] == "auxiliary"
+        assert env.signal_metadata["paddle_vx_normalized"]["nominal_range"] == (
+            -1.0, 1.0
+        )
+        velocities = []
+        # Settle startup motion, hold in both directions to the edges, then stop.
+        tape = [[0, 0]] * 16 + [[2, 3]] * 70 + [[3, 2]] * 70 + [[0, 0]] * 16
+        for action in tape:
+            actions = np.asarray(action, dtype=np.uint8)
+            for _ in range(frame_skip):
+                previous_x = reference_info["paddle_x"].copy()
+                *_, reference_info = reference.step(actions)
+            *_, info = env.step(actions)
+            expected_vx = reference_info["paddle_x"] - previous_x
+            np.testing.assert_array_equal(info["paddle_vx"], expected_vx)
+            np.testing.assert_array_equal(info["paddle_x"], reference_info["paddle_x"])
+            np.testing.assert_allclose(
+                info["paddle_vx_normalized"],
+                expected_vx / np.float32(FIXED_POINT_ONE * 160),
+            )
+            velocities.append(info["paddle_vx"].copy())
+        velocities = np.asarray(velocities)
+        assert np.any(velocities[16:86, 0] > 0)
+        assert np.any(velocities[16:86, 1] < 0)
+        assert np.any(velocities[86:156, 0] < 0)
+        assert np.any(velocities[86:156, 1] > 0)
+        np.testing.assert_array_equal(velocities[85], 0)
+        np.testing.assert_array_equal(velocities[155], 0)
+        if frame_skip == 1:
+            # Digital controls take effect after the current frame's smoothing.
+            np.testing.assert_array_equal(velocities[16], 0)
+        np.testing.assert_array_equal(info["paddle_vx"], 0)
+    finally:
+        env.close()
+        reference.close()
+
+
+def test_paddle_velocity_survives_snapshots_and_masked_reset():
+    env = make_env(
+        frame_skip=1, obs_copy="copy",
+        info_filter={"mode": "all", "keys": ("paddle_vx", "paddle_vx_normalized")},
+    )
+    try:
+        env.reset()
+        *_, moving = env.step(np.zeros(4, dtype=np.uint8))
+        assert np.all(moving["paddle_vx"] != 0)
+        states = env.get_state()
+        mask = np.asarray([True, False, False, False])
+        handles = env.capture_snapshots(mask)
+        *_, expected = env.step(np.zeros(4, dtype=np.uint8))
+        env.set_state(states)
+        assert env.get_state() == states
+        *_, replayed = env.step(np.zeros(4, dtype=np.uint8))
+        for key in ("paddle_vx", "paddle_vx_normalized"):
+            np.testing.assert_array_equal(replayed[key], expected[key])
+
+        untouched = env.get_state()[1:]
+        _, restored = env.reset(options={"reset_mask": mask, "snapshots": handles})
+        for key in ("paddle_vx", "paddle_vx_normalized"):
+            assert restored[key][0] == moving[key][0]
+        assert env.get_state()[1:] == untouched
+        _, reset = env.reset(options={"reset_mask": mask})
+        assert reset["paddle_vx"][0] == 0
+        assert reset["paddle_vx_normalized"][0] == 0.0
+        assert env.get_state()[1:] == untouched
+    finally:
+        env.close()
+
+
+def test_paddle_velocity_noop_reset_matches_last_warmup_frame():
+    options = {
+        "info_filter": {"mode": "all", "keys": ("paddle_vx_normalized",)},
+    }
+    warmed = make_env(noop_reset_max=1, **options)
+    reference = make_env(frame_skip=1, **options)
+    try:
+        _, reset_info = warmed.reset(seed=42)
+        reference.reset()
+        *_, step_info = reference.step(np.zeros(4, dtype=np.uint8))
+        np.testing.assert_array_equal(
+            reset_info["paddle_vx_normalized"], step_info["paddle_vx_normalized"]
+        )
+        assert np.all(reset_info["paddle_vx_normalized"] != 0.0)
+    finally:
+        warmed.close()
+        reference.close()
 
 
 def test_snapshot_replay_is_byte_exact():

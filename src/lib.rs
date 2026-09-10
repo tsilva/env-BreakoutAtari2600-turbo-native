@@ -19,7 +19,7 @@ const FULL_BRICKS: u128 = (1u128 << (BRICK_COLS * BRICK_ROWS)) - 1;
 const FULL_WALL_SCORE: i32 = 18 * (7 + 7 + 4 + 4 + 1 + 1);
 const ATARI_TOP_SCORE: i32 = 2 * FULL_WALL_SCORE;
 const BREAKTHROUGH_VY: i32 = 27 * FP / 8;
-const NATIVE_SIGNAL_NAMES: [&str; 22] = [
+const NATIVE_SIGNAL_NAMES: [&str; 23] = [
     "paddle_x",
     "ball_x",
     "ball_y",
@@ -42,6 +42,7 @@ const NATIVE_SIGNAL_NAMES: [&str; 22] = [
     "ball_paddle_offset",
     "_layout_initial_bricks",
     "_layout_max_score",
+    "paddle_vx",
 ];
 const SIGNALS: usize = NATIVE_SIGNAL_NAMES.len();
 // The cartridge's ball-Y RAM byte is the rendered top-edge coordinate minus
@@ -200,6 +201,7 @@ struct Preprocess {
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct Lane {
     paddle_x: i32,
+    paddle_vx: i32,
     ball_x: i32,
     ball_y: i32,
     ball_vx: i32,
@@ -275,6 +277,7 @@ impl Lane {
     fn new(stack_size: usize) -> Self {
         Self {
             paddle_x: 115 * FP,
+            paddle_vx: 0,
             ball_x: 80 * FP,
             ball_y: 122 * FP,
             ball_vx: FP,
@@ -386,6 +389,7 @@ fn reset_lane(
     noop_count: u32,
 ) {
     lane.paddle_x = 115 * FP;
+    lane.paddle_vx = 0;
     lane.ball_x = 80 * FP;
     lane.ball_y = 122 * FP;
     lane.ball_vx = FP;
@@ -594,7 +598,9 @@ fn update_paddle(lane: &mut Lane, action: u8) {
     let raw_x = lane.paddle_x / FP + 47;
     let target = 235 - lane.paddle_measure as i32;
     let next_raw = ((raw_x + target) / 2).clamp(55, 191);
+    let previous_x = lane.paddle_x;
     lane.paddle_x = (next_raw - 47) * FP;
+    lane.paddle_vx = lane.paddle_x - previous_x;
 
     if lane.paddle_held {
         lane.paddle_repeat += 1;
@@ -1105,6 +1111,7 @@ fn write_signals(lane: &Lane, dst: &mut [i64]) {
             - (i64::from(lane.paddle_x) + paddle_width * i64::from(FP) / 2),
         initial_bricks,
         LAYOUT_MAX_SCORES[layout_index],
+        i64::from(lane.paddle_vx),
     ];
     dst.copy_from_slice(&values);
 }
@@ -1160,9 +1167,10 @@ fn take_u16(src: &[u8], offset: &mut usize) -> Result<u16, &'static str> {
 
 fn serialize_lane(lane: &Lane) -> Vec<u8> {
     let mut out = Vec::with_capacity(64 + lane.stack.len());
-    out.extend_from_slice(b"BTO10");
+    out.extend_from_slice(b"BTO11");
     for value in [
         lane.paddle_x,
+        lane.paddle_vx,
         lane.ball_x,
         lane.ball_y,
         lane.ball_vx,
@@ -1201,11 +1209,12 @@ fn deserialize_lane(
     expected_stack: usize,
     frame_stack: usize,
 ) -> Result<Lane, &'static str> {
-    if data.get(0..5) != Some(b"BTO10") {
+    if data.get(0..5) != Some(b"BTO11") {
         return Err("state has an invalid header");
     }
     let mut offset = 5;
     let paddle_x = take_i32(data, &mut offset)?;
+    let paddle_vx = take_i32(data, &mut offset)?;
     let ball_x = take_i32(data, &mut offset)?;
     let ball_y = take_i32(data, &mut offset)?;
     let ball_vx = take_i32(data, &mut offset)?;
@@ -1269,6 +1278,7 @@ fn deserialize_lane(
     }
     Ok(Lane {
         paddle_x,
+        paddle_vx,
         ball_x,
         ball_y,
         ball_vx,
@@ -2006,6 +2016,7 @@ impl NativeBreakoutVecEnv {
             return Err(PyValueError::new_err("lives must be positive"));
         }
         target.paddle_x = paddle_x;
+        target.paddle_vx = 0;
         let raw_paddle_x = (paddle_x / FP + 47).clamp(55, 191);
         target.paddle_measure = (235 - raw_paddle_x) as u8;
         target.paddle_charge = charge_for_paddle_measurement(target.paddle_measure);
@@ -2334,6 +2345,7 @@ mod parity_tests {
     fn snapshot_round_trip_keeps_new_cartridge_modes() {
         let mut lane = active_lane();
         lane.paddle_x = 61 * FP + 123;
+        lane.paddle_vx = -5 * FP;
         lane.ball_x = 73 * FP + 456;
         lane.ball_y = 88 * FP + 789;
         lane.ball_vx = -2 * FP + 321;
@@ -2363,7 +2375,7 @@ mod parity_tests {
         lane.cached_visual = VisualState::from_lane(&lane);
         lane.visual_cache_valid = true;
         let encoded = serialize_lane(&lane);
-        assert_eq!(&encoded[..5], b"BTO10");
+        assert_eq!(&encoded[..5], b"BTO11");
 
         let decoded = deserialize_lane(&encoded, 12, 4).unwrap();
         let mut expected = lane;

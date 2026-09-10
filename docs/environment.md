@@ -168,6 +168,7 @@ zero or one.
 | Raw field | Normalized field | Divisor |
 | --- | --- | --- |
 | `paddle_x` | `paddle_x_normalized` | `FIXED_POINT_ONE * 160` |
+| `paddle_vx` | `paddle_vx_normalized` | `FIXED_POINT_ONE * 160` |
 | `ball_x` | `ball_x_normalized` | `FIXED_POINT_ONE * 160` |
 | `ball_y` | `ball_y_normalized` | `255` |
 | `ball_screen_y` | `ball_screen_y_normalized` | `FIXED_POINT_ONE * 210` |
@@ -180,6 +181,14 @@ zero or one.
 | `bricks_remaining` | `bricks_remaining_normalized` | selected layout's initial brick count |
 | `bricks_destroyed` | `bricks_destroyed_normalized` | twice the selected layout's initial brick count |
 | `walls_cleared` | `walls_cleared_normalized` | `2` |
+
+`paddle_vx` is the signed `int64` fixed-point displacement during the latest
+native frame, positive to the right. It includes inertia and edge clamping.
+With frame skip, it describes the last native frame actually advanced, rather
+than the whole environment step. `paddle_vx_normalized` is that displacement
+as a fraction of the 160-pixel screen width. Static resets without noops and
+`configure_lane` initialize velocity to zero; noop resets retain the last
+warm-up frame's velocity. Serialized and live snapshots preserve it exactly.
 
 `ball_y` remains the Stable-compatible Atari RAM value: zero means the
 cartridge is waiting for FIRE, otherwise it is the integer RAM coordinate.
