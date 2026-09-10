@@ -6,6 +6,8 @@ releases; changes will be recorded here.
 
 ## Unreleased
 
+## [0.5.12] - 2026-09-10
+
 ### Added
 
 - Add opt-in `paddle_vx` and `paddle_vx_normalized` policy signals for actual
@@ -280,6 +282,7 @@ releases; changes will be recorded here.
 
 - Initial public release.
 
+[0.5.12]: https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/compare/v0.5.11...v0.5.12
 [0.5.11]: https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/compare/v0.5.10...v0.5.11
 [0.5.10]: https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/compare/v0.5.9...v0.5.10
 [0.5.9]: https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/compare/v0.5.8...v0.5.9
