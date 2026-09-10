@@ -45,6 +45,8 @@ _NATIVE_SIGNAL_INDEX = {name: index for index, name in enumerate(_NATIVE_SIGNAL_
 POLICY_INFO_KEYS = (
     "paddle_x",
     "paddle_x_normalized",
+    "paddle_vx",
+    "paddle_vx_normalized",
     "ball_x",
     "ball_x_normalized",
     "ball_y",
@@ -74,6 +76,7 @@ POLICY_INFO_KEYS = (
 )
 _NORMALIZED_SOURCES = {
     "paddle_x_normalized": ("paddle_x", FIXED_POINT_ONE * RAW_WIDTH),
+    "paddle_vx_normalized": ("paddle_vx", FIXED_POINT_ONE * RAW_WIDTH),
     "ball_x_normalized": ("ball_x", FIXED_POINT_ONE * RAW_WIDTH),
     "ball_y_normalized": ("ball_y", 255),
     "ball_screen_y_normalized": (
@@ -155,6 +158,7 @@ def _signal_spec(key: str) -> dict[str, Any]:
             (-1.0, 1.0)
             if raw
             in {
+                "paddle_vx",
                 "ball_vx",
                 "ball_vy",
                 "ball_paddle_offset",
@@ -190,6 +194,8 @@ def _signal_spec(key: str) -> dict[str, Any]:
         "ball_paddle_offset",
     }:
         units = "fixed_point_pixels"
+    elif key == "paddle_vx":
+        units = "fixed_point_pixels_per_native_frame"
     elif key == "ball_y":
         units = "atari_ram_coordinate"
         nominal_range = (0, 255)

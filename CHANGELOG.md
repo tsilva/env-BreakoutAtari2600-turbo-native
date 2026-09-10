@@ -6,6 +6,16 @@ releases; changes will be recorded here.
 
 ## Unreleased
 
+### Added
+
+- Add opt-in `paddle_vx` and `paddle_vx_normalized` policy signals for actual
+  paddle displacement during the latest native frame, including snapshot support.
+
+### Changed
+
+- Advance the serialized snapshot format to preserve paddle velocity. Snapshots
+  from earlier versions must be recaptured.
+
 ## [0.5.11] - 2026-09-04
 
 ### Added
