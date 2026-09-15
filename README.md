@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/tsilva/env-BreakoutAtari2600-turbo-native/main/logo.png" alt="env-BreakoutAtari2600-turbo-native logo" width="420" />
+  <img src="https://raw.githubusercontent.com/tsilva/env-BreakoutAtari2600-turbo-native/main/logo.png" alt="env-BreakoutAtari2600-turbo-native logo" width="256" />
   <br />
   <strong>🕹️ Reproducible Breakout at training speed ⚡</strong>
 </p>
