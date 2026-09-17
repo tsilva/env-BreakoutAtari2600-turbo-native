@@ -560,13 +560,13 @@ def test_policy_info_is_opt_in_and_exposes_raw_normalized_pairs():
     for key in normalized:
         assert key.removesuffix("_normalized") in POLICY_INFO_KEYS
         assert infos[key].dtype == np.float32
-    for key in set(POLICY_INFO_KEYS) - set(normalized) - {"brick_grid", "serve_phase"}:
+    for key in set(POLICY_INFO_KEYS) - set(normalized) - {"brick_grid", "serve_phase", "is_initial_brick_layout"}:
         assert infos[key].dtype == np.int64
 
     assert infos["brick_grid"].shape == (4, 6, 18)
     assert infos["brick_grid"].dtype == np.uint8
     np.testing.assert_array_equal(
-        infos["brick_grid"].sum(axis=(1, 2)), infos["bricks_remaining"]
+        infos["brick_grid"].sum(axis=(1, 2)), infos["bricks_remaining"] - 1
     )
     np.testing.assert_array_equal(infos["serve_phase"], np.full(4, 2, dtype=np.int8))
 
@@ -1583,3 +1583,100 @@ def test_bricks_destroyed_counts_cumulative_two_wall_progress():
     assert info["walls_cleared"][0] == 1
     assert info["bricks_destroyed"][0] == 108
     assert info["bricks_destroyed_normalized"][0] == np.float32(0.5)
+
+
+def assert_rendered_brick_grid(env, info):
+    """Sample brick interiors in RGB independently of the native mask export."""
+    colors = np.array(
+        [[200, 72, 72], [192, 104, 56], [176, 120, 48],
+         [160, 160, 40], [72, 160, 72], [64, 72, 200]], dtype=np.uint8
+    )
+    frame = env.render()
+    pixels = frame[59:93:6, 10:152:8]
+    visible = np.all(pixels == colors[:, None, :], axis=2).astype(np.uint8)
+    np.testing.assert_array_equal(info["brick_grid"][0], visible)
+
+
+@pytest.mark.parametrize("frame_skip", [1, 4])
+def test_visible_brick_startup_matches_successor_render_and_reset(frame_skip):
+    env = make_env(
+        frame_skip=frame_skip, render_mode="rgb_array", obs_copy="copy",
+        info_filter={"mode": "all", "keys":
+                     ("brick_grid", "is_initial_brick_layout", "tick", "bricks_remaining")},
+    )
+    try:
+        _, info = env.reset()
+        assert env.signal_schema["brick_grid"]["shape"] == (6, 18)
+        assert env.signal_schema["is_initial_brick_layout"]["dtype"] == "bool"
+        assert info["is_initial_brick_layout"].dtype == np.bool_
+        assert info["is_initial_brick_layout"].all()
+        assert info["brick_grid"].shape == (4, 6, 18)
+        assert info["brick_grid"][0, 0, 0] == 0
+        assert info["brick_grid"][0].sum() == 107
+        assert_rendered_brick_grid(env, info)
+        for tick in range(frame_skip, 41, frame_skip):
+            *_, info = env.step(np.zeros(4, dtype=np.uint8))
+            assert info["tick"][0] == tick
+            assert bool(info["is_initial_brick_layout"][0]) == (tick < 36)
+            assert_rendered_brick_grid(env, info)
+            assert info["bricks_remaining"][0] == 108
+            if tick == 35:
+                assert not info["brick_grid"].any()
+            if tick >= 36:
+                assert info["brick_grid"].all()
+        _, info = env.reset(options={"reset_mask": np.array([True, False, False, False])})
+        assert info["is_initial_brick_layout"][0]
+        assert info["_is_initial_brick_layout"].tolist() == [True, False, False, False]
+        assert_rendered_brick_grid(env, info)
+        *_, info = env.step(np.zeros(4, dtype=np.uint8))
+        assert info["is_initial_brick_layout"].tolist() == [True, False, False, False]
+    finally:
+        env.close()
+
+
+@pytest.mark.parametrize("row,col", [(0, 0), (1, 17), (3, 9), (5, 17)])
+def test_visible_brick_grid_individual_removal_orientation(row, col):
+    env = make_env(
+        frame_skip=1, render_mode="rgb_array", obs_copy="copy",
+        info_filter={"mode": "all", "keys": ("brick_grid", "is_initial_brick_layout")},
+    )
+    try:
+        env.reset()
+        env.configure_lane(
+            0, paddle_x=40 * FIXED_POINT_ONE,
+            ball_x=(8 + col * 8) * FIXED_POINT_ONE,
+            ball_y=(63 + row * 6) * FIXED_POINT_ONE,
+            ball_vx=0, ball_vy=-FIXED_POINT_ONE,
+            bricks=(1 << 108) - 1, lives=5,
+        )
+        *_, before = env.step(np.zeros(4, dtype=np.uint8))
+        assert before["brick_grid"][0].all()
+        *_, after = env.step(np.zeros(4, dtype=np.uint8))
+        expected = np.ones((6, 18), dtype=np.uint8)
+        expected[row, col] = 0
+        np.testing.assert_array_equal(after["brick_grid"][0], expected)
+        assert not after["is_initial_brick_layout"][0]
+        assert_rendered_brick_grid(env, after)
+    finally:
+        env.close()
+
+
+def test_brick_info_noop_reset_and_snapshot_continuation():
+    env = make_env(
+        frame_skip=1, noop_reset_max=80, obs_copy="copy",
+        render_mode="rgb_array",
+        info_filter={"mode": "all", "keys":
+                     ("brick_grid", "is_initial_brick_layout", "tick")},
+    )
+    try:
+        _, info = env.reset(seed=42)
+        np.testing.assert_array_equal(info["is_initial_brick_layout"], info["tick"] < 36)
+        assert_rendered_brick_grid(env, info)
+        state = env.get_state()
+        *_, expected = env.step(np.zeros(4, dtype=np.uint8))
+        env.set_state(state)
+        *_, restored = env.step(np.zeros(4, dtype=np.uint8))
+        for key in expected:
+            np.testing.assert_array_equal(restored[key], expected[key])
+    finally:
+        env.close()

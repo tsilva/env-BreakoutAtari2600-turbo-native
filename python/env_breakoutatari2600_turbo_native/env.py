@@ -72,6 +72,7 @@ POLICY_INFO_KEYS = (
     "walls_cleared",
     "walls_cleared_normalized",
     "brick_grid",
+    "is_initial_brick_layout",
     "serve_phase",
 )
 _NORMALIZED_SOURCES = {
@@ -181,6 +182,9 @@ def _signal_spec(key: str) -> dict[str, Any]:
         shape = (6, 18)
         units = "occupied"
         nominal_range = (0, 1)
+    elif key == "is_initial_brick_layout":
+        dtype = "bool"
+        units = "boolean"
     elif key == "serve_phase":
         dtype = "int8"
         units = "phase"
@@ -275,11 +279,16 @@ class _InfoProjector:
             )
             out[signals[:, _NATIVE_SIGNAL_INDEX["_awaiting_fire"]] == 0] = -1
             return
+        if key == "is_initial_brick_layout":
+            out[:] = signals[:, _NATIVE_SIGNAL_INDEX["_is_initial_brick_layout"]]
+            return
         if key == "brick_grid":
             words = np.stack(
                 (
-                    signals[:, _NATIVE_SIGNAL_INDEX["brick_mask"]].view(np.uint64),
-                    signals[:, _NATIVE_SIGNAL_INDEX["brick_mask_high"]].view(np.uint64),
+                    signals[:, _NATIVE_SIGNAL_INDEX["_visible_brick_mask"]].view(np.uint64),
+                    signals[:, _NATIVE_SIGNAL_INDEX["_visible_brick_mask_high"]].view(
+                        np.uint64
+                    ),
                 ),
                 axis=1,
             )

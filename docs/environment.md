@@ -195,9 +195,30 @@ cartridge is waiting for FIRE, otherwise it is the integer RAM coordinate.
 `ball_screen_y` is the raw fixed-point simulation coordinate and has no such
 sentinel. `paddle_width` is 16 pixels initially and 12 after a ceiling contact.
 `ball_paddle_offset` is the signed fixed-point distance from paddle center to
-ball center. `brick_grid` is a logical `uint8` array shaped `(6, 18)` whose sum
-equals `bricks_remaining`; unlike rendering, it does not model the startup
-raster reveal. `bricks_destroyed` counts brick removals across both walls and
+ball center.
+
+`brick_grid` is a `uint8` matrix shaped `(6, 18)` per lane, ordered top-to-bottom
+and left-to-right, with 1 for present bricks and 0 for absent bricks. It comes
+directly from the native visible brick mask used by rendering, without pixel
+detection. During startup, the logical `brick_mask` and `bricks_remaining` can
+already describe 108 bricks while the visible layout is partial or blank.
+The grid exports that visible layout, so its sum can differ from the counter.
+
+`is_initial_brick_layout` is a boolean per lane, true throughout the initial
+layout animation, including blank setup frames. It becomes false on native
+frame 36, the first complete wall, and stays false through later serves and
+wall refills. A new episode restarts tracking; reset noops can advance past it.
+Snapshots preserve the episode position and therefore this flag.
+
+Both fields are opt-in through `info_filter` and discoverable through the signal
+schema and metadata. Reset info describes the returned initial observation;
+step info describes the successor observation's newest frame, including with
+frame skip. Vector info retains shape `(num_envs, 6, 18)` for the grid and boolean
+dtype for the flag. For JSON exports, use `brick_grid[lane].tolist()` and
+`bool(is_initial_brick_layout[lane])` to retain a nested integer matrix and a
+JSON boolean. Neither field has scalar normalization.
+
+`bricks_destroyed` counts brick removals across both walls and
 does not reset when the second wall appears. `serve_phase` is `-1` while the
 ball is active and `0..3` while waiting for FIRE.
 

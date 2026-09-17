@@ -19,7 +19,7 @@ const FULL_BRICKS: u128 = (1u128 << (BRICK_COLS * BRICK_ROWS)) - 1;
 const FULL_WALL_SCORE: i32 = 18 * (7 + 7 + 4 + 4 + 1 + 1);
 const ATARI_TOP_SCORE: i32 = 2 * FULL_WALL_SCORE;
 const BREAKTHROUGH_VY: i32 = 27 * FP / 8;
-const NATIVE_SIGNAL_NAMES: [&str; 23] = [
+const NATIVE_SIGNAL_NAMES: [&str; 26] = [
     "paddle_x",
     "ball_x",
     "ball_y",
@@ -43,6 +43,9 @@ const NATIVE_SIGNAL_NAMES: [&str; 23] = [
     "_layout_initial_bricks",
     "_layout_max_score",
     "paddle_vx",
+    "_visible_brick_mask",
+    "_visible_brick_mask_high",
+    "_is_initial_brick_layout",
 ];
 const SIGNALS: usize = NATIVE_SIGNAL_NAMES.len();
 // The cartridge's ball-Y RAM byte is the rendered top-edge coordinate minus
@@ -1086,6 +1089,7 @@ fn write_signals(lane: &Lane, dst: &mut [i64]) {
     let layout_index = lane.layout_id as usize;
     let initial_bricks = LAYOUT_INITIAL_BRICKS[layout_index];
     let bricks_remaining = lane.bricks.count_ones() as i64;
+    let visible = visible_bricks(lane);
     let values = [
         lane.paddle_x as i64,
         lane.ball_x as i64,
@@ -1112,6 +1116,11 @@ fn write_signals(lane: &Lane, dst: &mut [i64]) {
         initial_bricks,
         LAYOUT_MAX_SCORES[layout_index],
         i64::from(lane.paddle_vx),
+        visible as u64 as i64,
+        (visible >> 64) as i64,
+        // tick is episode-local and never restarts on a serve or wall refill.
+        // Frame 35 is blank; frame 36 is the first completed initial wall.
+        i64::from(lane.tick < 36),
     ];
     dst.copy_from_slice(&values);
 }
@@ -2404,6 +2413,25 @@ mod parity_tests {
             .position(|candidate| *candidate == name)
             .expect("test signal name must exist");
         signals[index]
+    }
+
+    #[test]
+    fn initial_layout_does_not_restart_on_serves_or_wall_refills() {
+        let mut lane = active_lane();
+        assert_eq!(signal_value(&lane, "_is_initial_brick_layout"), 0);
+        lane.ball_y = 217 * FP;
+        step_native(&mut lane, 0);
+        assert!(lane.awaiting_fire);
+        assert_eq!(signal_value(&lane, "_is_initial_brick_layout"), 0);
+        step_native(&mut lane, 1);
+        assert!(!lane.awaiting_fire);
+        assert_eq!(signal_value(&lane, "_is_initial_brick_layout"), 0);
+        lane.bricks = 0;
+        lane.wall_phase = WallPhase::RefillArmed;
+        let (_, _, refilled) = step_native(&mut lane, 0);
+        assert!(refilled);
+        assert_eq!(visible_bricks(&lane), FULL_BRICKS);
+        assert_eq!(signal_value(&lane, "_is_initial_brick_layout"), 0);
     }
 
     #[test]
