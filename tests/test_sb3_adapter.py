@@ -111,3 +111,20 @@ def test_adapter_preserves_terminal_observation_and_resets_only_done_lane(monkey
 
     env.close()
     assert native.closed
+
+
+def test_lane_brick_exports_preserve_matrix_and_boolean_types():
+    import json
+
+    infos = _lane_infos(
+        {"brick_grid": np.ones((1, 6, 18), dtype=np.uint8),
+         "is_initial_brick_layout": np.array([False], dtype=np.bool_)}, 1
+    )[0]
+    assert infos["brick_grid"].shape == (6, 18)
+    assert isinstance(infos["is_initial_brick_layout"], np.bool_)
+    exported = json.loads(json.dumps({
+        "brick_grid": infos["brick_grid"].tolist(),
+        "is_initial_brick_layout": bool(infos["is_initial_brick_layout"]),
+    }))
+    assert exported["brick_grid"] == [[1] * 18 for _ in range(6)]
+    assert exported["is_initial_brick_layout"] is False

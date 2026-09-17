@@ -80,6 +80,41 @@ filtered actions, policy signals, snapshots, and branching. Stable-Baselines3
 users can install SB3 separately and use the explicit
 [auto-reset adapter](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/docs/environment.md#stable-baselines3).
 
+### Brick layout info
+
+Select both fields with `info_filter` to include them in reset and step info:
+
+```python
+from env_breakoutatari2600_turbo_native import BreakoutVecEnv
+
+env = BreakoutVecEnv(
+    "Breakout-Atari2600-v0",
+    num_envs=1,
+    info_filter={
+        "mode": "all",
+        "keys": ("brick_grid", "is_initial_brick_layout"),
+    },
+)
+obs, infos = env.reset()
+export = {
+    "brick_grid": infos["brick_grid"][0].tolist(),
+    "is_initial_brick_layout": bool(infos["is_initial_brick_layout"][0]),
+}
+env.close()
+```
+
+- `brick_grid` is a 6×18 integer matrix per lane, ordered top-to-bottom and
+  left-to-right, with 1 for present bricks and 0 for absent bricks. It uses
+  native visible state, without pixel detection. During startup it can be
+  partial or blank even when `bricks_remaining` reports 108.
+- `is_initial_brick_layout` is true through the initial animation, including
+  blank setup frames. It becomes false on the first complete wall and stays
+  false through later serves and wall refills. A new episode restarts tracking.
+
+Both describe the returned observation's newest frame; step info describes
+the successor state. The export above preserves a nested matrix and a boolean
+for JSON serialization. Both fields are also included in `POLICY_INFO_KEYS`.
+
 ## Train with GradLab
 
 Training implementations live in [GradLab](https://github.com/tsilva/gradlab).
