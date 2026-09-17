@@ -6,6 +6,18 @@ releases; changes will be recorded here.
 
 ## Unreleased
 
+### Added
+
+- Add opt-in boolean `is_initial_brick_layout` info for the initial wall
+  animation, including blank setup frames, reset observations, and successor
+  observations. Later serves and wall refills do not reactivate it.
+
+### Changed
+
+- Export `brick_grid` from the native visible layout, including partial and
+  blank startup frames, while preserving its 6×18 integer matrix shape.
+- Document selection and JSON exports for both brick layout fields.
+
 ## [0.5.12] - 2026-09-10
 
 ### Added
