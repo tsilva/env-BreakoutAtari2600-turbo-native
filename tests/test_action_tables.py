@@ -34,6 +34,36 @@ def test_simple_preset_exposes_exact_discrete_contract():
         env.close()
 
 
+@pytest.mark.parametrize(
+    "actions",
+    [
+        np.array([1.9, 2.0]),
+        np.array([True, False]),
+        np.array(["1", "2"]),
+    ],
+)
+def test_native_actions_reject_non_integer_batches_without_stepping(actions):
+    env = BreakoutVecEnv(GAME_ID, num_envs=2, num_threads=1)
+    try:
+        env.reset()
+        before = env.get_state()
+        with pytest.raises(TypeError, match="native actions must have an integer dtype"):
+            env.step(actions)
+        assert env.get_state() == before
+    finally:
+        env.close()
+
+
+def test_native_actions_reject_large_unsigned_values_before_casting():
+    env = BreakoutVecEnv(GAME_ID, num_envs=1, num_threads=1)
+    try:
+        env.reset()
+        with pytest.raises(ValueError, match="actions must be in"):
+            env.step(np.array([2**64 - 1], dtype=np.uint64))
+    finally:
+        env.close()
+
+
 def test_inline_subset_and_reordering_map_to_native_commands():
     custom = BreakoutVecEnv(
         GAME_ID,
