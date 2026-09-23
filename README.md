@@ -1,7 +1,7 @@
 <p align="center">
   <img src="https://raw.githubusercontent.com/tsilva/env-BreakoutAtari2600-turbo-native/main/logo.png" alt="env-BreakoutAtari2600-turbo-native logo" width="256" />
   <br />
-  <strong>🕹️ Reproducible Breakout at training speed ⚡</strong>
+  <strong>Reproducible Breakout for parallel RL experiments</strong>
 </p>
 
 <p align="center">
@@ -11,16 +11,21 @@
   <a href="https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/LICENSE"><img src="https://img.shields.io/pypi/l/env-breakoutatari2600-turbo-native.svg" alt="MIT license" /></a>
 </p>
 
-env-BreakoutAtari2600-turbo-native is a Python library for reinforcement-learning
-researchers and engineers who need many reproducible Breakout games running in
-parallel. It provides training observations and rewards through Gymnasium, with
-one NumPy action batch per step. Install it from PyPI to use it in your own
-training or evaluation loop.
+env-BreakoutAtari2600-turbo-native is a Python library for researchers who need
+reproducible Atari 2600 Breakout rollouts in parallel. One NumPy action batch
+steps all Gymnasium lanes. The environment also supports exact snapshots and
+action branching for experiments that revisit a game state.
 
 env-BreakoutAtari2600-turbo-native is ROM-free. Normal use needs no emulator or
 Stable Retro installation. A Rust core handles deterministic physics and
 parallel stepping; Python exposes resets, rendering, snapshots, and action
 branching.
+
+Choose this library for focused Breakout experiments or as a replacement for
+the supported Stable Retro Turbo Breakout contract. For the established
+multi-game Atari benchmark, use the [Arcade Learning Environment](https://github.com/Farama-Foundation/Arcade-Learning-Environment).
+Results from these environments should be compared only when the game settings,
+observations, actions, rewards, and reset rules match.
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/tsilva/env-BreakoutAtari2600-turbo-native/main/demo.gif" alt="Native Breakout gameplay" width="320" />
@@ -43,11 +48,14 @@ uv add "env-breakoutatari2600-turbo-native[play]"
 uv run env-breakoutatari2600-turbo-native play
 ```
 
-## Use
+## Try a rollout
 
-Save this as `example.py` in your project and run `uv run python example.py`:
+Save this as `quickstart.py` in your project and run `uv run python quickstart.py`.
+The same code is checked in as [examples/quickstart.py](examples/quickstart.py):
 
 ```python
+from time import perf_counter
+
 import gymnasium as gym
 import numpy as np
 
@@ -57,20 +65,34 @@ env = gym.make_vec(
     num_envs=16,
     num_threads=4,
 )
-obs, infos = env.reset(seed=42)
-obs, rewards, terminated, truncated, infos = env.step(
-    np.full(env.num_envs, 1, dtype=np.uint8)  # FIRE starts each serve
-)
 
-done = terminated | truncated
-if done.any():
-    obs, reset_infos = env.reset(options={"reset_mask": done})
-env.close()
+try:
+    obs, _ = env.reset(seed=42)
+    total_reward = 0.0
+    started = perf_counter()
+    for step in range(1024):
+        # This fixed action cycle is a smoke workload, not a trained policy.
+        action = 1 if step % 4 == 0 else 2
+        actions = np.full(env.num_envs, action, dtype=np.uint8)
+        obs, rewards, terminated, truncated, _ = env.step(actions)
+        total_reward += float(rewards.sum())
+        done = terminated | truncated
+        if done.any():
+            obs, _ = env.reset(options={"reset_mask": done})
+    elapsed = perf_counter() - started
+    print(f"observation shape: {obs.shape}")
+    print(f"total reward: {total_reward:g}")
+    print(f"transitions: {1024 * env.num_envs}")
+    print(f"transitions/second: {1024 * env.num_envs / elapsed:,.0f} (local diagnostic)")
+finally:
+    env.close()
 ```
 
 Each lane is an independent game. Native actions are `0` noop, `1` FIRE,
 `2` right, and `3` left. The default observations are grayscale `uint8` arrays
 shaped `(num_envs, 4, 84, 84)`, with four native frames per step.
+The printed rate is a local smoke measurement from a fixed action cycle; it is
+not a matched performance comparison or an agent learning result.
 
 The module-qualified ID imports and registers the vector factory.
 `BreakoutVecEnv` is also available for direct use. See the
@@ -118,7 +140,8 @@ for JSON serialization. Both fields are also included in `POLICY_INFO_KEYS`.
 ## Train with GradLab
 
 Training implementations live in [GradLab](https://github.com/tsilva/gradlab).
-Run either published PPO recipe from any directory:
+The following recipe names were checked against the pinned GradLab `0.1.1`
+release. Run either from any directory:
 
 ```bash
 uvx gradlab@0.1.1 train Breakout-Atari2600-v0/ppo
@@ -158,6 +181,13 @@ limit. [TurboBench](https://github.com/tsilva/turbobench) provides performance
 comparisons and cross-provider parity checks. See
 [release validation](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/docs/release-validation.md)
 for `make parity` prerequisites and wheel certification.
+
+The [v0.5.13 TurboBench parity receipt](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/releases/download/v0.5.13/turbobench-parity-receipt.tar.gz)
+is downloadable from the release and bound to its exact final wheel.
+The receipt records canonical `Start` behavior checked against pinned original
+Stable Retro, including observations, rendered frames, rewards, lifecycle, and
+selected game information. It does not measure throughput or establish
+equivalence with ALE.
 
 ## Notes
 
