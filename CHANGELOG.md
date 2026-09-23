@@ -6,6 +6,11 @@ releases; changes will be recorded here.
 
 ## Unreleased
 
+### Fixed
+
+- Reject non-integer native action batches instead of silently coercing values,
+  and validate large unsigned actions before integer conversion.
+
 ## [0.5.13] - 2026-09-17
 
 ### Added

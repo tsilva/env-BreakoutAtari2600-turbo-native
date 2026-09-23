@@ -1006,9 +1006,11 @@ class BreakoutVecEnv(VectorEnv):
 
     def _native_actions(self, actions: Any) -> np.ndarray:
         if self.action_mode != "filtered":
-            values = np.asarray(actions, dtype=np.int64).reshape(-1)
+            values = np.asarray(actions).reshape(-1)
             if values.shape != (self.num_envs,):
                 raise ValueError(f"actions must have shape ({self.num_envs},)")
+            if values.dtype.kind not in "iu":
+                raise TypeError("native actions must have an integer dtype")
             if values.size and (
                 int(values.min()) < 0 or int(values.max()) >= len(self.action_table)
             ):
@@ -1016,7 +1018,7 @@ class BreakoutVecEnv(VectorEnv):
                     f"actions must be in [0, {len(self.action_table) - 1}] "
                     f"for action_preset={self.action_preset!r}"
                 )
-            return self._custom_native_actions[values]
+            return self._custom_native_actions[values.astype(np.int64, copy=False)]
         if type(actions) is not np.ndarray:
             raise TypeError(
                 "Stable-compatible filtered actions must be a plain NumPy array"
