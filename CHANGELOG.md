@@ -6,6 +6,8 @@ releases; changes will be recorded here.
 
 ## Unreleased
 
+## [0.5.14] - 2026-10-01
+
 ### Fixed
 
 - Reject non-integer native action batches instead of silently coercing values,
@@ -301,6 +303,7 @@ releases; changes will be recorded here.
 
 - Initial public release.
 
+[0.5.14]: https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/compare/v0.5.13...v0.5.14
 [0.5.13]: https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/compare/v0.5.12...v0.5.13
 [0.5.12]: https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/compare/v0.5.11...v0.5.12
 [0.5.11]: https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/compare/v0.5.10...v0.5.11
