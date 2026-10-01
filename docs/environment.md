@@ -218,6 +218,27 @@ dtype for the flag. For JSON exports, use `brick_grid[lane].tolist()` and
 `bool(is_initial_brick_layout[lane])` to retain a nested integer matrix and a
 JSON boolean. Neither field has scalar normalization.
 
+Select and export both fields as follows; both are also in `POLICY_INFO_KEYS`:
+
+```python
+from env_breakoutatari2600_turbo_native import BreakoutVecEnv
+
+env = BreakoutVecEnv(
+    "Breakout-Atari2600-v0",
+    num_envs=1,
+    info_filter={
+        "mode": "all",
+        "keys": ("brick_grid", "is_initial_brick_layout"),
+    },
+)
+obs, infos = env.reset()
+export = {
+    "brick_grid": infos["brick_grid"][0].tolist(),
+    "is_initial_brick_layout": bool(infos["is_initial_brick_layout"][0]),
+}
+env.close()
+```
+
 `bricks_destroyed` counts brick removals across both walls and
 does not reset when the second wall appears. `serve_phase` is `-1` while the
 ball is active and `0..3` while waiting for FIRE.
