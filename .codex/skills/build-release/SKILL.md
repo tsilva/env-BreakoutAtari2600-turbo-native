@@ -5,6 +5,18 @@ description: Prepare, certify, publish, and externally verify an env-breakoutata
 
 # Build release
 
+Read and apply the shared `$release-workflow` skill at
+`/Users/tsilva/.codex/skills/release-workflow/SKILL.md` before execution.
+It owns common preflight, publication safeguards, `$push` integration,
+workflow monitoring, verification, and reporting. The rules below are this
+project's adapter; they retain its invocation default and required gates.
+If the shared skill is unavailable, stop and report the missing dependency.
+
+A bare `$build-release` or `/build-release` invocation starts the release
+sequence below, including its separately required `oracle` and `pypi` approvals.
+It does not preapprove either checkpoint. Explicitly local or inspection-only
+requests do not advance publication transitions.
+
 Use only the checked-in release state machine described in
 `docs/release-validation.md`. Its reviewable transitions are:
 
@@ -38,8 +50,8 @@ Before changing release metadata:
   and
 - confirm immutable GitHub Releases are enabled.
 
-If a retained control is absent or the documentation and workflows disagree,
-stop before publication. Do not weaken a gate to make progress.
+Apply the shared stop conditions if a retained control is absent or the
+documentation and workflows disagree.
 
 The lock validator uses Docker, so require a working Docker daemon before
 running release preparation. Isolate local `uv` from user-wide configuration;

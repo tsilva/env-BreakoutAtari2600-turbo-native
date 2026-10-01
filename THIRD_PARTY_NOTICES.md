@@ -10,11 +10,13 @@ compatibility. The MIT license in this repository applies to this project's
 software and project-owned documentation; it does not grant rights to
 third-party names, trademarks, game programs, or artwork.
 
-No Atari ROM, cartridge dump, Stable Retro save state, or recorded reference
-frame is included in the repository or Python distributions. Live differential
-tests require users to obtain and configure their own lawful copy separately.
+No Atari ROM, cartridge dump, Stable Retro save state, or raw recorded reference
+frame is included in the repository or Python distributions. Evidence-bound
+comparison videos may include rendered reference-provider gameplay. Live
+differential tests require users to obtain and configure their own lawful copy
+separately.
 
-Contributors must not submit ROMs, extracted game assets, recorded reference
+Contributors must not submit ROMs, extracted game assets, raw recorded reference
 frames, or other material they do not have the right to distribute. Report a
 possible licensing or provenance problem through the process in
 [`SECURITY.md`](SECURITY.md).

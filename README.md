@@ -25,8 +25,16 @@ a Gymnasium vector interface and supports the documented Stable Retro Turbo
 Breakout replacement contract.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/tsilva/env-BreakoutAtari2600-turbo-native/main/demo.gif" alt="Native Breakout gameplay" width="320" />
+  <a href="https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/media/speed-comparison/comparison.mp4">
+    <img src="https://raw.githubusercontent.com/tsilva/env-BreakoutAtari2600-turbo-native/main/media/speed-comparison/comparison.gif" alt="Diagnostic speed comparison: original Stable Retro versus native Breakout, replaying the same actions" width="800" />
+  </a>
 </p>
+
+The comparison replays the same actions in native `0.5.13` and original Stable
+Retro `1.0.1`, with playback scaled by TurboBench's measured one-lane throughput
+ratio. **Diagnostic preview:** the host was busy during timing, so this is not
+a validated performance claim. [Watch the MP4](media/speed-comparison/comparison.mp4)
+or see the [method and verification evidence](docs/speed-comparison.md).
 
 ## Install
 

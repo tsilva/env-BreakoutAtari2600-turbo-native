@@ -9,6 +9,7 @@
 - Use `env-BreakoutAtari2600-turbo-native` as the project and GitHub repository name, `env-breakoutatari2600-turbo-native` as the Python distribution name, and `env_breakoutatari2600_turbo_native` as the public Python import package; current project-owned identities must not use any former project, distribution, import, or command identifier.
 - Normal environment use must require no Atari ROM, emulator, original Stable Retro, or Stable Retro Turbo installation.
 - The project must distribute no Atari ROM, cartridge dump, provider save state, recorded reference frame, or extracted game asset; parity validation may use a separately and lawfully obtained ROM.
+- Evidence-bound comparison videos may include rendered reference-provider gameplay; raw reference frames remain excluded.
 - Training implementations must remain outside this repository.
 - Stable-Baselines3 and interactive-player dependencies must remain optional rather than core dependencies.
 - Supported binary platforms must be limited to Apple-silicon macOS and x86-64 Linux.
