@@ -12,11 +12,12 @@ workflow monitoring, verification, and reporting. The rules below are this
 project's adapter; they retain its invocation default and required gates.
 If the shared skill is unavailable, stop and report the missing dependency.
 
-A bare `$build-release` or `/build-release` invocation starts the release
-sequence below. Run parity certification and candidate preparation automatically
-without a separate `oracle` approval. Publication still requires a separate
-`pypi` approval; invoking this skill does not preapprove it. Explicitly local or
-inspection-only requests do not advance publication transitions.
+A bare `$build-release` or `/build-release` invocation authorizes the entire
+release sequence: preparation, commit and push, parity certification, candidate
+build and inspection, publication, and external verification. Complete it
+automatically without asking for separate `oracle` or `pypi` approval. Retain
+all validation gates and the PyPI wait timer. Explicitly local or inspection-only
+requests do not advance publication transitions.
 
 Use only the checked-in release state machine described in
 `docs/release-validation.md`. Its reviewable transitions are:
@@ -25,7 +26,7 @@ Use only the checked-in release state machine described in
 2. protected TurboBench parity evidence for that exact commit and final macOS
    wheel;
 3. an attested cross-platform candidate bound to that parity run; and
-4. separately approved publication through PyPI Trusted Publishing.
+4. automatic publication of the verified candidate through PyPI Trusted Publishing.
 
 Never create or push a release tag by hand, upload to PyPI manually, rebuild a
 single candidate artifact, or substitute an artifact from another run. The
@@ -46,8 +47,8 @@ Before changing release metadata:
   active;
 - confirm the `oracle` environment has no required reviewers, remains restricted
   to `main`, and disallows administrator bypass;
-- confirm the `pypi` environment retains required reviewers, disallows
-  administrator bypass, and keeps its wait timer;
+- confirm the `pypi` environment has no required reviewers, remains restricted
+  to `main`, disallows administrator bypass, and keeps its wait timer;
 - confirm the publish workflow uses the `pypi` environment, OIDC
   `id-token: write`, and the pinned PyPI publish action without an API token;
   and
@@ -148,7 +149,7 @@ If any build, audit, receipt, manifest, checksum, or attestation check fails,
 stop. Fix the cause in a new commit, rerun parity for that SHA, and build a new
 candidate.
 
-## 4. Approve and publish
+## 4. Publish the verified candidate
 
 After candidate inspection, dispatch:
 
@@ -159,12 +160,16 @@ gh workflow run release.yml \
   -f commit="<40-character-release-sha>"
 ```
 
-When the run waits on the `pypi` environment, explain that approval will
-publish the distributions and create the tag and immutable GitHub Release.
-Require explicit user approval for this publication checkpoint; automatic
-parity certification and candidate preparation do not authorize publication.
+The `pypi` environment releases the job automatically after its wait timer.
+Invoking this skill already authorizes publishing the verified distributions
+and creating the tag and immutable GitHub Release; do not request another
+confirmation. If the run unexpectedly waits for manual review, report the
+environment configuration mismatch. When the user has explicitly authorized
+removing that requirement, approve an existing pending deployment through the
+GitHub API and remove required reviewers while preserving the wait timer,
+`main` restriction, and disabled administrator bypass.
 
-After approval, monitor through candidate revalidation, the idempotent PyPI
+Monitor through candidate revalidation, the idempotent PyPI
 transition, exact PyPI file-set verification, protected tag creation, and
 GitHub Release creation. A partial or conflicting PyPI version is a hard stop.
 
