@@ -23,3 +23,10 @@ Issues and specs are tracked in this repository’s GitHub Issues. See `docs/age
 ### Domain docs
 
 This is a single-context repository with a root `CONTEXT.md` and system-wide ADRs under `docs/adr/`. See `docs/agents/domain.md`.
+
+## Shared release procedure
+
+The project `build-release` skill composes `$release-workflow` from
+`/Users/tsilva/.codex/skills/release-workflow/SKILL.md`.
+Read both for release work; keep project commands, version policy, artifact
+requirements, and approval gates in the project adapter.
