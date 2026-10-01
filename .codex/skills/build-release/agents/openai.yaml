@@ -1,4 +1,4 @@
 interface:
   display_name: "Build Release"
-  short_description: "Release through protected parity and PyPI gates"
-  default_prompt: "Use $build-release to certify, publish, and verify an env-breakoutatari2600-turbo-native release."
+  short_description: "Automatically certify, publish, and verify releases"
+  default_prompt: "Use $build-release to prepare, certify, publish, and verify an env-breakoutatari2600-turbo-native release automatically, without further approval prompts."
