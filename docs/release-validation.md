@@ -16,6 +16,12 @@ canonical-host wheel once, passes that exact wheel to TurboBench, verifies the
 receipt, attests the wheel, and removes the private ROM. The release candidate
 reuses that same wheel; it does not certify a checkout or rebuild.
 
+Parity certification runs without manual approval after dispatch. The `oracle`
+environment remains restricted to `main` and has no required reviewers. The
+release procedure continues automatically through candidate preparation and
+inspection; PyPI publication retains its separate required approval and wait
+timer.
+
 ```bash
 gh workflow run parity-evidence.yml -f ref="$(git rev-parse HEAD)"
 gh run watch <parity-run-id> --exit-status

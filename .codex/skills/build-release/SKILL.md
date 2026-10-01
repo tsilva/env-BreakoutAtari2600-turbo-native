@@ -13,9 +13,10 @@ project's adapter; they retain its invocation default and required gates.
 If the shared skill is unavailable, stop and report the missing dependency.
 
 A bare `$build-release` or `/build-release` invocation starts the release
-sequence below, including its separately required `oracle` and `pypi` approvals.
-It does not preapprove either checkpoint. Explicitly local or inspection-only
-requests do not advance publication transitions.
+sequence below. Run parity certification and candidate preparation automatically
+without a separate `oracle` approval. Publication still requires a separate
+`pypi` approval; invoking this skill does not preapprove it. Explicitly local or
+inspection-only requests do not advance publication transitions.
 
 Use only the checked-in release state machine described in
 `docs/release-validation.md`. Its reviewable transitions are:
@@ -43,8 +44,10 @@ Before changing release metadata:
 - confirm `.github/workflows/parity-evidence.yml`,
   `.github/workflows/release-build.yml`, and `.github/workflows/release.yml` are
   active;
-- confirm the `oracle` and `pypi` environments retain required reviewers,
-  disallow administrator bypass, and keep the `pypi` wait timer;
+- confirm the `oracle` environment has no required reviewers, remains restricted
+  to `main`, and disallows administrator bypass;
+- confirm the `pypi` environment retains required reviewers, disallows
+  administrator bypass, and keeps its wait timer;
 - confirm the publish workflow uses the `pypi` environment, OIDC
   `id-token: write`, and the pinned PyPI publish action without an API token;
   and
@@ -95,9 +98,10 @@ Dispatch the protected parity workflow for the full release SHA:
 gh workflow run parity-evidence.yml -f ref="<40-character-release-sha>"
 ```
 
-When the run waits on the `oracle` environment, ask the user for approval at
-that checkpoint. Do not approve it from a prior or implied authorization.
-Monitor the run to success and record its run id.
+The `oracle` environment starts this job without manual approval. Monitor the
+run to success and record its run id. If it unexpectedly waits for approval,
+report the environment configuration mismatch rather than introducing a new
+approval checkpoint.
 
 The workflow must be `.github/workflows/parity-evidence.yml`, be a
 `workflow_dispatch` run at the exact release SHA, and produce
@@ -157,8 +161,8 @@ gh workflow run release.yml \
 
 When the run waits on the `pypi` environment, explain that approval will
 publish the distributions and create the tag and immutable GitHub Release.
-Require a new explicit user approval for this publication checkpoint; the
-earlier `oracle` approval does not carry over.
+Require explicit user approval for this publication checkpoint; automatic
+parity certification and candidate preparation do not authorize publication.
 
 After approval, monitor through candidate revalidation, the idempotent PyPI
 transition, exact PyPI file-set verification, protected tag creation, and
