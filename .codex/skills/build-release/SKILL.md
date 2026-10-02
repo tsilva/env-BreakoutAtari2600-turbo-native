@@ -205,3 +205,27 @@ Release contains the same seven files, including
 `turbobench-parity-receipt.tar.gz`. Finish only after the worktree is clean and
 synchronized. Report the PyPI and GitHub Release links, tag and SHA, artifact
 filenames, and parity, candidate, and publish workflow URLs.
+
+## Update GradLab after successful publication
+
+After the release succeeds and the exact PyPI version and required GitHub
+Release artifacts pass external verification, update GradLab to consume the
+latest successfully published `env-breakoutatari2600-turbo-native` version. Complete
+this step as part of the full publication flow; local builds, dry runs, and
+inspection-only requests do not trigger it.
+
+Read `/Users/tsilva/repos/tsilva/gradlab/AGENTS.md` and its required
+specifications before editing. Synchronize GradLab's current branch with its
+configured upstream and preserve existing work. Update every matching exact
+pin in `pyproject.toml`, including platform-specific project dependencies and
+the `train-runtime` dependency group. Use the just-verified release version;
+if GradLab already consumes a newer verified publication, do not downgrade it.
+Regenerate `uv.lock` with `uv lock --upgrade-package env-breakoutatari2600-turbo-native`,
+preserving unrelated pins, supply-chain constraints, and existing per-package
+release-age exceptions. Review the dependency diff, validate lock consistency,
+and run GradLab's relevant provider compatibility checks.
+
+Report the GradLab version/pin and lockfile update separately from release
+success. If synchronization, resolution, or validation fails, preserve the
+published release and report the downstream update as incomplete with its
+blocker; do not repeat publication.

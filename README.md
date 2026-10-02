@@ -26,14 +26,21 @@ Breakout replacement contract.
 
 <p align="center">
   <a href="https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/media/speed-comparison/comparison.mp4">
-    <img src="https://raw.githubusercontent.com/tsilva/env-BreakoutAtari2600-turbo-native/main/media/speed-comparison/comparison.gif" alt="Diagnostic speed comparison: original Stable Retro versus native Breakout, replaying the same actions" width="800" />
+    <img src="https://raw.githubusercontent.com/tsilva/env-BreakoutAtari2600-turbo-native/main/media/speed-comparison/comparison.gif" alt="Same Policy, Same Actions: Stable Retro versus BreakoutAtari2600-turbo, with diagnostic relative playback speed" width="800" />
   </a>
 </p>
 
-The comparison replays the same actions in native `0.5.13` and original Stable
-Retro `1.0.1`, with playback scaled by TurboBench's measured one-lane throughput
-ratio. **Diagnostic preview:** the host was busy during timing, so this is not
-a validated performance claim. [Watch the MP4](media/speed-comparison/comparison.mp4)
+The comparison uses actions sampled from GradLab's trained FirstWall PPO model
+in native `0.5.13` and original Stable Retro `1.0.1`. The excerpt matches exactly;
+playback illustrates TurboBench's diagnostic one-lane throughput ratio.
+Benchmark: `n_envs=1`, frame skip 2, stack size 4, and 84×84 grayscale area
+resizing without max pooling, with the top 17 rows masked. Frame skip and pixel
+preprocessing follow the policy's saved training recipe.
+Policy playback and future renders must preserve the checkpoint's saved training
+environment contract.
+**Diagnostic preview:** timing used a busy host, and the full episode exposed a
+later parity mismatch. [Watch the comparison](media/speed-comparison/comparison.mp4),
+[watch the full native-policy episode](media/speed-comparison/full-policy.mp4),
 or see the [method and verification evidence](docs/speed-comparison.md).
 
 ## Install
