@@ -6,6 +6,8 @@ releases; changes will be recorded here.
 
 ## Unreleased
 
+## [0.5.15] - 2026-10-02
+
 ### Fixed
 
 - Match original Stable Retro's steep-return angle boundaries after the paddle
@@ -308,6 +310,7 @@ releases; changes will be recorded here.
 
 - Initial public release.
 
+[0.5.15]: https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/compare/v0.5.14...v0.5.15
 [0.5.14]: https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/compare/v0.5.13...v0.5.14
 [0.5.13]: https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/compare/v0.5.12...v0.5.13
 [0.5.12]: https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/compare/v0.5.11...v0.5.12
