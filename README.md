@@ -126,7 +126,7 @@ for a longer loop with selective resets and a local throughput measurement.
 - [Contributing](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/CONTRIBUTING.md):
   source setup, development commands, and tests.
 - [Support](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/SUPPORT.md)
-  and [changelog](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/CHANGELOG.md):
+  and [changelog](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/releases):
   installation help, supported platforms, and changes during the `0.x` community preview.
 
 ## Architecture

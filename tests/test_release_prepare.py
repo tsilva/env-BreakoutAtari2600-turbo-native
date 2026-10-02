@@ -56,7 +56,6 @@ def test_prepare_change_allowlist_contains_only_release_metadata():
     assert release.ALLOWED_RELEASE_FILES == {
         "Cargo.lock",
         "Cargo.toml",
-        "CHANGELOG.md",
         "CITATION.cff",
         "VERSION.txt",
         "pyproject.toml",
@@ -66,10 +65,10 @@ def test_prepare_change_allowlist_contains_only_release_metadata():
 
 def test_changed_paths_does_not_parse_porcelain_status_columns(monkeypatch):
     release = release_module()
-    outputs = iter(("CHANGELOG.md\nVERSION.txt", "", ""))
+    outputs = iter(("CITATION.cff\nVERSION.txt", "", ""))
     monkeypatch.setattr(release, "capture", lambda _command: next(outputs))
 
-    assert release.changed_paths() == ["CHANGELOG.md", "VERSION.txt"]
+    assert release.changed_paths() == ["CITATION.cff", "VERSION.txt"]
 
 
 def test_prepare_needs_no_native_tools_or_dependency_installation(monkeypatch):
@@ -80,9 +79,6 @@ def test_prepare_needs_no_native_tools_or_dependency_installation(monkeypatch):
     monkeypatch.setattr(release, "target_version", lambda _args: "1.2.3")
     monkeypatch.setattr(release, "capture", lambda _args: "")
     monkeypatch.setattr(release, "dependency_graph_snapshot", lambda: "graph")
-    monkeypatch.setattr(
-        release, "finalize_release_notes", lambda version: calls.append("notes")
-    )
     monkeypatch.setattr(release, "helper", lambda *args: calls.append(args[0]))
     monkeypatch.setattr(
         release,
@@ -105,7 +101,7 @@ def test_prepare_needs_no_native_tools_or_dependency_installation(monkeypatch):
     assert "check-lock-policy" in calls
 
 
-def test_resume_does_not_bump_or_finalize_again(monkeypatch):
+def test_resume_does_not_bump_again(monkeypatch):
     release = release_module()
     calls = []
     monkeypatch.setattr(

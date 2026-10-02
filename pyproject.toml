@@ -39,7 +39,7 @@ dependencies = [
 ]
 
 [project.urls]
-Changelog = "https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/CHANGELOG.md"
+Changelog = "https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/releases"
 Discussions = "https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/discussions"
 Documentation = "https://github.com/tsilva/env-BreakoutAtari2600-turbo-native#readme"
 Issues = "https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/issues"
