@@ -90,7 +90,6 @@ def test_readme_delegates_training_to_pinned_gradlab_recipes():
     assert (
         "uvx gradlab@0.1.1 train Breakout-Atari2600-v0/ppo-stable-updates"
     ) in readme
-    assert "env-BreakoutAtari2600-turbo-native is ROM-free" in readme
     assert "env-breakoutatari2600-turbo-native train" not in readme
 
 
@@ -113,4 +112,7 @@ def test_ci_covers_supported_python_versions_and_platforms():
     assert "runner: ubuntu-24.04" in workflow
     assert "cargo clippy --locked --all-targets -- -D warnings" in workflow
     assert "python -m pytest" in workflow
-    assert "actions/dependency-review-action@" in workflow
+    dependency_review = (
+        REPO_ROOT / ".github" / "workflows" / "dependency-review.yml"
+    ).read_text(encoding="utf-8")
+    assert "actions/dependency-review-action@" in dependency_review

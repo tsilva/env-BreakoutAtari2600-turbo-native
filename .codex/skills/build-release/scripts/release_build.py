@@ -209,39 +209,6 @@ def check_version(args: argparse.Namespace) -> None:
         raise SystemExit("; ".join(failures))
 
 
-def run_capture(args: list[str]) -> tuple[int, str]:
-    try:
-        completed = subprocess.run(
-            args,
-            cwd=REPO_ROOT,
-            check=False,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-        )
-    except FileNotFoundError as error:
-        return 127, str(error)
-    return completed.returncode, completed.stdout.strip()
-
-
-def check_tools(_args: argparse.Namespace) -> None:
-    commands = {
-        "cargo": ["cargo", "--version"],
-        "docker": ["docker", "--version"],
-        "maturin": [str(PYTHON), "-m", "maturin", "--version"],
-        "twine": [str(PYTHON), "-m", "twine", "--version"],
-    }
-    result = {
-        name: {"ok": code == 0, "output": output}
-        for name, command in commands.items()
-        for code, output in [run_capture(command)]
-    }
-    print(json.dumps(result, indent=2))
-    missing = [name for name, check in result.items() if not check["ok"]]
-    if missing:
-        raise SystemExit(f"missing release tooling: {', '.join(missing)}")
-
-
 def check_lock_policy(_args: argparse.Namespace) -> None:
     project = read_toml(PYPROJECT)
     uv_config = project.get("tool", {}).get("uv", {})  # type: ignore[union-attr]
@@ -340,56 +307,6 @@ def resolve_version(args: argparse.Namespace) -> None:
     validate_version(current)
     target = next_version(current, args.part) if pypi_version_exists(current) else current
     print(target)
-
-
-def version_sort_key(version: str) -> tuple[int, int, int, int]:
-    match = re.fullmatch(r"(\d+)\.(\d+)\.(\d+)(?:\.post(\d+))?", version)
-    if match is None:
-        raise ValueError(version)
-    major, minor, patch, post = match.groups()
-    return int(major), int(minor), int(patch), int(post or 0)
-
-
-def latest_pypi(args: argparse.Namespace) -> None:
-    data = fetch_pypi_project()
-    if data is None:
-        print(
-            json.dumps(
-                {"package": PACKAGE_NAME, "exists": False, "latest_non_yanked": None},
-                indent=2,
-            )
-        )
-        return
-    releases = data.get("releases")
-    candidates: list[tuple[tuple[int, int, int, int], str]] = []
-    if isinstance(releases, dict):
-        for version, files in releases.items():
-            if not isinstance(version, str) or not isinstance(files, list):
-                continue
-            if not any(isinstance(file, dict) and not file.get("yanked", False) for file in files):
-                continue
-            try:
-                candidates.append((version_sort_key(version), version))
-            except ValueError:
-                continue
-    latest = max(candidates)[1] if candidates else None
-    info = data.get("info")
-    info_version = info.get("version") if isinstance(info, dict) else None
-    print(
-        json.dumps(
-            {
-                "package": PACKAGE_NAME,
-                "exists": True,
-                "latest_non_yanked": latest,
-                "pypi_info_version": info_version,
-            },
-            indent=2,
-        )
-    )
-    if args.fail_if_mismatch and latest != info_version:
-        raise SystemExit(
-            f"PyPI info.version {info_version!r} does not match latest non-yanked {latest!r}"
-        )
 
 
 def wheelhouse(version: str, platform: str) -> Path:
@@ -736,9 +653,6 @@ def build_parser() -> argparse.ArgumentParser:
     check.add_argument("--version")
     check.set_defaults(func=check_version)
 
-    tools = commands.add_parser("check-tools")
-    tools.set_defaults(func=check_tools)
-
     lock_policy = commands.add_parser("check-lock-policy")
     lock_policy.set_defaults(func=check_lock_policy)
 
@@ -756,10 +670,6 @@ def build_parser() -> argparse.ArgumentParser:
     pypi.add_argument("--version", required=True)
     pypi.add_argument("--package")
     pypi.set_defaults(func=check_pypi)
-
-    latest = commands.add_parser("latest-pypi")
-    latest.add_argument("--fail-if-mismatch", action="store_true")
-    latest.set_defaults(func=latest_pypi)
 
     platform = commands.add_parser("build-platform")
     platform.add_argument("--version")
