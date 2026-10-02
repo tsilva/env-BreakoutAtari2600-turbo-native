@@ -13,15 +13,13 @@
   <a href="https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/LICENSE"><img src="https://img.shields.io/pypi/l/env-breakoutatari2600-turbo-native.svg" alt="MIT license" /></a>
 </p>
 
-**env-BreakoutAtari2600-turbo-native** (breakout-native) is a Python library for
-reinforcement-learning researchers and engineers running Atari 2600 Breakout
-experiments. Run independent games in parallel, replay exact states, and compare
-action branches without a ROM or emulator. Install the package to try a Python
-rollout or play interactively.
-
-Normal use needs no [Stable Retro] installation. The Rust core provides
-deterministic gameplay through a [Gymnasium] vector interface and supports the
-documented [Stable Retro Turbo] Breakout replacement contract.
+**env-BreakoutAtari2600-turbo-native** implements Atari 2600 Breakout in Rust
+with a Python [Gymnasium] interface. Its [Stable Retro]
+[compatibility contract](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/docs/environment.md)
+supports policy transfer under matching observations, actions, and episode
+settings. Native gameplay, parallel execution, and preprocessing are designed
+to make environment stepping orders of magnitude faster than emulator-based
+environments such as [Stable Retro].
 
 <p align="center">
   <a href="https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/demo.mp4">
@@ -31,17 +29,6 @@ documented [Stable Retro Turbo] Breakout replacement contract.
     </picture>
   </a>
 </p>
-
-**Diagnostic preview:** native `0.5.13` and original [Stable Retro] `1.0.1` replay
-the same GradLab FirstWall PPO actions. The excerpt matches exactly; the full
-episode had a later parity mismatch. Playback illustrates a busy-host,
-one-lane environment throughput ratio, excluding policy inference and rendering.
-Its frame skip 2, four-frame stack, and 84×84 grayscale preprocessing follow
-the checkpoint's saved training contract. See the
-[comparison method and evidence inventory](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/docs/speed-comparison.md)
-for pixel settings, replay checks, and timing limits, or inspect the
-[media manifest](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/demo-manifest.json).
-Full-policy playback and replay archives remain local.
 
 ## Install
 
