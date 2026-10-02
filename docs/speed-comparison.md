@@ -54,7 +54,7 @@ area resizing, no last-two-frame max pooling, and a zero mask over the top 17
 rows before resizing. Observations use CHW layout. These pixel settings match
 the resolved recipe saved with the checkpoint; playback also uses frame skip 2.
 Each setting occupies its own line with `=` separators, smaller type, and more
-space between lines. The frame has no Benchmark heading or separate replay
+space between lines, in subdued slate gray. The frame has no Benchmark heading or separate replay
 frame-skip label.
 
 Playback illustrates relative environment throughput; it is not a screen
