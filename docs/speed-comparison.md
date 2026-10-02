@@ -1,9 +1,11 @@
 # Trained-policy speed comparison
 
-This document describes locally generated comparison media and evidence.
-Outputs are retained in the ignored `media/speed-comparison/` directory;
-they are not included in a GitHub checkout or the published Python package.
-The videos are `comparison.mp4`, `comparison.gif`, and `full-policy.mp4`.
+The approved comparison is the README's [animated preview](../demo.gif),
+with a [full-resolution MP4](../demo.mp4) and [media manifest](../demo-manifest.json)
+included in the repository. It uses GitHub's default dark background.
+Full-policy playback and the replay/benchmark archives remain local outputs in
+the ignored `media/speed-comparison/` directory. Those local artifacts are not
+included in a GitHub checkout or the published Python package.
 
 The comparison uses GradLab's final FirstWall PPO checkpoint, trained for
 191,561,728 steps. GradLab played the policy through its verified artifact
