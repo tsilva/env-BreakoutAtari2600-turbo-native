@@ -1,0 +1,567 @@
+{
+  "benchmark_bundle_id": "d5f9f9a4add5596f93bf7bf1998d0e4031c9252b6724aaefa734d768ddb214ed",
+  "checkpoint": {
+    "kind": "final",
+    "mlflow_url": "training-run:e10b9f9dfec247b881d2eac3979dda37",
+    "model_document_sha256": "99c37b31fcfb4b1da7b5daff88c07a4a1ee0b4b342014a15bba1cb5a8901bd3c",
+    "recipe_sha256": "e4bfc1f374fc270b787219198f0b9cae571e6694c49108ab45254deb67363016",
+    "run_id": "gradlab-2ab417e09bfa4a0c1946070089b23fe0",
+    "selection": {
+      "attempt": 1,
+      "mode": "stochastic",
+      "seed": 1000000,
+      "temperature": 1.0
+    },
+    "sha256": "dcfd8a41bcc7426ac0ef2f108d07a20f2ffb2c0c22745e6690c6065c01d5935a",
+    "step": 191561728
+  },
+  "claim_status": "diagnostic",
+  "diagnostic_disclosure_location": "README caption and docs/speed-comparison.md; user explicitly requested removal of all on-frame diagnostic marks",
+  "diagnostic_watermark": false,
+  "generator_sha256": "f7775034a9a2566d03d4189aae07722ffa0edfbc5f1dba3458d2cba39e64d655",
+  "outputs": {
+    "gif": {
+      "path": "demo.gif",
+      "probe": {
+        "format": {
+          "bit_rate": "95852",
+          "duration": "26.660000",
+          "filename": "<redacted-path>",
+          "format_long_name": "CompuServe Graphics Interchange Format (GIF)",
+          "format_name": "gif",
+          "nb_programs": 0,
+          "nb_stream_groups": 0,
+          "nb_streams": 1,
+          "probe_score": 100,
+          "size": "319429",
+          "start_time": "0.000000"
+        },
+        "streams": [
+          {
+            "avg_frame_rate": "25/2",
+            "codec_long_name": "CompuServe GIF (Graphics Interchange Format)",
+            "codec_name": "gif",
+            "codec_tag": "0x0000",
+            "codec_tag_string": "[0][0][0][0]",
+            "codec_type": "video",
+            "coded_height": 360,
+            "coded_width": 640,
+            "display_aspect_ratio": "16:9",
+            "disposition": {
+              "attached_pic": 0,
+              "captions": 0,
+              "clean_effects": 0,
+              "comment": 0,
+              "default": 0,
+              "dependent": 0,
+              "descriptions": 0,
+              "dub": 0,
+              "forced": 0,
+              "hearing_impaired": 0,
+              "karaoke": 0,
+              "lyrics": 0,
+              "metadata": 0,
+              "multilayer": 0,
+              "non_diegetic": 0,
+              "original": 0,
+              "still_image": 0,
+              "timed_thumbnails": 0,
+              "visual_impaired": 0
+            },
+            "duration": "26.660000",
+            "duration_ts": 2666,
+            "has_b_frames": 0,
+            "height": 360,
+            "index": 0,
+            "level": -99,
+            "nb_frames": "320",
+            "pix_fmt": "bgra",
+            "r_frame_rate": "12/1",
+            "sample_aspect_ratio": "1:1",
+            "start_pts": 0,
+            "start_time": "0.000000",
+            "time_base": "1/100",
+            "width": 640
+          }
+        ]
+      },
+      "sha256": "7bc302597906f02b2de134f8b62749bb3486212fb7f20b1d77c34bef957eba1f",
+      "size": 319429
+    },
+    "mp4": {
+      "path": "demo.mp4",
+      "probe": {
+        "format": {
+          "bit_rate": "216129",
+          "duration": "26.650000",
+          "filename": "<redacted-path>",
+          "format_long_name": "QuickTime / MOV",
+          "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+          "nb_programs": 0,
+          "nb_stream_groups": 0,
+          "nb_streams": 1,
+          "probe_score": 100,
+          "size": "719981",
+          "start_time": "0.000000",
+          "tags": {
+            "compatible_brands": "isomiso2avc1mp41",
+            "encoder": "Lavf62.12.101",
+            "major_brand": "isom",
+            "minor_version": "512"
+          }
+        },
+        "streams": [
+          {
+            "avg_frame_rate": "60/1",
+            "bit_rate": "210315",
+            "bits_per_raw_sample": "8",
+            "chroma_location": "left",
+            "codec_long_name": "H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10",
+            "codec_name": "h264",
+            "codec_tag": "0x31637661",
+            "codec_tag_string": "avc1",
+            "codec_type": "video",
+            "coded_height": 940,
+            "coded_width": 1672,
+            "display_aspect_ratio": "418:235",
+            "disposition": {
+              "attached_pic": 0,
+              "captions": 0,
+              "clean_effects": 0,
+              "comment": 0,
+              "default": 1,
+              "dependent": 0,
+              "descriptions": 0,
+              "dub": 0,
+              "forced": 0,
+              "hearing_impaired": 0,
+              "karaoke": 0,
+              "lyrics": 0,
+              "metadata": 0,
+              "multilayer": 0,
+              "non_diegetic": 0,
+              "original": 0,
+              "still_image": 0,
+              "timed_thumbnails": 0,
+              "visual_impaired": 0
+            },
+            "duration": "26.650000",
+            "duration_ts": 409344,
+            "extradata_size": 48,
+            "field_order": "progressive",
+            "has_b_frames": 2,
+            "height": 940,
+            "id": "0x1",
+            "index": 0,
+            "is_avc": "true",
+            "level": 42,
+            "mime_codec_string": "avc1.64002a",
+            "nal_length_size": "4",
+            "nb_frames": "1599",
+            "pix_fmt": "yuv420p",
+            "profile": "High",
+            "r_frame_rate": "60/1",
+            "sample_aspect_ratio": "1:1",
+            "start_pts": 0,
+            "start_time": "0.000000",
+            "tags": {
+              "encoder": "Lavc62.28.101 libx264",
+              "handler_name": "VideoHandler",
+              "language": "und"
+            },
+            "time_base": "1/15360",
+            "width": 1672
+          }
+        ]
+      },
+      "sha256": "523589ec390d1e100b2f33dd07ab4253c79f3a33f10964b755f45ffc3df95b62",
+      "size": 719981
+    }
+  },
+  "policy_benchmark_binding": {
+    "action_table_matches_training": true,
+    "benchmark_bundle_id": "d5f9f9a4add5596f93bf7bf1998d0e4031c9252b6724aaefa734d768ddb214ed",
+    "benchmark_shape": 1,
+    "checkpoint_sha256": "dcfd8a41bcc7426ac0ef2f108d07a20f2ffb2c0c22745e6690c6065c01d5935a",
+    "implementation_sha256": "ff406dd91e28798763ffc57c157170047245d7389cc59aff747669c30f0aab6c",
+    "model_document_sha256": "99c37b31fcfb4b1da7b5daff88c07a4a1ee0b4b342014a15bba1cb5a8901bd3c",
+    "pixel_preprocessing_matches_training": true,
+    "playback_frame_skip": 2,
+    "profile": {
+      "id": "breakout/firstwall-policy-v1",
+      "sha256": "243b46adf591999ba7547987e650cb8471c0061bdb9b80b07e5c725016140ad8"
+    },
+    "recipe_sha256": "e4bfc1f374fc270b787219198f0b9cae571e6694c49108ab45254deb67363016",
+    "schema": "turbobench.policy-derived-benchmark/v1",
+    "scope": "Environment stepping and policy-matched pixel preprocessing; policy inference, task reward shaping and context assembly excluded. Benchmark uses owned observations; training uses safe views. n_envs=1 is the comparison workload, not training batch size.",
+    "training_frame_skip": 2
+  },
+  "policy_frame_skip_guard": {
+    "benchmark": 2,
+    "passed": true,
+    "playback": 2,
+    "raw_action_cadence_verified": true,
+    "training": 2
+  },
+  "policy_training_contract": {
+    "available_modes": [
+      "training",
+      "counterfactual"
+    ],
+    "comparison_reasons": [],
+    "environment_action_note": null,
+    "evaluation_matches_training": null,
+    "frame_skip": {
+      "playback": 2,
+      "training": 2
+    },
+    "matches_training": true,
+    "mismatch_paths": [],
+    "mode": "training",
+    "policy_environment_hash": "sha256:e3305dd874a3bb9597fff2861f88d1660daba9c7d9a758a1f2ea828947f81360",
+    "requested_policy_override_paths": [],
+    "reward_clip_override": null,
+    "training_policy_environment_hash": "sha256:e3305dd874a3bb9597fff2861f88d1660daba9c7d9a758a1f2ea828947f81360"
+  },
+  "presentation": {
+    "background": {
+      "color": "#0d1117",
+      "composition": "solid FFmpeg color source behind artwork; dark artwork backdrop keyed out before gameplay overlay",
+      "gameplay_interiors": "canonical black",
+      "source": "https://raw.githubusercontent.com/primer/primitives/main/src/tokens/base/color/dark/dark.json5",
+      "style": "GitHub default dark theme flat fill",
+      "token": "bgColor-default"
+    },
+    "benchmark_context": {
+      "crop_bottom": 0,
+      "crop_mode": "mask",
+      "crop_top": 17,
+      "frame_skip": 2,
+      "frame_stack": 4,
+      "grayscale": true,
+      "layout": "chw",
+      "maxpool_last_two": false,
+      "n_envs": 1,
+      "on_frame_label": "n_envs = 1\nframeskip = 2\nframestack = 4\nresize = 84\u00d784\ngrayscale = true\nresize_algo = area\nmaxpool = false\nmask_top = 17",
+      "placement": "Vertical stack below speedup",
+      "requested_font_color": "#606975",
+      "requested_font_size_px": 16,
+      "requested_line_spacing_px": 25,
+      "resize": [
+        84,
+        84
+      ],
+      "resize_algorithm": "area"
+    },
+    "design": "User-selected arcade instrument panel: pixel typography, center ratio, colored accents, tall gameplay windows",
+    "diagnostic_label": "Removed at explicit user request; measurement classification remains diagnostic",
+    "left_label": "Stable Retro 1.0.1",
+    "policy_replay_context": {
+      "frame_skip": 2,
+      "matches_timing_frame_skip": true,
+      "matches_training": true
+    },
+    "relative_speed_label": "speedup",
+    "removed": "Model subtitle, training steps, sampling subtitle, playback multipliers, three footer lines, top-right diagnostic badge",
+    "right_label": "BreakoutAtari2600-turbo 0.5.13",
+    "speed_labels": "SPS and relative ratio only",
+    "title": "Same Policy, Same Actions"
+  },
+  "presentation_transform": {
+    "final_frame_hold_verified": true,
+    "gameplay_padding": [
+      26,
+      0
+    ],
+    "gameplay_scale": [
+      492,
+      646
+    ],
+    "gameplay_windows": [
+      [
+        104,
+        170,
+        546,
+        646
+      ],
+      [
+        1024,
+        170,
+        546,
+        646
+      ]
+    ],
+    "implementation_sha256": "313a44a3dc45b6224fcaf1372d547c2325c322b9844bf15771e5805f8e039a72",
+    "operation": "Replayed the original exact policy action excerpt; regenerated playback pacing from fresh policy-derived timing; covered illustrated windows with canonical raw replay using nearest-neighbor scaling; discarded temporary raw reference frames",
+    "original_captured_replay_hashes_exact": true,
+    "previous_manifest_sha256": "c14450e19389f9c0c294083bf634282031333c69621f0da1224763163c3e7083",
+    "selected_artwork_sha256": "e8374c62ae99014d9fd9dd48eee3a2425e511a67d3d386d80bfce14773cce575"
+  },
+  "providers": {
+    "left": {
+      "adapter": "turbo-vector-v2",
+      "artifact_sha256": "015b5dd340e31f9ec400ddabec5bea3919e4024dfa78b9f9de69cd0eab975978",
+      "build_root": null,
+      "commit": null,
+      "compatibility_lineage": "stable-retro/atari2600/breakout",
+      "diagnostic_reasons": [],
+      "distribution": "env-breakoutatari2600-turbo-native",
+      "environment_class": "BreakoutVecEnv",
+      "import_name": "env_breakoutatari2600_turbo_native",
+      "installed_lock": [
+        "cloudpickle==3.1.2",
+        "env-breakoutatari2600-turbo-native==0.5.13",
+        "farama-notifications==0.0.6",
+        "gymnasium==1.2.2",
+        "numpy==2.4.2",
+        "typing-extensions==4.16.0"
+      ],
+      "provider": "env-breakoutatari2600-turbo-native",
+      "python_minor": "3.14",
+      "release_files": [
+        {
+          "filename": "env_breakoutatari2600_turbo_native-0.5.13-cp311-abi3-macosx_11_0_arm64.whl",
+          "packagetype": "bdist_wheel",
+          "python_version": "cp311",
+          "requires_python": ">=3.11",
+          "sha256": "62c52c8448233dd40e8fcd29e0521c927d68cf9eadd349cf8925f9989ae7a839",
+          "size": 294394,
+          "upload_time": "2026-09-17T15:19:08.984642Z",
+          "url": "https://files.pythonhosted.org/packages/4c/0f/947184588a268355b365c29c9a57b3e5e4fa9e0c9f3dcbec01aeafa8bb28/env_breakoutatari2600_turbo_native-0.5.13-cp311-abi3-macosx_11_0_arm64.whl"
+        },
+        {
+          "filename": "env_breakoutatari2600_turbo_native-0.5.13-cp311-abi3-manylinux_2_28_x86_64.whl",
+          "packagetype": "bdist_wheel",
+          "python_version": "cp311",
+          "requires_python": ">=3.11",
+          "sha256": "b045b137053f62371996cbc1786b507aff9fef6a866aa894e910ca2f57f4ad23",
+          "size": 333138,
+          "upload_time": "2026-09-17T15:19:10.677020Z",
+          "url": "https://files.pythonhosted.org/packages/92/45/bcf3f3ab37de7c3d08d6cc5ee9b9c482272b7224981394a50f6d9271ded5/env_breakoutatari2600_turbo_native-0.5.13-cp311-abi3-manylinux_2_28_x86_64.whl"
+        },
+        {
+          "filename": "env_breakoutatari2600_turbo_native-0.5.13.tar.gz",
+          "packagetype": "sdist",
+          "python_version": "source",
+          "requires_python": ">=3.11",
+          "sha256": "1f2a11bf2d4455f18c3a0ded9ba79c3b26dcb2a2f8fe8f01a0d159b0e07351aa",
+          "size": 19043220,
+          "upload_time": "2026-09-17T15:19:12.094311Z",
+          "url": "https://files.pythonhosted.org/packages/80/f9/ac096e636e18b02a01466e697feee8db5b1013062664311a13182966880a/env_breakoutatari2600_turbo_native-0.5.13.tar.gz"
+        }
+      ],
+      "runtime_id": "0b3e7db257a7b01b0a84972f3c93256097bc896c6bf4399342061fb178d14a82",
+      "selected_artifact": {
+        "filename": "env_breakoutatari2600_turbo_native-0.5.13-cp311-abi3-macosx_11_0_arm64.whl",
+        "packagetype": "bdist_wheel",
+        "python_version": "cp311",
+        "sha256": "62c52c8448233dd40e8fcd29e0521c927d68cf9eadd349cf8925f9989ae7a839",
+        "size": 294394
+      },
+      "source_identity": "pypi:env-breakoutatari2600-turbo-native==0.5.13",
+      "source_kind": "pypi",
+      "tree": null,
+      "version": "0.5.13"
+    },
+    "right": {
+      "adapter": "stable-retro-scalar",
+      "artifact_sha256": "1310a4c0f9a5d6c0dc99c4412318ffd34529083abad262bad20146d1bff2366a",
+      "build_root": null,
+      "commit": null,
+      "compatibility_lineage": "1.0.1",
+      "diagnostic_reasons": [],
+      "distribution": "stable-retro",
+      "environment_class": null,
+      "import_name": "retro",
+      "installed_lock": [
+        "cloudpickle==3.1.2",
+        "farama-notifications==0.0.6",
+        "gymnasium==1.2.2",
+        "numpy==2.4.2",
+        "pyglet==1.5.31",
+        "stable-retro==1.0.1",
+        "typing-extensions==4.16.0"
+      ],
+      "provider": "stable-retro",
+      "python_minor": "3.14",
+      "release_files": [
+        {
+          "filename": "stable_retro-1.0.1-cp310-cp310-macosx_11_0_arm64.whl",
+          "packagetype": "bdist_wheel",
+          "python_version": "cp310",
+          "requires_python": "<3.15,>=3.10.0",
+          "sha256": "2f717550e97c6d7aa06ff14883734337f6da4daeb9cebfd643f898e7c0e006ce",
+          "size": 88639916,
+          "upload_time": "2026-06-25T16:55:39.992641Z",
+          "url": "https://files.pythonhosted.org/packages/fb/8d/802b91ba8ac4a62eec88887d74449a303aefdbddaa38cffb09cc43dbb439/stable_retro-1.0.1-cp310-cp310-macosx_11_0_arm64.whl"
+        },
+        {
+          "filename": "stable_retro-1.0.1-cp310-cp310-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
+          "packagetype": "bdist_wheel",
+          "python_version": "cp310",
+          "requires_python": "<3.15,>=3.10.0",
+          "sha256": "0c4fd6ae72a6c5304f770582b4a12e2192f983ad618948a03c17195fa931942c",
+          "size": 123169772,
+          "upload_time": "2026-06-25T16:55:46.480819Z",
+          "url": "https://files.pythonhosted.org/packages/4f/5a/998054c4976ec38919a69eb41e96256961e804e0352dd58d21c187d93f28/stable_retro-1.0.1-cp310-cp310-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl"
+        },
+        {
+          "filename": "stable_retro-1.0.1-cp311-cp311-macosx_11_0_arm64.whl",
+          "packagetype": "bdist_wheel",
+          "python_version": "cp311",
+          "requires_python": "<3.15,>=3.10.0",
+          "sha256": "bb562472bd44a61465676137b45f2e435d2e13593ed88c8b38e1e973bea809cc",
+          "size": 88641341,
+          "upload_time": "2026-06-25T16:55:52.673781Z",
+          "url": "https://files.pythonhosted.org/packages/f5/53/10bbd25c3a74b3f89f5714e982c839f0e70bc1a48bc3d83fc40848e2eda5/stable_retro-1.0.1-cp311-cp311-macosx_11_0_arm64.whl"
+        },
+        {
+          "filename": "stable_retro-1.0.1-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
+          "packagetype": "bdist_wheel",
+          "python_version": "cp311",
+          "requires_python": "<3.15,>=3.10.0",
+          "sha256": "4ddabe781fb9bc2d1011ccd04f2684a59d69ce270da82bb5ae6e9a17e9ef4518",
+          "size": 123192466,
+          "upload_time": "2026-06-25T16:56:00.315973Z",
+          "url": "https://files.pythonhosted.org/packages/b1/45/982c2c0e0dc4e7297002a096ee8570381e5063f5c376ed1352ca34185735/stable_retro-1.0.1-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl"
+        },
+        {
+          "filename": "stable_retro-1.0.1-cp312-cp312-macosx_11_0_arm64.whl",
+          "packagetype": "bdist_wheel",
+          "python_version": "cp312",
+          "requires_python": "<3.15,>=3.10.0",
+          "sha256": "07e62a3a1a6733bbf39540fb7ffbcf3c5bcf488f59d588a39d3febc9fb4d19dc",
+          "size": 88644174,
+          "upload_time": "2026-06-25T16:56:06.801119Z",
+          "url": "https://files.pythonhosted.org/packages/68/fa/281c7370d176f98979fb7ab0739c8eb88fb1a0086237983f13d741f880af/stable_retro-1.0.1-cp312-cp312-macosx_11_0_arm64.whl"
+        },
+        {
+          "filename": "stable_retro-1.0.1-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
+          "packagetype": "bdist_wheel",
+          "python_version": "cp312",
+          "requires_python": "<3.15,>=3.10.0",
+          "sha256": "53c180f930b7bafed248064b8467773b980a37bb5b6555f0717c8555143c9d6f",
+          "size": 123169757,
+          "upload_time": "2026-06-25T16:56:14.219718Z",
+          "url": "https://files.pythonhosted.org/packages/67/3d/5016f99a3c48ed0d25e3faae63651f811ea8abc9efa3e8a6905896969416/stable_retro-1.0.1-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl"
+        },
+        {
+          "filename": "stable_retro-1.0.1-cp313-cp313-macosx_11_0_arm64.whl",
+          "packagetype": "bdist_wheel",
+          "python_version": "cp313",
+          "requires_python": "<3.15,>=3.10.0",
+          "sha256": "8a06e8158a82dd4df35b1a5bdcbb6164bad645572b1a10a701a76e6e9700e0fa",
+          "size": 88644133,
+          "upload_time": "2026-06-25T16:56:20.748257Z",
+          "url": "https://files.pythonhosted.org/packages/ab/7a/86359bef7042d8d50fdf0a2b1c6d36ae389222098bd9e75059caadac82c5/stable_retro-1.0.1-cp313-cp313-macosx_11_0_arm64.whl"
+        },
+        {
+          "filename": "stable_retro-1.0.1-cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
+          "packagetype": "bdist_wheel",
+          "python_version": "cp313",
+          "requires_python": "<3.15,>=3.10.0",
+          "sha256": "e3c21bc31c5ad623d9700d56b9dd688f39592bc21c66f24cf59dfdf07b03b466",
+          "size": 123169478,
+          "upload_time": "2026-06-25T16:56:27.160994Z",
+          "url": "https://files.pythonhosted.org/packages/ed/6c/24d714948c79602dd0b6c11bfc1a7ce336c98cb0d7d709954499471876a6/stable_retro-1.0.1-cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl"
+        },
+        {
+          "filename": "stable_retro-1.0.1-cp314-cp314-macosx_11_0_arm64.whl",
+          "packagetype": "bdist_wheel",
+          "python_version": "cp314",
+          "requires_python": "<3.15,>=3.10.0",
+          "sha256": "8e6dabfff055a29a3d92142f8d417cc18811c6aa03de5af3fdbe743c30f94e0e",
+          "size": 88642986,
+          "upload_time": "2026-06-25T16:56:33.668675Z",
+          "url": "https://files.pythonhosted.org/packages/e0/94/7e18511874dcc02d2e79cabc17b71e7b7ac673de1d4e072973421790c6b4/stable_retro-1.0.1-cp314-cp314-macosx_11_0_arm64.whl"
+        },
+        {
+          "filename": "stable_retro-1.0.1-cp314-cp314-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
+          "packagetype": "bdist_wheel",
+          "python_version": "cp314",
+          "requires_python": "<3.15,>=3.10.0",
+          "sha256": "4451c5f8209dbdbf343d29ab028ec7d40d28b9c7459ac4e632be990bc2f1eac3",
+          "size": 123166102,
+          "upload_time": "2026-06-25T16:56:40.640049Z",
+          "url": "https://files.pythonhosted.org/packages/9c/d6/4237309bb37190669e533fd0f1f00cb46acd7862aa054243d0392e772208/stable_retro-1.0.1-cp314-cp314-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl"
+        },
+        {
+          "filename": "stable_retro-1.0.1.tar.gz",
+          "packagetype": "sdist",
+          "python_version": "source",
+          "requires_python": "<3.15,>=3.10.0",
+          "sha256": "68c43f2211f6314dc0727c2ad6cdefcc1c8621b7a38516c5afe15b523f3efcac",
+          "size": 152994540,
+          "upload_time": "2026-06-25T16:56:48.412455Z",
+          "url": "https://files.pythonhosted.org/packages/c2/70/44a58c6fe81aec4d83d85b9ed3d774aebc6e9fb8d81ea3542ea320ecebbb/stable_retro-1.0.1.tar.gz"
+        }
+      ],
+      "runtime_id": "0f28251f4257d6eebea5c1910d565015aec0d50f7ba484854119aff8ecfab6cc",
+      "selected_artifact": {
+        "filename": "stable_retro-1.0.1-cp314-cp314-macosx_11_0_arm64.whl",
+        "packagetype": "bdist_wheel",
+        "python_version": "cp314",
+        "sha256": "8e6dabfff055a29a3d92142f8d417cc18811c6aa03de5af3fdbe743c30f94e0e",
+        "size": 88642986
+      },
+      "source_identity": "pypi:stable-retro==1.0.1",
+      "source_kind": "pypi",
+      "tree": null,
+      "version": "1.0.1"
+    }
+  },
+  "replay": {
+    "action_stream_sha256": "ae94c6d9788bbb19c758284be1009464331fc0b428db17e3627d7067b3008467",
+    "cross_provider_gate": {
+      "completion_step": 1800,
+      "first_mismatches": [],
+      "frame_count": 5914,
+      "mismatch_count": 0,
+      "passed": true
+    },
+    "final_lives": 4,
+    "final_score": 429,
+    "frame_count": 5914,
+    "full_episode": {
+      "first_raw_frame_difference": 5914,
+      "full_cross_provider_gate_passed": false,
+      "native_lives": 3,
+      "native_outcome": "SUCCESS",
+      "native_score": 432,
+      "policy_decisions": 4139,
+      "reference_lives": 0,
+      "reference_outcome": "provider terminated",
+      "reference_score": 431
+    },
+    "left_frame_hashes_sha256": "341be406e9a450a74067ee9352141008bd150cfd69db05f92b7f5c1238944565",
+    "policy_decisions": 2946,
+    "policy_frame_gate_passed": true,
+    "raw_actions": 5913,
+    "reset_noop_prefix": 21,
+    "right_frame_hashes_sha256": "341be406e9a450a74067ee9352141008bd150cfd69db05f92b7f5c1238944565",
+    "termination": "Excerpt before first full-episode parity mismatch",
+    "walls_cleared": 0
+  },
+  "schema": "turbobench.readme-media/v1",
+  "source_media_manifest_sha256": "9fab0f47bb1c391b378358e3853a7715fe96c5248eb8a946aaf6d59d5d18cc2e",
+  "timing": {
+    "common_playback_compression": 4.0,
+    "disclosure": "Fresh diagnostic one-lane environment benchmark with the policy training frame skip and pixel preprocessing. Policy inference, context assembly and task reward shaping excluded; owned benchmark observations versus safe-view training observations. Playback illustrates relative throughput, not wall-clock execution.",
+    "faster_final_frame_hold": true,
+    "faster_playback_multiplier": 140.521531544384,
+    "full_policy_final_frame_hold_seconds": 2,
+    "median_native_sps": 38935.60993089234,
+    "median_reference_sps": 1097.2678673034536,
+    "paired_95_percent_ci": [
+      33.22123644075285,
+      37.42963696548599
+    ],
+    "ratio": 35.130382886096,
+    "slower_final_frame_hold_seconds": 2,
+    "slower_playback_multiplier": 4.0
+  },
+  "timing_profile": {
+    "id": "breakout/firstwall-policy-v1",
+    "sha256": "243b46adf591999ba7547987e650cb8471c0061bdb9b80b07e5c725016140ad8"
+  }
+}

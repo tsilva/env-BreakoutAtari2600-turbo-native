@@ -24,6 +24,12 @@ Stable Retro installation. A Rust core provides deterministic gameplay through
 a Gymnasium vector interface and supports the documented Stable Retro Turbo
 Breakout replacement contract.
 
+<p align="center">
+  <a href="https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/demo.mp4">
+    <img src="https://raw.githubusercontent.com/tsilva/env-BreakoutAtari2600-turbo-native/main/demo.gif" alt="Same Policy, Same Actions: Stable Retro and BreakoutAtari2600-turbo replaying a trained policy, with a diagnostic 35.13× environment speedup" width="800" />
+  </a>
+</p>
+
 The comparison uses actions sampled from GradLab's trained FirstWall PPO model
 in native `0.5.13` and original Stable Retro `1.0.1`. The excerpt matches exactly;
 playback illustrates TurboBench's diagnostic one-lane throughput ratio.
@@ -33,7 +39,9 @@ preprocessing follow the policy's saved training recipe.
 Policy playback and future renders must preserve the checkpoint's saved training
 environment contract.
 **Diagnostic preview:** timing used a busy host, and the full episode exposed a
-later parity mismatch. Videos and replay archives are retained locally.
+later parity mismatch. [Watch the video](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/demo.mp4)
+or inspect its [media manifest](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/demo-manifest.json).
+Full-policy playback and replay archives are retained locally.
 See the [comparison method and evidence inventory](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/docs/speed-comparison.md)
 for the workload, limitations, and verification procedure.
 
