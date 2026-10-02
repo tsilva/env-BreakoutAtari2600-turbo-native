@@ -18,7 +18,39 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  validate:
+    name: Validate release source before parity
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Validate immutable ref
+        env:
+          RELEASE_SHA: ${{ inputs.ref }}
+        run: '[[ "$RELEASE_SHA" =~ ^[0-9a-f]{40}$ ]]'
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+          ref: ${{ inputs.ref }}
+      - name: Require current main candidate
+        env:
+          RELEASE_SHA: ${{ inputs.ref }}
+        run: |
+          git fetch origin main
+          test "$(git rev-parse HEAD)" = "$RELEASE_SHA"
+          test "$(git rev-parse origin/main)" = "$RELEASE_SHA"
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.13"
+      - uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
+        with:
+          version: "0.11.13"
+      - name: Install locked release environment
+        run: uv sync --locked --extra dev
+      - name: Validate lock, metadata, source, and native tests
+        run: .venv/bin/python scripts/release.py check
+
   evidence:
+    needs: validate
     name: Certify exact final wheel
     runs-on: macos-15
     environment: oracle
