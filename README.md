@@ -13,15 +13,15 @@
   <a href="https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/LICENSE"><img src="https://img.shields.io/pypi/l/env-breakoutatari2600-turbo-native.svg" alt="MIT license" /></a>
 </p>
 
-breakout-native is a Python library for reinforcement-learning researchers and
-engineers running Atari 2600 Breakout experiments. Run independent games in
-parallel, replay exact states, and compare action branches without a ROM or
-emulator. Install the package to try a Python rollout or play interactively.
+**env-BreakoutAtari2600-turbo-native** (breakout-native) is a Python library for
+reinforcement-learning researchers and engineers running Atari 2600 Breakout
+experiments. Run independent games in parallel, replay exact states, and compare
+action branches without a ROM or emulator. Install the package to try a Python
+rollout or play interactively.
 
-The project env-BreakoutAtari2600-turbo-native is ROM-free; normal use also needs
-no Stable Retro installation. Its Rust core provides deterministic gameplay
-through a Gymnasium vector interface and supports the documented Stable Retro
-Turbo Breakout replacement contract.
+Normal use needs no [Stable Retro] installation. The Rust core provides
+deterministic gameplay through a [Gymnasium] vector interface and supports the
+documented [Stable Retro Turbo] Breakout replacement contract.
 
 <p align="center">
   <a href="https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/demo.mp4">
@@ -32,7 +32,7 @@ Turbo Breakout replacement contract.
   </a>
 </p>
 
-**Diagnostic preview:** native `0.5.13` and original Stable Retro `1.0.1` replay
+**Diagnostic preview:** native `0.5.13` and original [Stable Retro] `1.0.1` replay
 the same GradLab FirstWall PPO actions. The excerpt matches exactly; the full
 episode had a later parity mismatch. Playback illustrates a busy-host,
 one-lane environment throughput ratio, excluding policy inference and rendering.
@@ -109,7 +109,7 @@ not a matched performance comparison or an agent learning result.
 The module-qualified ID registers the vector factory; `BreakoutVecEnv` is also
 available for direct use. The
 [environment reference](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/docs/environment.md)
-covers Stable Retro Turbo compatibility, filtered actions, policy signals,
+covers [Stable Retro Turbo] compatibility, filtered actions, policy signals,
 snapshots, and branching. See its
 [info-filtering examples](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/docs/environment.md#info-filtering)
 for the visible brick grid and initial-layout flag, or the
@@ -137,8 +137,8 @@ safely. Local runs disable W&B and checkpoint evaluation by default.
 Install uv and Rust (the repository pins its toolchain), then run:
 
 ```bash
-git clone https://github.com/tsilva/env-BreakoutAtari2600-turbo-native.git
-cd env-BreakoutAtari2600-turbo-native
+git clone https://github.com/tsilva/env-BreakoutAtari2600-turbo-native.git breakout-native
+cd breakout-native
 uv sync --locked --extra dev --extra play
 make develop-release
 ```
@@ -168,7 +168,7 @@ for `make parity` prerequisites and wheel certification.
   for the established multi-game Atari benchmark. Compare results only when game
   settings, observations, actions, rewards, and reset rules match.
 - The [v0.5.15 parity receipt](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/releases/download/v0.5.15/turbobench-parity-receipt.tar.gz)
-  records canonical `Start` checks against pinned original Stable Retro for its
+  records canonical `Start` checks against pinned original [Stable Retro] for its
   exact final wheel. It measures neither throughput nor equivalence with ALE.
 - Autoreset is disabled. Reset terminal lanes before stepping again; a Boolean
   `reset_mask` leaves unselected lanes unchanged. The policy must issue FIRE
@@ -182,7 +182,7 @@ for `make parity` prerequisites and wheel certification.
   retaining observations across environment calls.
 - Serialized snapshots require the same package version and compatible
   configuration. Live snapshot handles belong to their originating environment.
-- Canonical `Start` parity uses pinned original Stable Retro through TurboBench
+- Canonical `Start` parity uses pinned original [Stable Retro] through TurboBench
   and requires a separately obtained lawful ROM. The package distributes no
   ROM, provider save state, recorded reference frame, or extracted game asset.
 - This is a `0.x` community preview. Read the
@@ -200,4 +200,8 @@ for `make parity` prerequisites and wheel certification.
 
 [MIT](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/LICENSE).
 See [third-party notices](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/THIRD_PARTY_NOTICES.md)
-for Atari, Stable Retro, ROM, and trademark boundaries.
+for Atari, [Stable Retro], ROM, and trademark boundaries.
+
+[Gymnasium]: https://gymnasium.farama.org/
+[Stable Retro]: https://stable-retro.farama.org/
+[Stable Retro Turbo]: https://github.com/tsilva/env-StableRetro-turbo
