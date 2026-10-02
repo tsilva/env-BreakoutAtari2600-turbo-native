@@ -122,14 +122,12 @@ for a longer loop with selective resets and a local throughput measurement.
   [Stable Retro Turbo] compatibility, and the optional Stable-Baselines3 adapter.
 - [Performance comparison](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/docs/speed-comparison.md)
   and [release validation](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/docs/release-validation.md):
-  timing methodology, parity evidence, and validation limits.
+  timing methodology, parity evidence, validation limits, and evidence ownership.
 - [Contributing](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/CONTRIBUTING.md):
   source setup, development commands, and tests.
 - [Support](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/SUPPORT.md)
   and [changelog](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/CHANGELOG.md):
   installation help, supported platforms, and changes during the `0.x` community preview.
-- [Specification compliance](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/docs/specification-compliance.md):
-  requirements and their validation evidence.
 
 ## Architecture
 
