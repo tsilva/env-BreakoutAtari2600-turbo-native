@@ -43,6 +43,7 @@ plays the complete episode at 4× in about 36.58 seconds.
 The selected arcade frame uses pixel typography, a central relative-speed
 readout, and the Atari brick colors. Its illustrated game interiors are fully
 covered by the verified replay, scaled with nearest-neighbor interpolation.
+The outer background is dark navy blue; gameplay interiors remain canonical black.
 The MP4 is 1672×940 at 60 fps; the README preview loops at 640×360.
 Built-in image generation updated the selected artwork's numeric labels and
 settings text. The exact edit prompt is saved in the policy archive at
