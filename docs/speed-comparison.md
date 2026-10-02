@@ -53,6 +53,9 @@ environment, frame skip 2, frame stack 4, and 84×84 grayscale observations with
 area resizing, no last-two-frame max pooling, and a zero mask over the top 17
 rows before resizing. Observations use CHW layout. These pixel settings match
 the resolved recipe saved with the checkpoint; playback also uses frame skip 2.
+Each setting occupies its own line with `=` separators, smaller type, and more
+space between lines. The frame has no Benchmark heading or separate replay
+frame-skip label.
 
 Playback illustrates relative environment throughput; it is not a screen
 recording of execution time. Policy inference, rendering, and encoding are
@@ -169,6 +172,14 @@ Require matching frame skip, frame stack, crop/mask, resizing, grayscale, max
 pooling, sticky actions, action table, reset behavior, and policy inputs for
 playback. Verify the playback contract against training before rendering.
 Derive benchmark pixel settings from that same recipe and fail on a mismatch.
+TurboBench's `require_policy_frame_skip` guard runs before benchmarking or
+rendering this policy. It rejects a mismatch between the saved training recipe,
+captured training/playback contract, policy decision cadence, benchmark, or
+render action-stream metadata. It also checks that the expanded raw actions
+repeat each recorded policy decision exactly the training number of frames
+and end at a complete decision boundary. Raw-frame rendering itself advances
+one frame per expanded action; this preserves the policy's two-frame cadence.
+The selected artwork's frame-skip value must match the same validated value.
 Document deliberate workload or timing-boundary differences, including lane
 count, thread count, buffer ownership, and excluded wrappers; never describe
 an environment-only benchmark as the full policy pipeline. If required policy
