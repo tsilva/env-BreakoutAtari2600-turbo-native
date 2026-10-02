@@ -1,104 +1,107 @@
 from __future__ import annotations
 
-import datetime
 import importlib.util
+import subprocess
 from pathlib import Path
 
 import pytest
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
-SCRIPT = REPO_ROOT / "scripts" / "release_notes.py"
+SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "release_notes.py"
 
 
 def release_notes_module():
     spec = importlib.util.spec_from_file_location("release_notes", SCRIPT)
-    assert spec is not None
-    assert spec.loader is not None
+    assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
 
 
-def test_extract_release_notes_returns_only_selected_section():
+def git(root, *args):
+    return subprocess.check_output(["git", *args], cwd=root, text=True).strip()
+
+
+@pytest.fixture
+def repository(tmp_path):
+    git(tmp_path, "init", "-q")
+    git(tmp_path, "config", "user.name", "Release test")
+    git(tmp_path, "config", "user.email", "release-test@example.invalid")
+    git(tmp_path, "commit", "--allow-empty", "-qm", "Initial release")
+    git(tmp_path, "tag", "v1.0.0")
+    return tmp_path
+
+
+def test_notes_cover_previous_release_to_exact_commit_without_changelog(repository):
     module = release_notes_module()
-    changelog = "# Changelog\n\n## [2.0.0] - now\n\nNew.\n\n## [1.0.0] - then\n\nOld.\n"
+    git(repository, "commit", "--allow-empty", "-qm", "Fix selective resets")
+    selected = git(repository, "rev-parse", "HEAD")
+    git(repository, "commit", "--allow-empty", "-qm", "Later unrelated change")
 
-    assert module.extract_release_notes(changelog, "2.0.0") == "New."
-    assert module.extract_release_notes(changelog, "1.0.0") == "Old."
-    with pytest.raises(ValueError, match="no section"):
-        module.extract_release_notes(changelog, "3.0.0")
+    notes = module.generate_notes(repository, "1.1.0", ref=selected)
+
+    assert "Fix selective resets" in notes
+    assert "Initial release" not in notes
+    assert "Later unrelated change" not in notes
+    assert not (repository / "CHANGELOG.md").exists()
 
 
-def test_extract_release_notes_rejects_empty_or_heading_only_sections():
+def test_notes_exclude_target_tag_and_release_commits(repository):
     module = release_notes_module()
+    git(repository, "commit", "--allow-empty", "-qm", "Add rendering")
+    git(repository, "commit", "--allow-empty", "-qm", "Add rendering")
+    git(repository, "commit", "--allow-empty", "-qm", "Release v1.1.0")
+    git(repository, "tag", "v1.1.0")
 
-    for body in ("", "### Changed"):
-        changelog = f"# Changelog\n\n## [2.0.0] - now\n\n{body}\n"
-        with pytest.raises(ValueError, match="section for 2.0.0.*empty"):
-            module.extract_release_notes(changelog, "2.0.0")
+    notes = module.generate_notes(repository, "1.1.0")
+
+    assert notes.count("Add rendering") == 1
+    assert "Release v1.1.0" not in notes
 
 
-def test_extract_release_notes_rejects_duplicate_sections():
+def test_notes_support_project_tag_prefix(repository):
     module = release_notes_module()
-    changelog = (
-        "# Changelog\n\n"
-        "## [2.0.0] - now\n\n- First.\n\n"
-        "## [2.0.0] - earlier\n\n- Duplicate.\n"
+    git(repository, "tag", "project-v1.0.0")
+    git(repository, "commit", "--allow-empty", "-qm", "Fix playback")
+
+    assert "Fix playback" in module.generate_notes(
+        repository, "1.1.0", tag_prefix="project-v"
     )
 
-    with pytest.raises(ValueError, match="multiple sections"):
-        module.extract_release_notes(changelog, "2.0.0")
 
-
-def test_finalize_changelog_promotes_unreleased_notes_and_adds_compare_link():
+def test_empty_change_range_requires_reviewed_notes(repository):
     module = release_notes_module()
-    changelog = (
-        "# Changelog\n\n"
-        "## Unreleased\n\n"
-        "### Added\n\n"
-        "- New behavior.\n\n"
-        "## [1.0.0] - earlier\n\n"
-        "- Old behavior.\n\n"
-        "[1.0.0]: https://example.test/v1.0.0\n"
-    )
 
-    result = module.finalize_changelog(
-        changelog,
-        "1.1.0",
-        datetime.date(2026, 7, 20),
-        "1.0.0",
-    )
-
-    assert "## Unreleased\n\n## [1.1.0] - 2026-07-20" in result
-    assert module.extract_release_notes(result, "1.1.0") == (
-        "### Added\n\n- New behavior."
-    )
-    assert "[1.1.0]: https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/compare/v1.0.0...v1.1.0" in result
+    with pytest.raises(ValueError, match="no releasable commits"):
+        module.generate_notes(repository, "1.1.0")
 
 
-def test_finalize_changelog_rejects_empty_unreleased_without_changes():
+def test_shallow_history_is_rejected(repository, tmp_path_factory):
     module = release_notes_module()
-    changelog = "# Changelog\n\n## Unreleased\n\n### Changed\n"
-
-    with pytest.raises(ValueError, match="Unreleased.*empty"):
-        module.finalize_changelog(
-            changelog,
-            "1.1.0",
-            datetime.date(2026, 7, 20),
-            "1.0.0",
-        )
-
-
-def test_finalize_changelog_accepts_prepared_release_section():
-    module = release_notes_module()
-    changelog = "# Changelog\n\n## Unreleased\n\n## [1.1.0] - now\n\n- Ready.\n"
-
-    assert (
-        module.finalize_changelog(
-            changelog,
-            "1.1.0",
-            datetime.date(2026, 7, 20),
-            "1.0.0",
-        )
-        == changelog
+    shallow = tmp_path_factory.mktemp("shallow") / "checkout"
+    subprocess.run(
+        ["git", "clone", "-q", "--depth=1", repository.as_uri(), str(shallow)],
+        check=True,
     )
+
+    with pytest.raises(ValueError, match="full Git history"):
+        module.generate_notes(shallow, "1.1.0")
+
+
+def test_cli_accepts_reviewed_notes_without_changing_repository(repository, capsys):
+    module = release_notes_module()
+    reviewed = repository / "reviewed.txt"
+    reviewed.write_text("### Fixed\n\n- Preserve terminal observations.\n")
+    before = git(repository, "status", "--porcelain")
+
+    module.main(["--version", "1.1.0", "--notes-file", str(reviewed)])
+
+    assert "Preserve terminal observations" in capsys.readouterr().out
+    assert git(repository, "status", "--porcelain") == before
+
+
+@pytest.mark.parametrize(
+    "notes", ["", "## Fixed\n", "<!-- pending -->\n", "<!--\npending\n-->", "- \n"]
+)
+def test_reviewed_notes_require_meaningful_content(notes):
+    with pytest.raises(ValueError, match="meaningful text"):
+        release_notes_module().validate_notes(notes)

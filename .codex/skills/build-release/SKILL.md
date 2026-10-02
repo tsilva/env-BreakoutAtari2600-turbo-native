@@ -75,8 +75,8 @@ python3 scripts/release.py prepare
 
 With no explicit target, `prepare` resolves the next patch version. Use
 `prepare --to <version>` or `prepare --part minor|major|patch` only when the
-user explicitly chose that target. This edits only changelog and version
-metadata, checks version consistency, notes, lock policy, unused tag/PyPI
+user explicitly chose that target. This edits only version metadata and
+checks version consistency, generated notes, lock policy, unused tag/PyPI
 version, and preservation of the third-party dependency graph. It does not
 compile or install the package. GitHub runs `scripts/release.py check` as a
 mandatory dependency of parity certification and again for the candidate.

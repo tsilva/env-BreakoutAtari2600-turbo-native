@@ -1,121 +1,99 @@
 #!/usr/bin/env python3
-"""Finalize and extract one release's human-readable changelog notes."""
+"""Generate release-note drafts from Git without a checked-in changelog.
+
+Canonical helper: release-workflow/scripts/release_notes.py. Portable copies
+may be bundled by projects whose CI needs commit-based notes before publishing.
+"""
 
 from __future__ import annotations
 
 import argparse
-import datetime
 import re
+import subprocess
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
-CHANGELOG_PATH = REPO_ROOT / "CHANGELOG.md"
-REPOSITORY_URL = "https://github.com/tsilva/env-BreakoutAtari2600-turbo-native"
+
+def capture(root: Path, *args: str) -> str:
+    return subprocess.check_output(["git", *args], cwd=root, text=True).strip()
 
 
-def _section_body(changelog: str, heading: re.Match[str]) -> tuple[str, int]:
-    next_section = re.search(
-        r"^(?:## |\[[^]]+\]:)", changelog[heading.end() :], re.MULTILINE
-    )
-    end = (
-        heading.end() + next_section.start()
-        if next_section is not None
-        else len(changelog)
-    )
-    return changelog[heading.end() : end].strip(), end
+def validate_notes(notes: str) -> str:
+    visible = re.sub(r"<!--.*?-->", "", notes, flags=re.DOTALL)
+    prose = [
+        line.strip()
+        for line in visible.splitlines()
+        if line.strip() and not line.lstrip().startswith("#")
+    ]
+    if not any(character.isalnum() for line in prose for character in line):
+        raise ValueError("release notes must contain meaningful text")
+    return notes.strip() + "\n"
 
 
-def _require_meaningful_notes(body: str, label: str) -> None:
-    has_prose = any(
-        line.strip() and not line.lstrip().startswith("#")
-        for line in body.splitlines()
-    )
-    if not has_prose:
-        raise ValueError(f"CHANGELOG.md {label} section is empty")
-
-
-def extract_release_notes(changelog: str, version: str) -> str:
-    heading = re.compile(rf"^## \[{re.escape(version)}\].*$", re.MULTILINE)
-    matches = list(heading.finditer(changelog))
-    if not matches:
-        raise ValueError(f"CHANGELOG.md has no section for {version}")
-    if len(matches) != 1:
-        raise ValueError(f"CHANGELOG.md has multiple sections for {version}")
-    body, _ = _section_body(changelog, matches[0])
-    _require_meaningful_notes(body, f"section for {version}")
-    return body
-
-
-def finalize_changelog(
-    changelog: str,
-    version: str,
-    release_date: datetime.date,
-    previous_version: str | None,
+def generate_notes(
+    root: Path, version: str, *, ref: str = "HEAD", tag_prefix: str = "v"
 ) -> str:
-    """Promote human-authored Unreleased notes to an immutable release section."""
-    release_heading = re.compile(rf"^## \[{re.escape(version)}\].*$", re.MULTILINE)
-    existing_releases = list(release_heading.finditer(changelog))
-    if existing_releases:
-        extract_release_notes(changelog, version)
-        return changelog
-
-    unreleased_matches = list(re.finditer(r"^## Unreleased\s*$", changelog, re.MULTILINE))
-    if len(unreleased_matches) != 1:
-        raise ValueError(
-            "CHANGELOG.md must contain exactly one '## Unreleased' section"
+    if capture(root, "rev-parse", "--is-shallow-repository") == "true":
+        raise ValueError("release notes require full Git history and release tags")
+    commit = capture(root, "rev-parse", "--verify", f"{ref}^{{commit}}")
+    try:
+        previous = capture(
+            root,
+            "describe",
+            "--tags",
+            "--abbrev=0",
+            "--match",
+            f"{tag_prefix}[0-9]*",
+            "--exclude",
+            f"{tag_prefix}{version}",
+            commit,
         )
-    unreleased = unreleased_matches[0]
-    body, section_end = _section_body(changelog, unreleased)
-    _require_meaningful_notes(body, "Unreleased")
-
-    promoted = (
-        f"## Unreleased\n\n"
-        f"## [{version}] - {release_date.isoformat()}\n\n"
-        f"{body}\n\n"
+    except subprocess.CalledProcessError:
+        previous = None
+    revision = f"{previous}..{commit}" if previous else commit
+    subjects = capture(root, "log", "--reverse", "--format=%s", revision).splitlines()
+    changes = list(
+        dict.fromkeys(
+            subject.strip()
+            for subject in subjects
+            if subject.strip()
+            and not subject.startswith(("Release ", "Bump version to "))
+        )
     )
-    result = changelog[: unreleased.start()] + promoted + changelog[section_end:]
-
-    link = (
-        f"[{version}]: {REPOSITORY_URL}/compare/v{previous_version}...v{version}"
-        if previous_version is not None
-        else f"[{version}]: {REPOSITORY_URL}/releases/tag/v{version}"
+    if not changes:
+        raise ValueError(
+            "no releasable commits found; supply reviewed notes with --notes-file"
+        )
+    return validate_notes(
+        "## Changes\n\n" + "\n".join(f"- {subject}" for subject in changes)
     )
-    link_heading = re.compile(rf"^\[{re.escape(version)}\]:", re.MULTILINE)
-    if link_heading.search(result) is None:
-        first_link = re.search(r"^\[[^]]+\]:", result, re.MULTILINE)
-        if first_link is None:
-            result = result.rstrip() + f"\n\n{link}\n"
-        else:
-            result = result[: first_link.start()] + f"{link}\n" + result[first_link.start() :]
-    return result
 
 
-def main(argv=None) -> None:
+def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--repo-path", type=Path, default=Path.cwd())
     parser.add_argument("--version", required=True)
+    parser.add_argument("--ref", default="HEAD")
+    parser.add_argument("--tag-prefix", default="v")
     parser.add_argument(
-        "--finalize",
-        action="store_true",
-        help="Promote the Unreleased section to the requested version before extracting it",
-    )
-    parser.add_argument("--previous-version")
-    parser.add_argument(
-        "--date",
-        type=datetime.date.fromisoformat,
-        default=datetime.date.today(),
-        help="Release date used with --finalize (ISO 8601)",
+        "--notes-file",
+        type=Path,
+        help="Use reviewed notes instead of generating a draft",
     )
     args = parser.parse_args(argv)
-    changelog = CHANGELOG_PATH.read_text(encoding="utf-8")
-    if args.finalize:
-        changelog = finalize_changelog(
-            changelog,
-            args.version,
-            args.date,
-            args.previous_version,
+    try:
+        notes = (
+            validate_notes(args.notes_file.read_text(encoding="utf-8"))
+            if args.notes_file
+            else generate_notes(
+                args.repo_path,
+                args.version,
+                ref=args.ref,
+                tag_prefix=args.tag_prefix,
+            )
         )
-        CHANGELOG_PATH.write_text(changelog, encoding="utf-8")
-    print(extract_release_notes(changelog, args.version))
+    except ValueError as error:
+        parser.error(str(error))
+    print(notes, end="")
 
 
 if __name__ == "__main__":

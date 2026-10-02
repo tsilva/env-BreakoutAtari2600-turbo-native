@@ -24,7 +24,6 @@ CARGO_PACKAGE_NAME = "env-breakoutatari2600-turbo-native"
 ALLOWED_RELEASE_FILES = {
     "Cargo.lock",
     "Cargo.toml",
-    "CHANGELOG.md",
     "CITATION.cff",
     "VERSION.txt",
     "pyproject.toml",
@@ -96,24 +95,6 @@ def target_version(args: argparse.Namespace) -> str:
         version = helper_capture("resolve-version", "--part", "patch").splitlines()[-1]
     helper("check-pypi", "--version", version)
     return version
-
-
-def previous_release_version() -> str | None:
-    try:
-        tag = capture(["git", "describe", "--tags", "--abbrev=0"])
-    except subprocess.CalledProcessError:
-        return None
-    if not tag.startswith("v"):
-        raise SystemExit(f"latest release tag must start with 'v': {tag}")
-    return tag.removeprefix("v")
-
-
-def finalize_release_notes(version: str) -> None:
-    command = [str(PYTHON), str(RELEASE_NOTES), "--version", version, "--finalize"]
-    previous_version = previous_release_version()
-    if previous_version is not None:
-        command.extend(["--previous-version", previous_version])
-    run(command)
 
 
 def validate_release_notes(version: str) -> None:
@@ -251,7 +232,6 @@ def prepare(args: argparse.Namespace) -> None:
         raise SystemExit(f"release tag v{version} already exists")
     graph_before = dependency_graph_snapshot()
     if not args.resume:
-        finalize_release_notes(version)
         helper("bump-version", "--to", version, "--write")
     helper("check-version", "--version", version)
     helper("check-lock-policy")

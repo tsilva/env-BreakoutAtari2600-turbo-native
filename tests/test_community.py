@@ -13,7 +13,6 @@ COMMUNITY_FILES = (
     "CODE_OF_CONDUCT.md",
     "SECURITY.md",
     "SUPPORT.md",
-    "CHANGELOG.md",
     "CITATION.cff",
     ".github/ISSUE_TEMPLATE/bug_report.yml",
     ".github/ISSUE_TEMPLATE/feature_request.yml",
@@ -64,7 +63,9 @@ def test_readme_uses_pypi_safe_images_and_local_links_resolve():
 
     readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
     assert 'src="./' not in readme
-    assert "raw.githubusercontent.com/tsilva/env-BreakoutAtari2600-turbo-native" in readme
+    assert (
+        "raw.githubusercontent.com/tsilva/env-BreakoutAtari2600-turbo-native" in readme
+    )
 
     for markdown_path in markdown_paths:
         text = markdown_path.read_text(encoding="utf-8")

@@ -320,7 +320,7 @@ restoration.
   for the established multi-game Atari benchmark. Compare results only when
   game settings, observations, actions, rewards, and reset rules match.
 - The API is community-preview software under a `0.x` version. Minor releases
-  may change documented public APIs and will record changes in the changelog.
+  may change documented public APIs and will record changes in GitHub Releases.
 - The only supported distributions are Apple-silicon macOS and x86-64 Linux.
 - The canonical `Start` state targets exact Stable Retro Turbo cartridge parity. Other layouts
   deliberately change only the brick mask.
