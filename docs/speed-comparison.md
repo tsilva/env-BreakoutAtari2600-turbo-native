@@ -1,6 +1,6 @@
 # Trained-policy speed comparison
 
-The approved comparison is the README's [animated preview](../demo.gif),
+The approved comparison is the README's [animated WebP preview](../demo.webp),
 with a [full-resolution MP4](../demo.mp4) and [media manifest](../demo-manifest.json)
 included in the repository. It uses GitHub's default dark background.
 Full-policy playback and the replay/benchmark archives remain local outputs in
@@ -48,7 +48,14 @@ readout, and the Atari brick colors. Its illustrated game interiors are fully
 covered by the verified replay, scaled with nearest-neighbor interpolation.
 The outer background uses GitHub's default dark theme `bgColor-default`,
 `#0d1117`, as a flat video fill; gameplay interiors remain canonical black.
-The MP4 is 1672×940 at 60 fps; the animated preview loops at 640×360.
+The MP4 is 1672×940 at 60 fps. The animated WebP preview retains the full
+1672×940 resolution at 20 fps, loops indefinitely, and uses lossless compression
+of the decoded MP4 frames. It is displayed at 800 CSS pixels wide so it remains
+sharp on high-density displays. A `<picture>` element retains the original
+640×360 [GIF](../demo.gif) as a fallback for browsers without WebP support.
+The preview is derived from the existing MP4 without rerunning policy playback
+or changing the timing evidence; its source hash and encoding settings are
+recorded in the README media manifest.
 Built-in image generation updated the selected artwork's numeric labels and
 settings text. The exact edit prompt is saved in the policy archive at
 `presentation/artwork-generation.json`; gameplay is provided by the verified
