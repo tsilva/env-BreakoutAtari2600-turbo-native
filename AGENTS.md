@@ -22,7 +22,7 @@ Issues and specs are tracked in this repository’s GitHub Issues. See `docs/age
 
 ### Domain docs
 
-This is a single-context repository with a root `CONTEXT.md` and system-wide ADRs under `docs/adr/`. See `docs/agents/domain.md`.
+This is a single-context repository with a root `CONTEXT.md`. See `docs/agents/domain.md`.
 
 ## Shared release procedure
 
