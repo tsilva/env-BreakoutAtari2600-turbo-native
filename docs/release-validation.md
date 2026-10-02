@@ -1,7 +1,7 @@
 # Release validation
 
-Provider-local unit, Rust, deterministic trace, wheel smoke, and supported-host
-checks remain in this repository. Cross-provider behavior is certified by
+Provider unit, Rust, deterministic trace, wheel smoke, and supported-host
+checks are owned by this repository and execute in GitHub Actions for releases. Cross-provider behavior is certified by
 TurboBench's immutable `breakout/start-v1` profile against original
 `stable-retro==1.0.1`.
 
@@ -34,3 +34,28 @@ gh workflow run release-build.yml \
 The ROM is fetched from protected storage according to
 `validation/parity-assets.json`. No private asset or local path enters the
 portable receipt or release distribution.
+
+## Execution boundary
+
+Local `python3 scripts/release.py prepare` uses only the Python standard library
+to prepare metadata and verify its consistency, release notes, lock policy,
+unused version/tag, and unchanged third-party dependency graph. The operator
+reviews and pushes the metadata, then dispatches and monitors the workflows.
+No local Rust, Docker, `uv sync`, package build, or native test is required.
+Use `prepare --resume` to validate an already prepared uncommitted version;
+resume rejects unrelated files and third-party dependency changes.
+
+The parity workflow first runs `scripts/release.py check` on Ubuntu, including
+Docker lock consistency, lint, Rust checks/tests, native compilation, and Python
+tests. Only after those checks pass can the protected macOS wheel certification
+start. The candidate revalidates the source and reuses the certified macOS
+wheel. Its final inspection job verifies the seven-file manifest, distribution
+checksums, and both provenance and SPDX attestations before publication.
+
+The publish workflow revalidates the candidate and both attestation types,
+retains the protected five-minute PyPI wait timer, and creates the tag and
+immutable GitHub Release. Its final verification job independently downloads
+all public PyPI distributions and all seven GitHub assets, compares hashes,
+verifies both PyPI distribution attestation types and the exact tag SHA, and
+records `release-verification-v<version>/verification.json`. A release is
+complete only when this job passes; GradLab updates follow that evidence.

@@ -253,9 +253,7 @@ def test_release_notes_are_validated_before_pypi_publication():
     assert release_script.index("finalize_release_notes(version)") < release_script.index(
         'helper("bump-version", "--to", version, "--write")'
     )
-    assert release_script.index("validate_release_notes(version)") < release_script.rindex(
-        "run_checks()"
-    )
+    assert "Build, lock consistency, and source tests are gated by GitHub Actions." in release_script
     assert "create_commit_and_tag" not in release_script
     assert "push_release" not in release_script
     assert '"CHANGELOG.md"' in release_script
