@@ -1,8 +1,9 @@
 # Trained-policy speed comparison
 
-[Watch the comparison](../media/speed-comparison/comparison.mp4),
-[view the animated preview](../media/speed-comparison/comparison.gif), or
-[watch the full native-policy episode](../media/speed-comparison/full-policy.mp4).
+This document describes locally generated comparison media and evidence.
+Outputs are retained in the ignored `media/speed-comparison/` directory;
+they are not included in a GitHub checkout or the published Python package.
+The videos are `comparison.mp4`, `comparison.gif`, and `full-policy.mp4`.
 
 The comparison uses GradLab's final FirstWall PPO checkpoint, trained for
 191,561,728 steps. GradLab played the policy through its verified artifact
@@ -43,8 +44,9 @@ plays the complete episode at 4× in about 36.58 seconds.
 The selected arcade frame uses pixel typography, a central relative-speed
 readout, and the Atari brick colors. Its illustrated game interiors are fully
 covered by the verified replay, scaled with nearest-neighbor interpolation.
-The outer background is dark navy blue; gameplay interiors remain canonical black.
-The MP4 is 1672×940 at 60 fps; the README preview loops at 640×360.
+The outer background uses GitHub's default dark theme `bgColor-default`,
+`#0d1117`, as a flat video fill; gameplay interiors remain canonical black.
+The MP4 is 1672×940 at 60 fps; the animated preview loops at 640×360.
 Built-in image generation updated the selected artwork's numeric labels and
 settings text. The exact edit prompt is saved in the policy archive at
 `presentation/artwork-generation.json`; gameplay is provided by the verified
@@ -117,12 +119,15 @@ including reset noops and auto-serve; its contract reports `matches_training=tru
 
 ## Verification artifacts
 
-- [Policy-media manifest and output hashes](../media/speed-comparison/media-manifest.json)
-- [Policy replay evidence archive](../media/speed-comparison/policy-replay.tar.gz)
-- [Policy-derived benchmark report](../media/speed-comparison/policy-benchmark-report.md)
-- [Policy-derived benchmark bundle](../media/speed-comparison/policy-benchmark.tar.gz)
-- [Original benchmark report](../media/speed-comparison/benchmark-report.md)
-- [Original portable benchmark bundle](../media/speed-comparison/benchmark.tar.gz)
+These files are available to operators with the local comparison outputs,
+under `media/speed-comparison/`:
+
+- `media-manifest.json`: policy-media manifest and output hashes.
+- `policy-replay.tar.gz`: policy replay evidence archive.
+- `policy-benchmark-report.md`: policy-derived benchmark report.
+- `policy-benchmark.tar.gz`: policy-derived benchmark bundle.
+- `benchmark-report.md`: original benchmark report.
+- `benchmark.tar.gz`: original portable benchmark bundle.
 
 The policy archive includes the semantic action streams, captured decision
 provenance, full replay hashes, exact excerpt verification, failure disclosure,

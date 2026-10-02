@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import subprocess
 import tomllib
 from pathlib import Path
 
@@ -48,6 +49,13 @@ def test_package_metadata_exposes_public_project_identity():
 
 
 def test_readme_uses_pypi_safe_images_and_local_links_resolve():
+    tracked_paths = {
+        (REPO_ROOT / path).resolve()
+        for path in subprocess.check_output(
+            ["git", "ls-files", "-z"], cwd=REPO_ROOT, text=True
+        ).split("\0")
+        if path
+    }
     markdown_paths = [
         REPO_ROOT / "README.md",
         *sorted((REPO_ROOT / "docs").rglob("*.md")),
@@ -65,6 +73,11 @@ def test_readme_uses_pypi_safe_images_and_local_links_resolve():
                 continue
             relative = target.split("#", 1)[0]
             assert (markdown_path.parent / relative).resolve().exists(), (
+                markdown_path,
+                target,
+            )
+            assert (markdown_path.parent / relative).resolve() in tracked_paths, (
+                "documentation link must resolve in a fresh Git checkout",
                 markdown_path,
                 target,
             )
