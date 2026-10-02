@@ -176,6 +176,63 @@
       },
       "sha256": "523589ec390d1e100b2f33dd07ab4253c79f3a33f10964b755f45ffc3df95b62",
       "size": 719981
+    },
+    "webp": {
+      "derivation": {
+        "decode_arguments": [
+          "-i",
+          "demo.mp4",
+          "-vf",
+          "fps=20",
+          "frame-%04d.png"
+        ],
+        "decoder": "ffmpeg version 8.1.1 Copyright (c) 2000-2026 the FFmpeg developers",
+        "encode_arguments": [
+          "-loop",
+          "0",
+          "-lossless",
+          "-q",
+          "75",
+          "-m",
+          "6",
+          "-d",
+          "50",
+          "frame-*.png",
+          "-o",
+          "demo.webp"
+        ],
+        "encoder": "img2webp (libwebp 1.6.0)",
+        "lossless": true,
+        "resize": false,
+        "source_output": "mp4",
+        "source_path": "demo.mp4",
+        "source_sha256": "523589ec390d1e100b2f33dd07ab4253c79f3a33f10964b755f45ffc3df95b62",
+        "verification": {
+          "duration_ms": 26650,
+          "lossless_rgb_frame_gate_passed": true,
+          "source_frames_verified": 533
+        }
+      },
+      "path": "demo.webp",
+      "probe": {
+        "format": {
+          "duration": "26.650000",
+          "format_name": "webp",
+          "size": "1874106"
+        },
+        "streams": [
+          {
+            "codec_name": "webp",
+            "height": 940,
+            "loop": 0,
+            "nb_frames": "532",
+            "nominal_frame_rate": "20/1",
+            "width": 1672
+          }
+        ]
+      },
+      "sha256": "78e480831c60f1ef06ec623fc3b93eec0de39997085a85c84f0fb19833765f20",
+      "size": 1874106
     }
   },
   "policy_benchmark_binding": {

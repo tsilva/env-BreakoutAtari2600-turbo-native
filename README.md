@@ -26,7 +26,10 @@ Breakout replacement contract.
 
 <p align="center">
   <a href="https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/demo.mp4">
-    <img src="https://raw.githubusercontent.com/tsilva/env-BreakoutAtari2600-turbo-native/main/demo.gif" alt="Same Policy, Same Actions: Stable Retro and BreakoutAtari2600-turbo replaying a trained policy, with a diagnostic 35.13× environment speedup" width="800" />
+    <picture>
+      <source srcset="https://raw.githubusercontent.com/tsilva/env-BreakoutAtari2600-turbo-native/main/demo.webp" type="image/webp" />
+      <img src="https://raw.githubusercontent.com/tsilva/env-BreakoutAtari2600-turbo-native/main/demo.gif" alt="Same Policy, Same Actions: Stable Retro and BreakoutAtari2600-turbo replaying a trained policy, with a diagnostic 35.13× environment speedup" width="800" />
+    </picture>
   </a>
 </p>
 
