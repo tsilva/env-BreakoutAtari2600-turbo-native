@@ -5,6 +5,15 @@ checks are owned by this repository and execute in GitHub Actions for releases. 
 TurboBench's immutable `breakout/start-v1` profile against original
 `stable-retro==1.0.1`.
 
+The [v0.5.15 parity receipt](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/releases/download/v0.5.15/turbobench-parity-receipt.tar.gz)
+records canonical `Start` checks against pinned original Stable Retro for its
+exact final wheel. It measures neither throughput nor equivalence with the
+Arcade Learning Environment.
+
+Canonical parity requires a separately obtained lawful ROM. Normal environment
+use requires no ROM; the package distributes no ROM, provider save state,
+recorded reference frame, or extracted game asset.
+
 During development, run `make parity` with a lawful `RETRO_DATA_PATH`. The
 command tests an isolated snapshot of the current worktree and is always
 diagnostic. It covers exact observations, frames, rewards, lifecycle, resets,

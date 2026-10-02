@@ -14,10 +14,11 @@
 </p>
 
 **env-BreakoutAtari2600-turbo-native** implements Atari 2600 Breakout in Rust
-with a Python [Gymnasium] interface. Its [Stable Retro]
-[compatibility contract](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/docs/environment.md)
-supports policy transfer under matching observations, actions, and episode
-settings. Native gameplay, parallel execution, and preprocessing are designed
+with a Python [Gymnasium] interface. Policies trained here should work in
+[Stable Retro] when both environments use the same observation, action, and
+episode settings within the
+[documented compatibility contract](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/docs/environment.md).
+Native gameplay, parallel execution, and preprocessing are designed
 to make environment stepping orders of magnitude faster than emulator-based
 environments such as [Stable Retro].
 
@@ -30,31 +31,52 @@ environments such as [Stable Retro].
   </a>
 </p>
 
-## Install
+## Quick start
 
 Requires Python 3.11+ on Apple-silicon macOS 11+ or x86-64 Linux with glibc 2.28+.
+Playing needs no ROM, emulator, or Rust installation.
 
-With [uv](https://docs.astral.sh/uv/) installed, add the library to your project:
-
-```bash
-uv add env-breakoutatari2600-turbo-native
-```
-
-To play interactively, install the optional Pygame extra and open the player:
+With [uv](https://docs.astral.sh/uv/) installed, create a project and open the
+interactive player:
 
 ```bash
+uv init --python 3.11 breakout-experiment
+cd breakout-experiment
 uv add "env-breakoutatari2600-turbo-native[play]"
 uv run env-breakoutatari2600-turbo-native play
 ```
 
-## Try a rollout
+Move with ←/→ or A/D, press Space to serve, and Escape to quit. Press P to
+pause or R to restart. Add `--uncapped` to play without a display-rate limit,
+or `--help` to see all player options.
 
-Save this as `quickstart.py` in your project and run `uv run python quickstart.py`.
-The same code is available in [the runnable example](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/examples/quickstart.py):
+For an existing project, skip `uv init` and `cd`. If you only need the Python
+API, install without the optional player: `uv add env-breakoutatari2600-turbo-native`.
+
+## Train an agent
+
+Train a PPO agent with the published [GradLab](https://github.com/tsilva/gradlab)
+recipes. Training lives in GradLab, separately from this environment. Run either
+version-pinned recipe from any directory:
+
+```bash
+# Standard PPO
+uvx gradlab@0.1.1 train Breakout-Atari2600-v0/ppo
+
+# PPO with learning-rate decay and KL-based update stopping
+uvx gradlab@0.1.1 train Breakout-Atari2600-v0/ppo-stable-updates
+```
+
+These are full training runs. GradLab saves `final_model.zip` under `./runs`
+and prints a version-pinned playback command when training finishes or stops safely. Run that
+command to watch your trained policy play. Local runs disable W&B and checkpoint
+evaluation by default.
+
+## Use from Python
+
+Save this as `quickstart.py` in your project, then run `uv run python quickstart.py`:
 
 ```python
-from time import perf_counter
-
 import gymnasium as gym
 import numpy as np
 
@@ -66,118 +88,48 @@ env = gym.make_vec(
 )
 
 try:
-    obs, _ = env.reset(seed=42)
-    total_reward = 0.0
-    started = perf_counter()
-    for step in range(1024):
-        # This fixed action cycle is a smoke workload, not a trained policy.
-        action = 1 if step % 4 == 0 else 2
-        actions = np.full(env.num_envs, action, dtype=np.uint8)
-        obs, rewards, terminated, truncated, _ = env.step(actions)
-        total_reward += float(rewards.sum())
-        done = terminated | truncated
-        if done.any():
-            obs, _ = env.reset(options={"reset_mask": done})
-    elapsed = perf_counter() - started
-    print(f"observation shape: {obs.shape}")
-    print(f"total reward: {total_reward:g}")
-    print(f"transitions: {1024 * env.num_envs}")
-    print(f"transitions/second: {1024 * env.num_envs / elapsed:,.0f} (local diagnostic)")
+    obs, infos = env.reset(seed=42)
+    actions = np.ones(env.num_envs, dtype=np.uint8)  # FIRE in every game
+    obs, rewards, terminated, truncated, infos = env.step(actions)
+    print(obs.shape)  # (16, 4, 84, 84)
 finally:
     env.close()
 ```
 
-Each lane is an independent game. Native actions are `0` noop, `1` FIRE,
-`2` right, and `3` left. The default observations are grayscale `uint8` arrays
-shaped `(num_envs, 4, 84, 84)`, with four native frames per step.
-The printed rate is a local smoke measurement from a fixed action cycle; it is
-not a matched performance comparison or an agent learning result.
+This starts 16 independent games and serves the ball in each. Observations
+contain four stacked 84×84 grayscale frames per game. Each step advances four
+native game frames by default.
 
-The module-qualified ID registers the vector factory; `BreakoutVecEnv` is also
-available for direct use. The
-[environment reference](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/docs/environment.md)
-covers [Stable Retro Turbo] compatibility, filtered actions, policy signals,
-snapshots, and branching. See its
-[info-filtering examples](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/docs/environment.md#info-filtering)
-for the visible brick grid and initial-layout flag, or the
-[Stable-Baselines3 adapter](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/docs/environment.md#stable-baselines3)
-for explicit auto-reset behavior; install SB3 separately.
+See the [full rollout example](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/examples/quickstart.py)
+for a longer loop with selective resets and a local throughput measurement.
 
-## Train with GradLab
+## Important behavior
 
-Training implementations live in [GradLab](https://github.com/tsilva/gradlab).
-The following recipe names were checked against the pinned GradLab `0.1.1`
-release. Run either from any directory:
+- **Serve each ball:** actions are `0` noop, `1` FIRE, `2` right, and `3` left.
+- **Reset completed games:** autoreset is disabled. Reset terminal lanes before
+  stepping again; a Boolean `reset_mask` leaves other games unchanged. See the
+  [reset example](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/docs/environment.md#manual-reset).
+- **Keep observations safely:** default observations reuse two rotating buffers.
+  Use `obs_copy="copy"` when retaining observations across environment calls.
+- **Understand rewards:** rewards are score changes, without life-loss or
+  board-clear shaping. Episodes end after all five lives are lost; the
+  environment does not generate truncation.
 
-```bash
-uvx gradlab@0.1.1 train Breakout-Atari2600-v0/ppo
-uvx gradlab@0.1.1 train Breakout-Atari2600-v0/ppo-stable-updates
-```
+## Documentation and contributing
 
-The second recipe adds learning-rate decay and KL-based update stopping.
-These are full research runs. GradLab writes `final_model.zip` under `./runs`
-and prints a version-pinned playback command when a run finishes or stops
-safely. Local runs disable W&B and checkpoint evaluation by default.
-
-## Develop
-
-Install uv and Rust (the repository pins its toolchain), then run:
-
-```bash
-git clone https://github.com/tsilva/env-BreakoutAtari2600-turbo-native.git breakout-native
-cd breakout-native
-uv sync --locked --extra dev --extra play
-make develop-release
-```
-
-## Commands
-
-Run these from the repository root after source setup:
-
-```bash
-uv run --frozen python examples/quickstart.py                      # run a rollout
-uv run --frozen --extra play env-breakoutatari2600-turbo-native play  # open the player
-uv run --frozen --extra play env-breakoutatari2600-turbo-native play --uncapped
-make lint              # Python and Rust checks
-make test              # Python and Rust tests
-make develop-release   # rebuild the native extension after changes
-```
-
-Append `--help` to the player command for options, including the display-rate
-limit. [TurboBench](https://github.com/tsilva/turbobench) provides performance
-comparisons and cross-provider parity checks. See
-[release validation](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/docs/release-validation.md)
-for `make parity` prerequisites and wheel certification.
-
-## Notes
-
-- Use the [Arcade Learning Environment](https://github.com/Farama-Foundation/Arcade-Learning-Environment)
-  for the established multi-game Atari benchmark. Compare results only when game
-  settings, observations, actions, rewards, and reset rules match.
-- The [v0.5.15 parity receipt](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/releases/download/v0.5.15/turbobench-parity-receipt.tar.gz)
-  records canonical `Start` checks against pinned original [Stable Retro] for its
-  exact final wheel. It measures neither throughput nor equivalence with ALE.
-- Autoreset is disabled. Reset terminal lanes before stepping again; a Boolean
-  `reset_mask` leaves unselected lanes unchanged. The policy must issue FIRE
-  for each serve.
-- Rewards are score changes without life-loss or board-clear shaping. Episodes
-  end after all five lives are lost; the environment never generates truncation.
-- Rendering is opt-in. Set `render_mode="rgb_array"`, then call
-  `render_lane(index)` for a 160×210 Stella RGB frame. Rendering does not advance
-  the game or alter policy observations.
-- Default observations use two rotating buffers. Use `obs_copy="copy"` when
-  retaining observations across environment calls.
-- Serialized snapshots require the same package version and compatible
-  configuration. Live snapshot handles belong to their originating environment.
-- Canonical `Start` parity uses pinned original [Stable Retro] through TurboBench
-  and requires a separately obtained lawful ROM. The package distributes no
-  ROM, provider save state, recorded reference frame, or extracted game asset.
-- This is a `0.x` community preview. Read the
-  [changelog](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/CHANGELOG.md)
-  for public changes and [support guide](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/SUPPORT.md)
-  for platform limits and help. The
-  [compliance matrix](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/docs/specification-compliance.md)
-  links requirements to their validation evidence.
+- [Environment reference](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/docs/environment.md):
+  actions, preprocessing, rendering, snapshots, branching, game signals,
+  [Stable Retro Turbo] compatibility, and the optional Stable-Baselines3 adapter.
+- [Performance comparison](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/docs/speed-comparison.md)
+  and [release validation](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/docs/release-validation.md):
+  timing methodology, parity evidence, and validation limits.
+- [Contributing](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/CONTRIBUTING.md):
+  source setup, development commands, and tests.
+- [Support](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/SUPPORT.md)
+  and [changelog](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/CHANGELOG.md):
+  installation help, supported platforms, and changes during the `0.x` community preview.
+- [Specification compliance](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/docs/specification-compliance.md):
+  requirements and their validation evidence.
 
 ## Architecture
 
