@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/tsilva/env-BreakoutAtari2600-turbo-native/main/logo.png" alt="env-BreakoutAtari2600-turbo-native logo" width="256" />
+  <img src="https://raw.githubusercontent.com/tsilva/env-BreakoutAtari2600-turbo-native/main/logo.png" alt="breakout-native logo" width="256" />
   <br />
   <!-- repo-tagline:start -->
   <strong>🕹️ Reproducible Breakout for parallel RL experiments ⚡</strong>
@@ -13,40 +13,35 @@
   <a href="https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/LICENSE"><img src="https://img.shields.io/pypi/l/env-breakoutatari2600-turbo-native.svg" alt="MIT license" /></a>
 </p>
 
-env-BreakoutAtari2600-turbo-native is a Python library for reinforcement-learning
-researchers and engineers running reproducible Atari 2600 Breakout experiments.
-It runs independent games in parallel and lets you replay exact states or
-compare action branches. Install the package to run a Python rollout or play
-interactively.
+breakout-native is a Python library for reinforcement-learning researchers and
+engineers running Atari 2600 Breakout experiments. Run independent games in
+parallel, replay exact states, and compare action branches without a ROM or
+emulator. Install the package to try a Python rollout or play interactively.
 
-env-BreakoutAtari2600-turbo-native is ROM-free. Normal use needs no emulator or
-Stable Retro installation. A Rust core provides deterministic gameplay through
-a Gymnasium vector interface and supports the documented Stable Retro Turbo
-Breakout replacement contract.
+The project env-BreakoutAtari2600-turbo-native is ROM-free; normal use also needs
+no Stable Retro installation. Its Rust core provides deterministic gameplay
+through a Gymnasium vector interface and supports the documented Stable Retro
+Turbo Breakout replacement contract.
 
 <p align="center">
   <a href="https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/demo.mp4">
     <picture>
       <source srcset="https://raw.githubusercontent.com/tsilva/env-BreakoutAtari2600-turbo-native/main/demo.webp" type="image/webp" />
-      <img src="https://raw.githubusercontent.com/tsilva/env-BreakoutAtari2600-turbo-native/main/demo.gif" alt="Same Policy, Same Actions: Stable Retro and BreakoutAtari2600-turbo replaying a trained policy, with a diagnostic 35.13× environment speedup" width="800" />
+      <img src="https://raw.githubusercontent.com/tsilva/env-BreakoutAtari2600-turbo-native/main/demo.gif" alt="Stable Retro and breakout-native replaying the same trained-policy actions at a diagnostic 35.13× relative environment speed" width="800" />
     </picture>
   </a>
 </p>
 
-The comparison uses actions sampled from GradLab's trained FirstWall PPO model
-in native `0.5.13` and original Stable Retro `1.0.1`. The excerpt matches exactly;
-playback illustrates TurboBench's diagnostic one-lane throughput ratio.
-Benchmark: `n_envs=1`, frame skip 2, stack size 4, and 84×84 grayscale area
-resizing without max pooling, with the top 17 rows masked. Frame skip and pixel
-preprocessing follow the policy's saved training recipe.
-Policy playback and future renders must preserve the checkpoint's saved training
-environment contract.
-**Diagnostic preview:** timing used a busy host, and the full episode exposed a
-later parity mismatch. [Watch the video](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/demo.mp4)
-or inspect its [media manifest](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/demo-manifest.json).
-Full-policy playback and replay archives are retained locally.
-See the [comparison method and evidence inventory](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/docs/speed-comparison.md)
-for the workload, limitations, and verification procedure.
+**Diagnostic preview:** native `0.5.13` and original Stable Retro `1.0.1` replay
+the same GradLab FirstWall PPO actions. The excerpt matches exactly; the full
+episode had a later parity mismatch. Playback illustrates a busy-host,
+one-lane environment throughput ratio, excluding policy inference and rendering.
+Its frame skip 2, four-frame stack, and 84×84 grayscale preprocessing follow
+the checkpoint's saved training contract. See the
+[comparison method and evidence inventory](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/docs/speed-comparison.md)
+for pixel settings, replay checks, and timing limits, or inspect the
+[media manifest](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/demo-manifest.json).
+Full-policy playback and replay archives remain local.
 
 ## Install
 
@@ -111,8 +106,8 @@ shaped `(num_envs, 4, 84, 84)`, with four native frames per step.
 The printed rate is a local smoke measurement from a fixed action cycle; it is
 not a matched performance comparison or an agent learning result.
 
-The module-qualified ID imports and registers the vector factory;
-`BreakoutVecEnv` is also available for direct use. The
+The module-qualified ID registers the vector factory; `BreakoutVecEnv` is also
+available for direct use. The
 [environment reference](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/docs/environment.md)
 covers Stable Retro Turbo compatibility, filtered actions, policy signals,
 snapshots, and branching. See its
@@ -172,7 +167,7 @@ for `make parity` prerequisites and wheel certification.
 - Use the [Arcade Learning Environment](https://github.com/Farama-Foundation/Arcade-Learning-Environment)
   for the established multi-game Atari benchmark. Compare results only when game
   settings, observations, actions, rewards, and reset rules match.
-- The [v0.5.13 parity receipt](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/releases/download/v0.5.13/turbobench-parity-receipt.tar.gz)
+- The [v0.5.15 parity receipt](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/releases/download/v0.5.15/turbobench-parity-receipt.tar.gz)
   records canonical `Start` checks against pinned original Stable Retro for its
   exact final wheel. It measures neither throughput nor equivalence with ALE.
 - Autoreset is disabled. Reset terminal lanes before stepping again; a Boolean
@@ -199,7 +194,7 @@ for `make parity` prerequisites and wheel certification.
 
 ## Architecture
 
-![Breakout vector environment architecture](https://raw.githubusercontent.com/tsilva/env-BreakoutAtari2600-turbo-native/main/architecture.png)
+![breakout-native vector environment architecture](https://raw.githubusercontent.com/tsilva/env-BreakoutAtari2600-turbo-native/main/architecture.png)
 
 ## License
 
