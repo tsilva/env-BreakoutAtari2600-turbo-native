@@ -6,6 +6,11 @@ releases; changes will be recorded here.
 
 ## Unreleased
 
+### Fixed
+
+- Match original Stable Retro's steep-return angle boundaries after the paddle
+  narrows, preventing deterministic gameplay divergence on trained-policy replays.
+
 ## [0.5.14] - 2026-10-01
 
 ### Fixed
