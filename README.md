@@ -28,10 +28,24 @@ environments such as [Stable Retro].
   </a>
 </p>
 
-<table>
-  <tr><th align="left">Provider throughput and paired speedup — scroll to see every count</th></tr>
-  <tr><td width="2000"><img src="https://raw.githubusercontent.com/tsilva/env-BreakoutAtari2600-turbo-native/benchmark-v0.5.15-20261004-tb2.0.11/benchmark.svg" alt="Side-by-side provider throughput bars and paired 95% confidence intervals at each environment count" width="2000" /></td></tr>
-</table>
+<p align="center">
+  <a href="https://raw.githubusercontent.com/tsilva/env-BreakoutAtari2600-turbo-native/benchmark-v0.5.15-20261004-tb2.0.11/benchmark.svg"><img src="https://raw.githubusercontent.com/tsilva/env-BreakoutAtari2600-turbo-native/benchmark-v0.5.15-20261004-tb2.0.11/benchmark.svg" alt="Side-by-side provider throughput bars at every measured environment count; open for full-size labels and confidence intervals" width="800" /></a>
+</p>
+
+[Open the full-size chart](https://raw.githubusercontent.com/tsilva/env-BreakoutAtari2600-turbo-native/benchmark-v0.5.15-20261004-tb2.0.11/benchmark.svg). The table keeps the values readable at README width.
+
+| n_envs | Stable Retro 1.0.1 SPS | Native 0.5.15 SPS | Paired speedup (95% CI) |
+| ---: | ---: | ---: | :---: |
+| 1 | 192.6 | 69,797.5 | 362.30× (358.47–366.10) |
+| 2 | 377.4 | 124,814.6 | 331.04× (316.39–332.47) |
+| 4 | 732.5 | 218,855.1 | 298.26× (290.64–305.13) |
+| 8 | 1,032.3 | 258,955.4 | 251.21× (249.10–270.88) |
+| 16 | 1,247.5 | 276,118.0 | 221.98× (219.31–224.02) |
+| 32 | 1,342.4 | 353,326.8 | 263.21× (261.24–265.77) |
+| 64 | 1,389.7 | 418,587.7 | 300.97× (298.86–302.43) |
+| 128 | 1,408.1 | 361,149.5 | 256.48× (254.61–256.76) |
+| 256 | 1,423.2 | 173,169.7 | 121.52× (120.64–122.43) |
+
 
 Native **0.5.15** achieved **362.30×** the environment throughput of Stable
 Retro **1.0.1** at `n_envs=1` (paired 95% CI **358.47–366.10×**) on an
