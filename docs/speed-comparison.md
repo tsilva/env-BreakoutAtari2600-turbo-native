@@ -63,12 +63,13 @@ location. The cap is 1,024 environments; reaching it alone would be diagnostic.
 
 ## Readable README chart
 
-The [README chart](../benchmark-readme.svg) uses an 800×376 canvas, side-by-side
+The [README chart](../benchmark-readme.svg) uses an 800×388 canvas, side-by-side
 vertical bars on one shared zero-based linear scale, whole-number SPS labels,
 and paired speedups. The top-right legend uses 14px text; SPS and speedup
 values use 13px text, and environment counts use 14px text.
-The header-to-plot gap is compact, with a 12px line identifying the benchmark
-CPU from the verified result: AMD Ryzen 5 7600X 6-Core Processor.
+A small gap separates the header labels from the plot. A 12px line shows only
+the processor name from the verified benchmark result: AMD Ryzen 5 7600X
+6-Core Processor.
 Both published chart views omit inline confidence intervals
 and bottom explanatory labels; exact medians and intervals remain in the table
 above and immutable proof. Display rounding does not change bar heights. The
@@ -84,7 +85,7 @@ This chart is a derived publication export, separate from the immutable
 showcase assets. [benchmark-readme.json](../benchmark-readme.json) binds the
 benchmark proof ID, original result digest, renderer file digest, selected
 and omitted counts, and SVG digest. [demo-manifest.json](../demo-manifest.json)
-pins renderer source revision [`722c697`](https://github.com/tsilva/turbobench/commit/722c697a4cae353c2ce3b2589045e3d4967cb081).
+pins renderer source revision [`22ead7a`](https://github.com/tsilva/turbobench/commit/22ead7a5d812d522244b1061ad448ca404c43e9b).
 The [complete chart publication record](../benchmark.json) binds all nine
 counts and the same verified result. The archive retains its original chart;
 the repo's complete publication view has simplified labels.
@@ -94,11 +95,11 @@ After downloading and extracting the refreshed proof using the instructions
 below, reproduce the README export with that exact renderer source:
 
 ```bash
-curl -fL https://github.com/tsilva/turbobench/archive/722c697a4cae353c2ce3b2589045e3d4967cb081.tar.gz -o readme-renderer.tar.gz
+curl -fL https://github.com/tsilva/turbobench/archive/22ead7a5d812d522244b1061ad448ca404c43e9b.tar.gz -o readme-renderer.tar.gz
 tar -xzf readme-renderer.tar.gz
-uv run --frozen --python 3.14 --project turbobench-722c697a4cae353c2ce3b2589045e3d4967cb081 python -m turbobench.readme_chart \
+uv run --frozen --python 3.14 --project turbobench-22ead7a5d812d522244b1061ad448ca404c43e9b python -m turbobench.readme_chart \
   "$PWD/proof/benchmark" "$PWD/benchmark-readme.svg"
-uv run --frozen --python 3.14 --project turbobench-722c697a4cae353c2ce3b2589045e3d4967cb081 python -m turbobench.readme_chart \
+uv run --frozen --python 3.14 --project turbobench-22ead7a5d812d522244b1061ad448ca404c43e9b python -m turbobench.readme_chart \
   "$PWD/proof/benchmark" "$PWD/benchmark.svg" --full
 ```
 

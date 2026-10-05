@@ -80,8 +80,8 @@
   "readme_chart": {
     "asset": {
       "path": "benchmark-readme.svg",
-      "sha256": "65611119e1676f7ed9389fece4f483981c88e2011a9da0f4165b06642636a29d",
-      "size": 6676
+      "sha256": "e84cc3236ab5bba4e96745a8f43884227d5eee6a594414574bbf6a6b940f93cf",
+      "size": 6661
     },
     "benchmark_id": "7a7df46f83e4be2a26fe7dbcc212fb2305860a317af1d8fc92206c03ac2f8214",
     "diagnostic": false,
@@ -90,7 +90,7 @@
       128,
       256
     ],
-    "renderer_sha256": "d44dd3e0d178a6140b9901a6d84127d6819ba3ecf1cc0f291fccc3cfadf85424",
+    "renderer_sha256": "bc602dc10eb5ed538ea83238fa3ba060cd73a7aa302034c81521062421b71717",
     "result_sha256": "ea05e31a0d23754c990483846ecfd1bed933a3a2d5d1f3c3499c648781373a6e",
     "selection": "measured-prefix-through-first-candidate-median-sps-maximum",
     "shown_n_envs": [
@@ -103,9 +103,9 @@
       64
     ],
     "provenance_path": "benchmark-readme.json",
-    "provenance_sha256": "59d50c5c0a3a4f2d4dc6deb008aa53ba125584e0debb13ae652e7eb08bca22d9",
+    "provenance_sha256": "5d56619467bc39a5a5f7fcab952418402c5f477be5dd58c817dd3b2f8851c697",
     "renderer_repository": "https://github.com/tsilva/turbobench",
-    "renderer_revision": "722c697a4cae353c2ce3b2589045e3d4967cb081",
+    "renderer_revision": "22ead7a5d812d522244b1061ad448ca404c43e9b",
     "note": "Derived publication view; original benchmark proof and archived chart are unchanged."
   },
   "archived_chart": {
@@ -124,7 +124,7 @@
     "diagnostic": false,
     "format": "turbobench.publication-chart/v1",
     "omitted_n_envs": [],
-    "renderer_sha256": "d44dd3e0d178a6140b9901a6d84127d6819ba3ecf1cc0f291fccc3cfadf85424",
+    "renderer_sha256": "bc602dc10eb5ed538ea83238fa3ba060cd73a7aa302034c81521062421b71717",
     "result_sha256": "ea05e31a0d23754c990483846ecfd1bed933a3a2d5d1f3c3499c648781373a6e",
     "selection": "all-measured-counts",
     "shown_n_envs": [
@@ -139,9 +139,9 @@
       256
     ],
     "provenance_path": "benchmark.json",
-    "provenance_sha256": "68e2a8b044117c741a2a36259748972505379ebc5be93db44897d1980ebe3903",
+    "provenance_sha256": "7c1814dc10e4df425cb297141e8e838fee2ebdfab7a9ef0fb690752ace19a047",
     "renderer_repository": "https://github.com/tsilva/turbobench",
-    "renderer_revision": "722c697a4cae353c2ce3b2589045e3d4967cb081",
+    "renderer_revision": "22ead7a5d812d522244b1061ad448ca404c43e9b",
     "note": "Derived publication view; original benchmark proof and archived chart are unchanged."
   },
   "previous_showcase": {
