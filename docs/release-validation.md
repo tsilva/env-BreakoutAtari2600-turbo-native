@@ -55,3 +55,12 @@ Root [SPECS.md](../SPECS.md) is authoritative. Maintained evidence belongs to:
   Make targets and the protected parity workflow.
 - Private-asset exclusion: package manifests, release audits, and
   `validation/parity-assets.json` used only by the protected workflow.
+
+## Performance evidence
+
+The separate [policy benchmark proof](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/releases/tag/benchmark-v0.5.15-20261004-tb2.0.11) compares published native
+0.5.15 with Stable Retro 1.0.1 using published TurboBench 2.0.11 on an idle Linux
+host. Its [method and limitations](speed-comparison.md) distinguish the matched
+policy excerpt from full-game parity. Download and verify that archive with the
+pinned 2.0.11 verifier; it does not replace the library release's canonical
+`breakout/start-v1` receipt.

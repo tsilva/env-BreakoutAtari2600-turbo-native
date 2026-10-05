@@ -23,13 +23,26 @@ to make environment stepping orders of magnitude faster than emulator-based
 environments such as [Stable Retro].
 
 <p align="center">
-  <a href="https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/demo.mp4">
-    <picture>
-      <source srcset="https://raw.githubusercontent.com/tsilva/env-BreakoutAtari2600-turbo-native/main/demo.webp" type="image/webp" />
-      <img src="https://raw.githubusercontent.com/tsilva/env-BreakoutAtari2600-turbo-native/main/demo.gif" alt="Stable Retro and breakout-native replaying the same trained-policy actions at a diagnostic 35.13× relative environment speed" width="800" />
-    </picture>
+  <a href="https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/benchmark-v0.5.15-20261004-tb2.0.11/demo.mp4">
+    <img src="https://raw.githubusercontent.com/tsilva/env-BreakoutAtari2600-turbo-native/benchmark-v0.5.15-20261004-tb2.0.11/demo.webp" alt="Stable Retro 1.0.1 and native 0.5.15 replaying the same policy actions; 362.30× environment throughput at n_envs=1" width="800" />
   </a>
 </p>
+
+<table>
+  <tr><th align="left">Provider throughput and paired speedup — scroll to see every count</th></tr>
+  <tr><td><img src="https://raw.githubusercontent.com/tsilva/env-BreakoutAtari2600-turbo-native/benchmark-v0.5.15-20261004-tb2.0.11/benchmark.svg" alt="Side-by-side provider throughput bars and paired 95% confidence intervals at each environment count" width="4090" /></td></tr>
+</table>
+
+Native **0.5.15** achieved **362.30×** the environment throughput of Stable
+Retro **1.0.1** at `n_envs=1` (paired 95% CI **358.47–366.10×**) on an
+AMD Ryzen 5 7600X. The chart retains every measured count through the adaptive
+stop. Timing replays captured FirstWall policy actions with frame skip 2 and
+stack 4; it includes stepping and preprocessing and excludes policy inference,
+recording, and rendering. The animation uses a common 4× time compression and
+the measured ratio; it is not a wall-clock recording. The matching excerpt
+ends at score 429 with four lives and does not establish completed-wall parity
+or a success rate. [Full-size chart](https://raw.githubusercontent.com/tsilva/env-BreakoutAtari2600-turbo-native/benchmark-v0.5.15-20261004-tb2.0.11/benchmark.svg) · [Method, policy, and limitations](docs/speed-comparison.md) ·
+[Download and verify the proof](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/releases/tag/benchmark-v0.5.15-20261004-tb2.0.11).
 
 ## Quick start
 
