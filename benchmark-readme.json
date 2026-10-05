@@ -1,8 +1,8 @@
 {
   "asset": {
     "path": "benchmark-readme.svg",
-    "sha256": "6b63ce87c6479ebc18c152de08d63083ac05b5a57c5df0fbdfafc622e24422ef",
-    "size": 6569
+    "sha256": "65611119e1676f7ed9389fece4f483981c88e2011a9da0f4165b06642636a29d",
+    "size": 6676
   },
   "benchmark_id": "7a7df46f83e4be2a26fe7dbcc212fb2305860a317af1d8fc92206c03ac2f8214",
   "diagnostic": false,
@@ -11,7 +11,7 @@
     128,
     256
   ],
-  "renderer_sha256": "590cb9e89bb6759b624481065fce5768c34c6fb0a0441e1bf34f5feed1733b98",
+  "renderer_sha256": "d44dd3e0d178a6140b9901a6d84127d6819ba3ecf1cc0f291fccc3cfadf85424",
   "result_sha256": "ea05e31a0d23754c990483846ecfd1bed933a3a2d5d1f3c3499c648781373a6e",
   "selection": "measured-prefix-through-first-candidate-median-sps-maximum",
   "shown_n_envs": [
