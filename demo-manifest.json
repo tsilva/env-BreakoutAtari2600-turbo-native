@@ -1,20 +1,15 @@
 {
-  "format": "breakout.benchmark-publication/v1",
-  "description": "Public archive and byte-identical README exports. Download the archive for standalone TurboBench verification.",
+  "format": "breakout.benchmark-publication/v2",
+  "description": "Refreshed presentation with unchanged published benchmark and policy children. Verify the complete proof with the pinned renderer source; TurboBench 2.0.11 verifies its benchmark child.",
   "proof": {
     "schema": "turbobench.showcase-proof/v3",
-    "proof_id": "b82ebbeefbef6c4319b314cda146b1c7727fa4e4c4823c041cd0f45783a5735d",
+    "proof_id": "ad2eeab534424e19eb2d05beb855c28a5c99d8e6ff28b34bc64b49c76fae13bb",
     "benchmark_id": "7a7df46f83e4be2a26fe7dbcc212fb2305860a317af1d8fc92206c03ac2f8214",
     "policy_id": "d1656f3e45f41694846ba3921b88312e35b326962bf233f80afb5fff55d5f0fe",
-    "release_url": "https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/releases/tag/benchmark-v0.5.15-20261004-tb2.0.11",
-    "archive_url": "https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/releases/download/benchmark-v0.5.15-20261004-tb2.0.11/breakout-policy-showcase-tb2.0.11-env0.5.15.tar.gz",
-    "archive_sha256": "0b3cf31ee3b97e3f0ef633249087ad97ff4f8658a99d8a2965b42892b3dcb9b9"
-  },
-  "verifier": {
-    "distribution": "turbobench-cli",
-    "version": "2.0.11",
-    "wheel_sha256": "e7ae9d3104b9016159e4739fc2ab7e5065da67cfaf0f3d585829e2ac86a5b060",
-    "harness_sha256": "85da540ed868f812717bea83b885d13f08889d6b2b5d6d93c27b10964da9f2b8"
+    "release_url": "https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/releases/tag/showcase-v0.5.15-20261005-style3",
+    "archive_url": "https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/releases/download/showcase-v0.5.15-20261005-style3/breakout-policy-showcase-env0.5.15-style3.tar.gz",
+    "archive_sha256": "c864c3725ddbf283cf3eae899b502069787415aa73cd3fbad1a4bb6515728d60",
+    "style": "comparison-style/v3"
   },
   "providers": {
     "upstream": {
@@ -52,18 +47,39 @@
   "media": {
     "demo.mp4": {
       "proof_path": "media/comparison.mp4",
-      "sha256": "2583c8a62738e8a67324a3a4d8ca19fab36adfe3d72dd110e37a1d357553bf49",
-      "size": 551272
+      "sha256": "e1a1fc63eef0becaed0ba2383a8046441ddfaaf44ebeb3aa158aa3bdefe1cdb8",
+      "size": 542229
     },
     "demo.webp": {
       "proof_path": "media/comparison.webp",
-      "sha256": "18827bb89fa317c07c21d029316e4a23e1f53b8f06865fd26bf3a090c825e2ba",
-      "size": 656004
+      "sha256": "71bdee271e9cbcd20a45b5e6ebd754e1e39ae7aba6f3e6a5b00e9889fb77dae8",
+      "size": 705990
     },
     "benchmark.svg": {
       "proof_path": "chart.svg",
       "sha256": "3e4af1652b10fd787b3d778e48997a50e821223a34ceeaacf83c5af24fbe1a05",
       "size": 9477
     }
+  },
+  "original_showcase": {
+    "schema": "turbobench.showcase-proof/v3",
+    "proof_id": "b82ebbeefbef6c4319b314cda146b1c7727fa4e4c4823c041cd0f45783a5735d",
+    "benchmark_id": "7a7df46f83e4be2a26fe7dbcc212fb2305860a317af1d8fc92206c03ac2f8214",
+    "policy_id": "d1656f3e45f41694846ba3921b88312e35b326962bf233f80afb5fff55d5f0fe",
+    "release_url": "https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/releases/tag/benchmark-v0.5.15-20261004-tb2.0.11",
+    "archive_url": "https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/releases/download/benchmark-v0.5.15-20261004-tb2.0.11/breakout-policy-showcase-tb2.0.11-env0.5.15.tar.gz",
+    "archive_sha256": "0b3cf31ee3b97e3f0ef633249087ad97ff4f8658a99d8a2965b42892b3dcb9b9"
+  },
+  "benchmark_verifier": {
+    "distribution": "turbobench-cli",
+    "version": "2.0.11",
+    "wheel_sha256": "e7ae9d3104b9016159e4739fc2ab7e5065da67cfaf0f3d585829e2ac86a5b060",
+    "harness_sha256": "85da540ed868f812717bea83b885d13f08889d6b2b5d6d93c27b10964da9f2b8"
+  },
+  "showcase_verifier": {
+    "repository": "https://github.com/tsilva/turbobench",
+    "revision": "f6f5e16787b74ddb48cd358a9611aee49f81dfc0",
+    "render_harness_sha256": "5239fcb88cd4a9dc9f2945cff288c20504156edac650b291a7ee6622ef583d4a",
+    "note": "Style v3 is in this source revision; published TurboBench 2.0.11 verifies the unchanged benchmark child, not the refreshed style v3 root."
   }
 }

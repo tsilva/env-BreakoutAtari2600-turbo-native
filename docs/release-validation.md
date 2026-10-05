@@ -64,3 +64,10 @@ host. Its [method and limitations](speed-comparison.md) distinguish the matched
 policy excerpt from full-game parity. Download and verify that archive with the
 pinned 2.0.11 verifier; it does not replace the library release's canonical
 `breakout/start-v1` receipt.
+
+## Presentation refresh
+
+The [style v3 showcase refresh](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/releases/tag/showcase-v0.5.15-20261005-style3) updates the title and speedup
+label placement using renderer revision `f6f5e16`. Its benchmark and
+policy proofs are unchanged. [Media verification](speed-comparison.md#refreshed-frame-and-media-proof)
+pins the renderer source separately from the published 2.0.11 benchmark verifier.

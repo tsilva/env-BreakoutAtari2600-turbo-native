@@ -23,16 +23,16 @@ to make environment stepping orders of magnitude faster than emulator-based
 environments such as [Stable Retro].
 
 <p align="center">
-  <a href="https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/benchmark-v0.5.15-20261004-tb2.0.11/demo.mp4">
-    <img src="https://raw.githubusercontent.com/tsilva/env-BreakoutAtari2600-turbo-native/benchmark-v0.5.15-20261004-tb2.0.11/demo.webp" alt="Stable Retro 1.0.1 and native 0.5.15 replaying the same policy actions; 362.30× environment throughput at n_envs=1" width="800" />
+  <a href="https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/showcase-v0.5.15-20261005-style3/demo.mp4">
+    <img src="https://raw.githubusercontent.com/tsilva/env-BreakoutAtari2600-turbo-native/showcase-v0.5.15-20261005-style3/demo.webp" alt="Same Actions: Stable Retro 1.0.1 and native 0.5.15 replaying the same policy actions; 362.30× environment throughput at n_envs=1" width="800" />
   </a>
 </p>
 
 <p align="center">
-  <a href="https://raw.githubusercontent.com/tsilva/env-BreakoutAtari2600-turbo-native/benchmark-v0.5.15-20261004-tb2.0.11/benchmark.svg"><img src="https://raw.githubusercontent.com/tsilva/env-BreakoutAtari2600-turbo-native/benchmark-v0.5.15-20261004-tb2.0.11/benchmark.svg" alt="Side-by-side provider throughput bars at every measured environment count; open for full-size labels and confidence intervals" width="800" /></a>
+  <a href="https://raw.githubusercontent.com/tsilva/env-BreakoutAtari2600-turbo-native/showcase-v0.5.15-20261005-style3/benchmark.svg"><img src="https://raw.githubusercontent.com/tsilva/env-BreakoutAtari2600-turbo-native/showcase-v0.5.15-20261005-style3/benchmark.svg" alt="Side-by-side provider throughput bars at every measured environment count; open for full-size labels and confidence intervals" width="800" /></a>
 </p>
 
-[Open the full-size chart](https://raw.githubusercontent.com/tsilva/env-BreakoutAtari2600-turbo-native/benchmark-v0.5.15-20261004-tb2.0.11/benchmark.svg). The table keeps the values readable at README width.
+[Open the full-size chart](https://raw.githubusercontent.com/tsilva/env-BreakoutAtari2600-turbo-native/showcase-v0.5.15-20261005-style3/benchmark.svg). The table keeps the values readable at README width.
 
 | n_envs | Stable Retro 1.0.1 SPS | Native 0.5.15 SPS | Paired speedup (95% CI) |
 | ---: | ---: | ---: | :---: |
@@ -55,8 +55,8 @@ stack 4; it includes stepping and preprocessing and excludes policy inference,
 recording, and rendering. The animation uses a common 4× time compression and
 the measured ratio; it is not a wall-clock recording. The matching excerpt
 ends at score 429 with four lives and does not establish completed-wall parity
-or a success rate. [Full-size chart](https://raw.githubusercontent.com/tsilva/env-BreakoutAtari2600-turbo-native/benchmark-v0.5.15-20261004-tb2.0.11/benchmark.svg) · [Method, policy, and limitations](docs/speed-comparison.md) ·
-[Download and verify the proof](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/releases/tag/benchmark-v0.5.15-20261004-tb2.0.11).
+or a success rate. [Full-size chart](https://raw.githubusercontent.com/tsilva/env-BreakoutAtari2600-turbo-native/showcase-v0.5.15-20261005-style3/benchmark.svg) · [Method, policy, and limitations](docs/speed-comparison.md) ·
+[Download and verify the proof](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/releases/tag/showcase-v0.5.15-20261005-style3).
 
 ## Quick start
 
