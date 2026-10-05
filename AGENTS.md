@@ -30,3 +30,9 @@ The project `build-release` skill composes `$release-workflow` from
 `/Users/tsilva/.codex/skills/release-workflow/SKILL.md`.
 Read both for release work; keep project commands, version policy, artifact
 requirements, and approval gates in the project adapter.
+
+## Benchmark publication
+
+- Keep README benchmark prose to one link to root `benchmarks.md` beside the current media and chart.
+- Update `benchmarks.md` with the latest benchmark's results, hardware, method, policy, limitations, asset provenance, pinned verification instructions, and proof links whenever publishing a benchmark. Replace superseded benchmark prose; retain older runs only as proof references.
+- Keep the linked report consistent with the README assets and `demo-manifest.json`; preserve immutable proof archives and their version-specific verification instructions.

@@ -32,20 +32,7 @@ environments such as [Stable Retro].
   <img src="benchmark-readme.svg" alt="Side-by-side vertical provider throughput bars from 1 to 64 environments, with whole-number SPS values and speedups" width="800" />
 </p>
 
-Native throughput improves through **64 environments**, reaching **418,588
-steps/s**. This README view stops at that measured peak; the slower native
-results at 128 and 256 remain in the [complete results](docs/speed-comparison.md#results-and-scaling)
-and verified proof.
-
-Native **0.5.15** achieved **362.30×** the environment throughput of Stable
-Retro **1.0.1** at `n_envs=1` (paired 95% CI **358.47–366.10×**) on an
-AMD Ryzen 5 7600X. Timing replays captured FirstWall policy actions with frame skip 2 and
-stack 4; it includes stepping and preprocessing and excludes policy inference,
-recording, and rendering. The animation uses a common 4× time compression and
-the measured ratio; it is not a wall-clock recording. The matching excerpt
-ends at score 429 with four lives and does not establish completed-wall parity
-or a success rate. [Method, policy, and limitations](docs/speed-comparison.md) ·
-[Download and verify the proof](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/releases/tag/showcase-v0.5.15-20261005-style4).
+[Benchmark results, method, and proof](benchmarks.md).
 
 ## Quick start
 
@@ -136,7 +123,7 @@ for a longer loop with selective resets and a local throughput measurement.
 - [Environment reference](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/docs/environment.md):
   actions, preprocessing, rendering, snapshots, branching, game signals,
   [Stable Retro Turbo] compatibility, and the optional Stable-Baselines3 adapter.
-- [Performance comparison](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/docs/speed-comparison.md)
+- [Performance comparison](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/benchmarks.md)
   and [release validation](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/docs/release-validation.md):
   timing methodology, parity evidence, validation limits, and evidence ownership.
 - [Contributing](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/CONTRIBUTING.md):

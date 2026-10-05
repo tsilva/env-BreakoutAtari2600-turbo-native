@@ -58,24 +58,7 @@ Root [SPECS.md](../SPECS.md) is authoritative. Maintained evidence belongs to:
 
 ## Performance evidence
 
-The separate [policy benchmark proof](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/releases/tag/benchmark-v0.5.15-20261004-tb2.0.11) compares published native
-0.5.15 with Stable Retro 1.0.1 using published TurboBench 2.0.11 on an idle Linux
-host. Its [method and limitations](speed-comparison.md) distinguish the matched
-policy excerpt from full-game parity. Download and verify that archive with the
-pinned 2.0.11 verifier; it does not replace the library release's canonical
-`breakout/start-v1` receipt.
-
-## Presentation refresh
-
-The [style v3 showcase refresh](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/releases/tag/showcase-v0.5.15-20261005-style3) updates the title and speedup
-label placement using renderer revision `f6f5e16`. Its benchmark and
-policy proofs are unchanged. [Media verification](speed-comparison.md#refreshed-frame-and-media-proof)
-pins the renderer source separately from the published 2.0.11 benchmark verifier.
-
-## Frame spacing refresh
-
-The [style v4 showcase refresh](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/releases/tag/showcase-v0.5.15-20261005-style4) adds small title-accent gaps,
-compacts the speedup/settings spacing, and places SPS next to each number.
-Renderer revision: `cfc7a19dc8d243c725f4b604658bc640cb587124`. Benchmark and policy proofs are unchanged.
-[Media verification](speed-comparison.md#refreshed-frame-and-media-proof) pins
-the source verifier separately from the published 2.0.11 benchmark verifier.
+See [benchmarks.md](../benchmarks.md) for the latest benchmark, method,
+limitations, pinned verifier instructions, and current and earlier proof files.
+Benchmark and showcase evidence does not replace the library release's canonical
+`breakout/start-v1` parity receipt.
