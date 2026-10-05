@@ -71,3 +71,11 @@ The [style v3 showcase refresh](https://github.com/tsilva/env-BreakoutAtari2600-
 label placement using renderer revision `f6f5e16`. Its benchmark and
 policy proofs are unchanged. [Media verification](speed-comparison.md#refreshed-frame-and-media-proof)
 pins the renderer source separately from the published 2.0.11 benchmark verifier.
+
+## Frame spacing refresh
+
+The [style v4 showcase refresh](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/releases/tag/showcase-v0.5.15-20261005-style4) adds small title-accent gaps,
+compacts the speedup/settings spacing, and places SPS next to each number.
+Renderer revision: `cfc7a19dc8d243c725f4b604658bc640cb587124`. Benchmark and policy proofs are unchanged.
+[Media verification](speed-comparison.md#refreshed-frame-and-media-proof) pins
+the source verifier separately from the published 2.0.11 benchmark verifier.
