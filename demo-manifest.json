@@ -54,11 +54,6 @@
       "proof_path": "media/comparison.webp",
       "sha256": "71bdee271e9cbcd20a45b5e6ebd754e1e39ae7aba6f3e6a5b00e9889fb77dae8",
       "size": 705990
-    },
-    "benchmark.svg": {
-      "proof_path": "chart.svg",
-      "sha256": "3e4af1652b10fd787b3d778e48997a50e821223a34ceeaacf83c5af24fbe1a05",
-      "size": 9477
     }
   },
   "original_showcase": {
@@ -85,17 +80,17 @@
   "readme_chart": {
     "asset": {
       "path": "benchmark-readme.svg",
-      "sha256": "f024adf08da52351dc3bfe1a688c5fb275b9296fcd8b5348e2b7843ada21073b",
-      "size": 7167
+      "sha256": "8dc4a38e4dfabdfa37100aa1cf94217618a76f08eb91df40c698da833a70d820",
+      "size": 6240
     },
     "benchmark_id": "7a7df46f83e4be2a26fe7dbcc212fb2305860a317af1d8fc92206c03ac2f8214",
     "diagnostic": false,
-    "format": "turbobench.readme-chart/v1",
+    "format": "turbobench.publication-chart/v1",
     "omitted_n_envs": [
       128,
       256
     ],
-    "renderer_sha256": "28630e7e778cfed4d8c04f9cea4c3f26fa483bef2b75598880a5af02a3c49c4f",
+    "renderer_sha256": "d0f64548913b1ff9ec511baab1e06b4e41b32d8864e652e65a73900b4940cbfe",
     "result_sha256": "ea05e31a0d23754c990483846ecfd1bed933a3a2d5d1f3c3499c648781373a6e",
     "selection": "measured-prefix-through-first-candidate-median-sps-maximum",
     "shown_n_envs": [
@@ -108,9 +103,45 @@
       64
     ],
     "provenance_path": "benchmark-readme.json",
-    "provenance_sha256": "76ab0cba055543fedbc124c7837c5fa0869dc9ab22e0927ac39217fef0655bbe",
+    "provenance_sha256": "d08bec7603f2d0fd1c4af5e669d0d773091f0fbcccfd041c6540e4c28cbd5b78",
     "renderer_repository": "https://github.com/tsilva/turbobench",
-    "renderer_revision": "0504863c9083f1c714e64c6bd1112abc3e9cbdff",
-    "note": "Derived publication view; original full chart and benchmark proof are unchanged."
+    "renderer_revision": "fd8639c844acdf4e0d434ad9b84c02c30dfca7d8",
+    "note": "Derived publication view; original benchmark proof and archived chart are unchanged."
+  },
+  "archived_chart": {
+    "proof_path": "chart.svg",
+    "sha256": "3e4af1652b10fd787b3d778e48997a50e821223a34ceeaacf83c5af24fbe1a05",
+    "size": 9477,
+    "note": "Original complete chart remains inside the immutable showcase archive."
+  },
+  "full_chart": {
+    "asset": {
+      "path": "benchmark.svg",
+      "sha256": "cbca2f24d755306eeaacf9f23721b620a6df204577255ebf547d646835f58fcf",
+      "size": 9133
+    },
+    "benchmark_id": "7a7df46f83e4be2a26fe7dbcc212fb2305860a317af1d8fc92206c03ac2f8214",
+    "diagnostic": false,
+    "format": "turbobench.publication-chart/v1",
+    "omitted_n_envs": [],
+    "renderer_sha256": "d0f64548913b1ff9ec511baab1e06b4e41b32d8864e652e65a73900b4940cbfe",
+    "result_sha256": "ea05e31a0d23754c990483846ecfd1bed933a3a2d5d1f3c3499c648781373a6e",
+    "selection": "all-measured-counts",
+    "shown_n_envs": [
+      1,
+      2,
+      4,
+      8,
+      16,
+      32,
+      64,
+      128,
+      256
+    ],
+    "provenance_path": "benchmark.json",
+    "provenance_sha256": "0dcfc739ccd33fc1a4efa18c925e7568f6db652a6915deb23ed871c93300a3af",
+    "renderer_repository": "https://github.com/tsilva/turbobench",
+    "renderer_revision": "fd8639c844acdf4e0d434ad9b84c02c30dfca7d8",
+    "note": "Derived publication view; original benchmark proof and archived chart are unchanged."
   }
 }

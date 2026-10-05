@@ -9,7 +9,8 @@ and its canonical parity receipt remain separate evidence.
 
 The README's [animation](../demo.webp) and [MP4](../demo.mp4) are exports from
 the refreshed style v3 showcase proof described below. The
-[grouped bar chart](../benchmark.svg) and benchmark measurements are unchanged.
+[complete chart](../benchmark.svg) now uses simplified publication labels;
+benchmark measurements and the archived chart are unchanged.
 [demo-manifest.json](../demo-manifest.json) records their digests and the archive
 reference; it is a publication pointer, not a standalone TurboBench proof.
 
@@ -63,8 +64,10 @@ location. The cap is 1,024 environments; reaching it alone would be diagnostic.
 ## Readable README chart
 
 The [README chart](../benchmark-readme.svg) uses an 800-unit canvas, paired
-horizontal bars on one shared zero-based linear scale, and large numeric SPS,
-paired speedup and 95% interval labels. It shows the measured prefix through
+horizontal bars on one shared zero-based linear scale, whole-number SPS labels,
+and paired speedups. Both published chart views omit inline confidence intervals
+and bottom explanatory labels; exact medians and intervals remain in the table
+above and immutable proof. Display rounding does not change bar lengths. It shows the measured prefix through
 the first maximum native median throughput: **1, 2, 4, 8, 16, 32, 64**.
 The cutoff uses native throughput, not the native/upstream speedup ratio.
 The native decline at **128 and 256** is omitted only from this presentation;
@@ -76,17 +79,22 @@ This chart is a derived publication export, separate from the immutable
 showcase assets. [benchmark-readme.json](../benchmark-readme.json) binds the
 benchmark proof ID, original result digest, renderer file digest, selected
 and omitted counts, and SVG digest. [demo-manifest.json](../demo-manifest.json)
-pins renderer source revision [`0504863`](https://github.com/tsilva/turbobench/commit/0504863c9083f1c714e64c6bd1112abc3e9cbdff).
+pins renderer source revision [`fd8639c`](https://github.com/tsilva/turbobench/commit/fd8639c844acdf4e0d434ad9b84c02c30dfca7d8).
+The [complete chart publication record](../benchmark.json) binds all nine
+counts and the same verified result. The archive retains its original chart;
+the repo's complete publication view has simplified labels.
 The video and animated WebP are unchanged.
 
 After downloading and extracting the refreshed proof using the instructions
 below, reproduce the README export with that exact renderer source:
 
 ```bash
-curl -fL https://github.com/tsilva/turbobench/archive/0504863c9083f1c714e64c6bd1112abc3e9cbdff.tar.gz -o readme-renderer.tar.gz
+curl -fL https://github.com/tsilva/turbobench/archive/fd8639c844acdf4e0d434ad9b84c02c30dfca7d8.tar.gz -o readme-renderer.tar.gz
 tar -xzf readme-renderer.tar.gz
-uv run --frozen --python 3.14 --project turbobench-0504863c9083f1c714e64c6bd1112abc3e9cbdff python -m turbobench.readme_chart \
+uv run --frozen --python 3.14 --project turbobench-fd8639c844acdf4e0d434ad9b84c02c30dfca7d8 python -m turbobench.readme_chart \
   "$PWD/proof/benchmark" "$PWD/benchmark-readme.svg"
+uv run --frozen --python 3.14 --project turbobench-fd8639c844acdf4e0d434ad9b84c02c30dfca7d8 python -m turbobench.readme_chart \
+  "$PWD/proof/benchmark" "$PWD/benchmark.svg" --full
 ```
 
 Compare the generated SVG and JSON digests with the repository's publication

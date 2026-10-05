@@ -1,50 +1,129 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="4090" height="700" viewBox="0 0 4090 700" role="img" aria-labelledby="title description">
-<title id="title">Environment throughput by environment count</title>
-<desc id="description">Side-by-side upstream and candidate bars show median steps per second on a linear axis starting at zero. Speedups use shape-local paired ratios.</desc>
-<rect width="100%" height="100%" fill="#0d1117"/>
-<g font-family="monospace" fill="#acbde1">
-<text x="80" y="60" font-size="32">Throughput by environment count</text>
-<text x="80" y="98" font-size="20">Median steps per second (SPS); higher is faster</text>
-<rect x="140" y="155" width="20" height="20" fill="#acbde1"/><text x="172" y="172" font-size="20">Stable Retro 1.0.1</text>
-<rect x="860" y="155" width="20" height="20" fill="#ffcc22"/><text x="892" y="172" font-size="20">BreakoutAtari2600-turbo 0.5.15</text>
-<path d="M140 500.000 H4010" stroke="#606975" stroke-opacity="0.4"/><text x="124" y="506.000" text-anchor="end" font-size="18">0</text>
-<path d="M140 400.000 H4010" stroke="#606975" stroke-opacity="0.4"/><text x="124" y="406.000" text-anchor="end" font-size="18">200,000</text>
-<path d="M140 300.000 H4010" stroke="#606975" stroke-opacity="0.4"/><text x="124" y="306.000" text-anchor="end" font-size="18">400,000</text>
-<path d="M140 200.000 H4010" stroke="#606975" stroke-opacity="0.4"/><text x="124" y="206.000" text-anchor="end" font-size="18">600,000</text>
-<g data-n-envs="1">
-<rect data-provider="left" data-sps="192.64882617994488" x="222.600" y="499.903676" width="120.400" height="0.096324" fill="#acbde1"><title>n_envs=1, left: 192.6 SPS</title></rect><text x="282.800" y="487.904" text-anchor="middle" fill="#acbde1" font-size="22">192.6</text>
-<rect data-provider="right" data-sps="69797.45612201637" x="367.000" y="465.101272" width="120.400" height="34.898728" fill="#ffcc22"><title>n_envs=1, right: 69,797.5 SPS</title></rect><text x="427.200" y="453.101" text-anchor="middle" fill="#ffcc22" font-size="22">69,797.5</text>
-<text x="355.000" y="540" text-anchor="middle" font-size="24">n_envs=1</text><text x="355.000" y="580" text-anchor="middle" fill="#ffcc22" font-size="22">362.30x speedup</text><text x="355.000" y="612" text-anchor="middle" font-size="17">95% paired CI: 358.47x - 366.10x</text></g>
-<g data-n-envs="2">
-<rect data-provider="left" data-sps="377.41150165629034" x="652.600" y="499.811294" width="120.400" height="0.188706" fill="#acbde1"><title>n_envs=2, left: 377.4 SPS</title></rect><text x="712.800" y="487.811" text-anchor="middle" fill="#acbde1" font-size="22">377.4</text>
-<rect data-provider="right" data-sps="124814.61841012655" x="797.000" y="437.592691" width="120.400" height="62.407309" fill="#ffcc22"><title>n_envs=2, right: 124,814.6 SPS</title></rect><text x="857.200" y="425.593" text-anchor="middle" fill="#ffcc22" font-size="22">124,814.6</text>
-<text x="785.000" y="540" text-anchor="middle" font-size="24">n_envs=2</text><text x="785.000" y="580" text-anchor="middle" fill="#ffcc22" font-size="22">331.04x speedup</text><text x="785.000" y="612" text-anchor="middle" font-size="17">95% paired CI: 316.39x - 332.47x</text></g>
-<g data-n-envs="4">
-<rect data-provider="left" data-sps="732.4865964314062" x="1082.600" y="499.633757" width="120.400" height="0.366243" fill="#acbde1"><title>n_envs=4, left: 732.5 SPS</title></rect><text x="1142.800" y="487.634" text-anchor="middle" fill="#acbde1" font-size="22">732.5</text>
-<rect data-provider="right" data-sps="218855.14319058336" x="1227.000" y="390.572428" width="120.400" height="109.427572" fill="#ffcc22"><title>n_envs=4, right: 218,855.1 SPS</title></rect><text x="1287.200" y="378.572" text-anchor="middle" fill="#ffcc22" font-size="22">218,855.1</text>
-<text x="1215.000" y="540" text-anchor="middle" font-size="24">n_envs=4</text><text x="1215.000" y="580" text-anchor="middle" fill="#ffcc22" font-size="22">298.26x speedup</text><text x="1215.000" y="612" text-anchor="middle" font-size="17">95% paired CI: 290.64x - 305.13x</text></g>
-<g data-n-envs="8">
-<rect data-provider="left" data-sps="1032.2523001071434" x="1512.600" y="499.483874" width="120.400" height="0.516126" fill="#acbde1"><title>n_envs=8, left: 1,032.3 SPS</title></rect><text x="1572.800" y="487.484" text-anchor="middle" fill="#acbde1" font-size="22">1,032.3</text>
-<rect data-provider="right" data-sps="258955.42646216365" x="1657.000" y="370.522287" width="120.400" height="129.477713" fill="#ffcc22"><title>n_envs=8, right: 258,955.4 SPS</title></rect><text x="1717.200" y="358.522" text-anchor="middle" fill="#ffcc22" font-size="22">258,955.4</text>
-<text x="1645.000" y="540" text-anchor="middle" font-size="24">n_envs=8</text><text x="1645.000" y="580" text-anchor="middle" fill="#ffcc22" font-size="22">251.21x speedup</text><text x="1645.000" y="612" text-anchor="middle" font-size="17">95% paired CI: 249.10x - 270.88x</text></g>
-<g data-n-envs="16">
-<rect data-provider="left" data-sps="1247.5403221764454" x="1942.600" y="499.376230" width="120.400" height="0.623770" fill="#acbde1"><title>n_envs=16, left: 1,247.5 SPS</title></rect><text x="2002.800" y="487.376" text-anchor="middle" fill="#acbde1" font-size="22">1,247.5</text>
-<rect data-provider="right" data-sps="276117.99861899996" x="2087.000" y="361.941001" width="120.400" height="138.058999" fill="#ffcc22"><title>n_envs=16, right: 276,118.0 SPS</title></rect><text x="2147.200" y="349.941" text-anchor="middle" fill="#ffcc22" font-size="22">276,118.0</text>
-<text x="2075.000" y="540" text-anchor="middle" font-size="24">n_envs=16</text><text x="2075.000" y="580" text-anchor="middle" fill="#ffcc22" font-size="22">221.98x speedup</text><text x="2075.000" y="612" text-anchor="middle" font-size="17">95% paired CI: 219.31x - 224.02x</text></g>
-<g data-n-envs="32">
-<rect data-provider="left" data-sps="1342.3607550525423" x="2372.600" y="499.328820" width="120.400" height="0.671180" fill="#acbde1"><title>n_envs=32, left: 1,342.4 SPS</title></rect><text x="2432.800" y="487.329" text-anchor="middle" fill="#acbde1" font-size="22">1,342.4</text>
-<rect data-provider="right" data-sps="353326.7810414951" x="2517.000" y="323.336609" width="120.400" height="176.663391" fill="#ffcc22"><title>n_envs=32, right: 353,326.8 SPS</title></rect><text x="2577.200" y="311.337" text-anchor="middle" fill="#ffcc22" font-size="22">353,326.8</text>
-<text x="2505.000" y="540" text-anchor="middle" font-size="24">n_envs=32</text><text x="2505.000" y="580" text-anchor="middle" fill="#ffcc22" font-size="22">263.21x speedup</text><text x="2505.000" y="612" text-anchor="middle" font-size="17">95% paired CI: 261.24x - 265.77x</text></g>
-<g data-n-envs="64">
-<rect data-provider="left" data-sps="1389.681125166189" x="2802.600" y="499.305159" width="120.400" height="0.694841" fill="#acbde1"><title>n_envs=64, left: 1,389.7 SPS</title></rect><text x="2862.800" y="487.305" text-anchor="middle" fill="#acbde1" font-size="22">1,389.7</text>
-<rect data-provider="right" data-sps="418587.6716885976" x="2947.000" y="290.706164" width="120.400" height="209.293836" fill="#ffcc22"><title>n_envs=64, right: 418,587.7 SPS</title></rect><text x="3007.200" y="278.706" text-anchor="middle" fill="#ffcc22" font-size="22">418,587.7</text>
-<text x="2935.000" y="540" text-anchor="middle" font-size="24">n_envs=64</text><text x="2935.000" y="580" text-anchor="middle" fill="#ffcc22" font-size="22">300.97x speedup</text><text x="2935.000" y="612" text-anchor="middle" font-size="17">95% paired CI: 298.86x - 302.43x</text></g>
-<g data-n-envs="128">
-<rect data-provider="left" data-sps="1408.1270792798941" x="3232.600" y="499.295936" width="120.400" height="0.704064" fill="#acbde1"><title>n_envs=128, left: 1,408.1 SPS</title></rect><text x="3292.800" y="487.296" text-anchor="middle" fill="#acbde1" font-size="22">1,408.1</text>
-<rect data-provider="right" data-sps="361149.52454765845" x="3377.000" y="319.425238" width="120.400" height="180.574762" fill="#ffcc22"><title>n_envs=128, right: 361,149.5 SPS</title></rect><text x="3437.200" y="307.425" text-anchor="middle" fill="#ffcc22" font-size="22">361,149.5</text>
-<text x="3365.000" y="540" text-anchor="middle" font-size="24">n_envs=128</text><text x="3365.000" y="580" text-anchor="middle" fill="#ffcc22" font-size="22">256.48x speedup</text><text x="3365.000" y="612" text-anchor="middle" font-size="17">95% paired CI: 254.61x - 256.76x</text></g>
-<g data-n-envs="256">
-<rect data-provider="left" data-sps="1423.1579495724345" x="3662.600" y="499.288421" width="120.400" height="0.711579" fill="#acbde1"><title>n_envs=256, left: 1,423.2 SPS</title></rect><text x="3722.800" y="487.288" text-anchor="middle" fill="#acbde1" font-size="22">1,423.2</text>
-<rect data-provider="right" data-sps="173169.74524198193" x="3807.000" y="413.415127" width="120.400" height="86.584873" fill="#ffcc22"><title>n_envs=256, right: 173,169.7 SPS</title></rect><text x="3867.200" y="401.415" text-anchor="middle" fill="#ffcc22" font-size="22">173,169.7</text>
-<text x="3795.000" y="540" text-anchor="middle" font-size="24">n_envs=256</text><text x="3795.000" y="580" text-anchor="middle" fill="#ffcc22" font-size="22">121.52x speedup</text><text x="3795.000" y="612" text-anchor="middle" font-size="17">95% paired CI: 120.64x - 122.43x</text></g>
-<text x="80" y="670" font-size="16" fill="#606975">Bars: shape-local median SPS. Speedup: paired candidate/upstream ratio; counts are not aggregated.</text></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="4090" height="610" viewBox="0 0 4090 610" role="img" aria-labelledby="title description">
+  <title id="title">Environment throughput by environment count</title>
+  <desc id="description">Side-by-side upstream and candidate bars show median steps per second on a linear axis starting at zero. Speedups use shape-local paired ratios.</desc>
+  <rect width="100%" height="100%" fill="#0d1117" />
+  <g font-family="monospace" fill="#acbde1">
+    <text x="80" y="60" font-size="32">Throughput by environment count</text>
+    <text x="80" y="98" font-size="20">Median steps per second (SPS); higher is faster</text>
+    <rect x="140" y="155" width="20" height="20" fill="#acbde1" />
+    <text x="172" y="172" font-size="20">Stable Retro 1.0.1</text>
+    <rect x="860" y="155" width="20" height="20" fill="#ffcc22" />
+    <text x="892" y="172" font-size="20">BreakoutAtari2600-turbo 0.5.15</text>
+    <path d="M140 500.000 H4010" stroke="#606975" stroke-opacity="0.4" />
+    <text x="124" y="506.000" text-anchor="end" font-size="18">0</text>
+    <path d="M140 400.000 H4010" stroke="#606975" stroke-opacity="0.4" />
+    <text x="124" y="406.000" text-anchor="end" font-size="18">200,000</text>
+    <path d="M140 300.000 H4010" stroke="#606975" stroke-opacity="0.4" />
+    <text x="124" y="306.000" text-anchor="end" font-size="18">400,000</text>
+    <path d="M140 200.000 H4010" stroke="#606975" stroke-opacity="0.4" />
+    <text x="124" y="206.000" text-anchor="end" font-size="18">600,000</text>
+    <g data-n-envs="1">
+      <rect data-provider="left" data-sps="192.64882617994488" x="222.600" y="499.903676" width="120.400" height="0.096324" fill="#acbde1">
+        <title>n_envs=1, left: 193 SPS</title>
+      </rect>
+      <text x="282.800" y="487.904" text-anchor="middle" fill="#acbde1" font-size="22">193</text>
+      <rect data-provider="right" data-sps="69797.45612201637" x="367.000" y="465.101272" width="120.400" height="34.898728" fill="#ffcc22">
+        <title>n_envs=1, right: 69,797 SPS</title>
+      </rect>
+      <text x="427.200" y="453.101" text-anchor="middle" fill="#ffcc22" font-size="22">69,797</text>
+      <text x="355.000" y="540" text-anchor="middle" font-size="24">n_envs=1</text>
+      <text x="355.000" y="580" text-anchor="middle" fill="#ffcc22" font-size="22">362.30x speedup</text>
+    </g>
+    <g data-n-envs="2">
+      <rect data-provider="left" data-sps="377.41150165629034" x="652.600" y="499.811294" width="120.400" height="0.188706" fill="#acbde1">
+        <title>n_envs=2, left: 377 SPS</title>
+      </rect>
+      <text x="712.800" y="487.811" text-anchor="middle" fill="#acbde1" font-size="22">377</text>
+      <rect data-provider="right" data-sps="124814.61841012655" x="797.000" y="437.592691" width="120.400" height="62.407309" fill="#ffcc22">
+        <title>n_envs=2, right: 124,815 SPS</title>
+      </rect>
+      <text x="857.200" y="425.593" text-anchor="middle" fill="#ffcc22" font-size="22">124,815</text>
+      <text x="785.000" y="540" text-anchor="middle" font-size="24">n_envs=2</text>
+      <text x="785.000" y="580" text-anchor="middle" fill="#ffcc22" font-size="22">331.04x speedup</text>
+    </g>
+    <g data-n-envs="4">
+      <rect data-provider="left" data-sps="732.4865964314062" x="1082.600" y="499.633757" width="120.400" height="0.366243" fill="#acbde1">
+        <title>n_envs=4, left: 732 SPS</title>
+      </rect>
+      <text x="1142.800" y="487.634" text-anchor="middle" fill="#acbde1" font-size="22">732</text>
+      <rect data-provider="right" data-sps="218855.14319058336" x="1227.000" y="390.572428" width="120.400" height="109.427572" fill="#ffcc22">
+        <title>n_envs=4, right: 218,855 SPS</title>
+      </rect>
+      <text x="1287.200" y="378.572" text-anchor="middle" fill="#ffcc22" font-size="22">218,855</text>
+      <text x="1215.000" y="540" text-anchor="middle" font-size="24">n_envs=4</text>
+      <text x="1215.000" y="580" text-anchor="middle" fill="#ffcc22" font-size="22">298.26x speedup</text>
+    </g>
+    <g data-n-envs="8">
+      <rect data-provider="left" data-sps="1032.2523001071434" x="1512.600" y="499.483874" width="120.400" height="0.516126" fill="#acbde1">
+        <title>n_envs=8, left: 1,032 SPS</title>
+      </rect>
+      <text x="1572.800" y="487.484" text-anchor="middle" fill="#acbde1" font-size="22">1,032</text>
+      <rect data-provider="right" data-sps="258955.42646216365" x="1657.000" y="370.522287" width="120.400" height="129.477713" fill="#ffcc22">
+        <title>n_envs=8, right: 258,955 SPS</title>
+      </rect>
+      <text x="1717.200" y="358.522" text-anchor="middle" fill="#ffcc22" font-size="22">258,955</text>
+      <text x="1645.000" y="540" text-anchor="middle" font-size="24">n_envs=8</text>
+      <text x="1645.000" y="580" text-anchor="middle" fill="#ffcc22" font-size="22">251.21x speedup</text>
+    </g>
+    <g data-n-envs="16">
+      <rect data-provider="left" data-sps="1247.5403221764454" x="1942.600" y="499.376230" width="120.400" height="0.623770" fill="#acbde1">
+        <title>n_envs=16, left: 1,248 SPS</title>
+      </rect>
+      <text x="2002.800" y="487.376" text-anchor="middle" fill="#acbde1" font-size="22">1,248</text>
+      <rect data-provider="right" data-sps="276117.99861899996" x="2087.000" y="361.941001" width="120.400" height="138.058999" fill="#ffcc22">
+        <title>n_envs=16, right: 276,118 SPS</title>
+      </rect>
+      <text x="2147.200" y="349.941" text-anchor="middle" fill="#ffcc22" font-size="22">276,118</text>
+      <text x="2075.000" y="540" text-anchor="middle" font-size="24">n_envs=16</text>
+      <text x="2075.000" y="580" text-anchor="middle" fill="#ffcc22" font-size="22">221.98x speedup</text>
+    </g>
+    <g data-n-envs="32">
+      <rect data-provider="left" data-sps="1342.3607550525423" x="2372.600" y="499.328820" width="120.400" height="0.671180" fill="#acbde1">
+        <title>n_envs=32, left: 1,342 SPS</title>
+      </rect>
+      <text x="2432.800" y="487.329" text-anchor="middle" fill="#acbde1" font-size="22">1,342</text>
+      <rect data-provider="right" data-sps="353326.7810414951" x="2517.000" y="323.336609" width="120.400" height="176.663391" fill="#ffcc22">
+        <title>n_envs=32, right: 353,327 SPS</title>
+      </rect>
+      <text x="2577.200" y="311.337" text-anchor="middle" fill="#ffcc22" font-size="22">353,327</text>
+      <text x="2505.000" y="540" text-anchor="middle" font-size="24">n_envs=32</text>
+      <text x="2505.000" y="580" text-anchor="middle" fill="#ffcc22" font-size="22">263.21x speedup</text>
+    </g>
+    <g data-n-envs="64">
+      <rect data-provider="left" data-sps="1389.681125166189" x="2802.600" y="499.305159" width="120.400" height="0.694841" fill="#acbde1">
+        <title>n_envs=64, left: 1,390 SPS</title>
+      </rect>
+      <text x="2862.800" y="487.305" text-anchor="middle" fill="#acbde1" font-size="22">1,390</text>
+      <rect data-provider="right" data-sps="418587.6716885976" x="2947.000" y="290.706164" width="120.400" height="209.293836" fill="#ffcc22">
+        <title>n_envs=64, right: 418,588 SPS</title>
+      </rect>
+      <text x="3007.200" y="278.706" text-anchor="middle" fill="#ffcc22" font-size="22">418,588</text>
+      <text x="2935.000" y="540" text-anchor="middle" font-size="24">n_envs=64</text>
+      <text x="2935.000" y="580" text-anchor="middle" fill="#ffcc22" font-size="22">300.97x speedup</text>
+    </g>
+    <g data-n-envs="128">
+      <rect data-provider="left" data-sps="1408.1270792798941" x="3232.600" y="499.295936" width="120.400" height="0.704064" fill="#acbde1">
+        <title>n_envs=128, left: 1,408 SPS</title>
+      </rect>
+      <text x="3292.800" y="487.296" text-anchor="middle" fill="#acbde1" font-size="22">1,408</text>
+      <rect data-provider="right" data-sps="361149.52454765845" x="3377.000" y="319.425238" width="120.400" height="180.574762" fill="#ffcc22">
+        <title>n_envs=128, right: 361,150 SPS</title>
+      </rect>
+      <text x="3437.200" y="307.425" text-anchor="middle" fill="#ffcc22" font-size="22">361,150</text>
+      <text x="3365.000" y="540" text-anchor="middle" font-size="24">n_envs=128</text>
+      <text x="3365.000" y="580" text-anchor="middle" fill="#ffcc22" font-size="22">256.48x speedup</text>
+    </g>
+    <g data-n-envs="256">
+      <rect data-provider="left" data-sps="1423.1579495724345" x="3662.600" y="499.288421" width="120.400" height="0.711579" fill="#acbde1">
+        <title>n_envs=256, left: 1,423 SPS</title>
+      </rect>
+      <text x="3722.800" y="487.288" text-anchor="middle" fill="#acbde1" font-size="22">1,423</text>
+      <rect data-provider="right" data-sps="173169.74524198193" x="3807.000" y="413.415127" width="120.400" height="86.584873" fill="#ffcc22">
+        <title>n_envs=256, right: 173,170 SPS</title>
+      </rect>
+      <text x="3867.200" y="401.415" text-anchor="middle" fill="#ffcc22" font-size="22">173,170</text>
+      <text x="3795.000" y="540" text-anchor="middle" font-size="24">n_envs=256</text>
+      <text x="3795.000" y="580" text-anchor="middle" fill="#ffcc22" font-size="22">121.52x speedup</text>
+    </g>
+  </g>
+</svg>

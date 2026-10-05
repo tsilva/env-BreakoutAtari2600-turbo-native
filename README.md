@@ -29,10 +29,10 @@ environments such as [Stable Retro].
 </p>
 
 <p align="center">
-  <img src="benchmark-readme.svg" alt="Paired provider throughput bars from 1 to 64 environments, with readable SPS values, speedups, and 95% confidence intervals" width="800" />
+  <img src="benchmark-readme.svg" alt="Paired provider throughput bars from 1 to 64 environments, with whole-number SPS values and speedups" width="800" />
 </p>
 
-Native throughput improves through **64 environments**, reaching **418,587.7
+Native throughput improves through **64 environments**, reaching **418,588
 steps/s**. This README view stops at that measured peak; the slower native
 results at 128 and 256 remain in the [complete results](docs/speed-comparison.md#results-and-scaling)
 and verified proof.
