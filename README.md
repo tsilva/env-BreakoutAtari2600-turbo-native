@@ -29,7 +29,7 @@ environments such as [Stable Retro].
 </p>
 
 <p align="center">
-  <img src="benchmark-readme.svg" alt="Paired provider throughput bars from 1 to 64 environments, with whole-number SPS values and speedups" width="800" />
+  <img src="benchmark-readme.svg" alt="Side-by-side vertical provider throughput bars from 1 to 64 environments, with whole-number SPS values and speedups" width="800" />
 </p>
 
 Native throughput improves through **64 environments**, reaching **418,588
