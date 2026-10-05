@@ -6,11 +6,11 @@ This comparison, started October 4, 2026, uses the published **TurboBench 2.0.11
 native **0.5.15**, and original **Stable Retro 1.0.1**. The benchmark ran on
 `private-host-redacted`; exact replay and media generation ran separately on an
 Apple M1 Pro. The latest complete proof is attached to the
-[showcase release](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/releases/tag/showcase-v0.5.15-20261005-style4). The library's [v0.5.15 release](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/releases/tag/v0.5.15)
+[showcase release](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/releases/tag/showcase-v0.5.15-20261005-style5). The library's [v0.5.15 release](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/releases/tag/v0.5.15)
 and its canonical parity receipt remain separate evidence.
 
 The README's [animation](demo.webp) and [MP4](demo.mp4) are exports from
-the refreshed style v4 showcase proof described below. The
+the refreshed style v5 showcase proof described below. The
 [complete chart](benchmark.svg) now uses simplified publication labels;
 benchmark measurements and the archived chart are unchanged.
 [demo-manifest.json](demo-manifest.json) records their digests and the archive
@@ -163,41 +163,43 @@ proof and must not be inferred away from this successful excerpt.
 The README media was re-rendered on October 5, 2026 with **Same Actions**,
 small gaps on both sides of the title, the **speedup** label directly below
 the multiplier, and a compact divider/settings block below it. Each **SPS**
-unit sits immediately beside its number regardless of digit count.
+unit sits immediately beside its number regardless of digit count. The upper
+yellow divider is now 16 pixels above the multiplier, removing the former
+58-pixel spacer.
 The MP4 and animated WebP retain 1672×940 resolution, 26.65-second duration,
 the original playback ratio, and the same effective action trajectory.
 The WebP remains lossless, nominally 20 fps, and loops indefinitely; the
 silent H.264 MP4 remains 60 fps.
 
-The [refreshed showcase proof](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/releases/tag/showcase-v0.5.15-20261005-style4) uses `comparison-style/v4` and
-TurboBench renderer source revision [`cfc7a19`](https://github.com/tsilva/turbobench/commit/cfc7a19dc8d243c725f4b604658bc640cb587124).
+The [refreshed showcase proof](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/releases/tag/showcase-v0.5.15-20261005-style5) uses `comparison-style/v5` and
+TurboBench renderer source revision [`10fc93d`](https://github.com/tsilva/turbobench/commit/10fc93d737671765269e07321de37f76345590b5).
 Its benchmark and policy child proofs are unchanged, and its archived chart is
 byte-identical to the original. Fresh untimed replay passes the original
 cross-host commitments. No benchmark was rerun and no measurements were edited.
 
-Download `breakout-policy-showcase-env0.5.15-style4.tar.gz` and `SHA256SUMS` from the refreshed showcase release
+Download `breakout-policy-showcase-env0.5.15-style5.tar.gz` and `SHA256SUMS` from the refreshed showcase release
 into a fresh directory. The **published 2.0.11 verifier checks the benchmark
 child**; the **pinned source revision checks the complete refreshed media proof**.
-Style v4 is not included in the published 2.0.11 wheel.
+Style v5 is not included in the published 2.0.11 wheel.
 
 ```bash
 shasum -a 256 -c SHA256SUMS
-tar -xzf breakout-policy-showcase-env0.5.15-style4.tar.gz
+tar -xzf breakout-policy-showcase-env0.5.15-style5.tar.gz
 uvx --python 3.14 --exclude-newer-package turbobench-cli=2026-10-05 --with numpy==2.5.1 --with pillow==12.3.0 --with packaging==26.2 \
   --from turbobench-cli==2.0.11 turbobench verify proof/benchmark
-curl -fL https://github.com/tsilva/turbobench/archive/cfc7a19dc8d243c725f4b604658bc640cb587124.tar.gz -o renderer.tar.gz
+curl -fL https://github.com/tsilva/turbobench/archive/10fc93d737671765269e07321de37f76345590b5.tar.gz -o renderer.tar.gz
 tar -xzf renderer.tar.gz
-uv run --frozen --python 3.14 --project turbobench-cfc7a19dc8d243c725f4b604658bc640cb587124 turbobench verify "$PWD/proof"
+uv run --frozen --python 3.14 --project turbobench-10fc93d737671765269e07321de37f76345590b5 turbobench verify "$PWD/proof"
 ```
 
 Both verification steps require FFprobe but no ROM, save state, inference, or
 remeasurement. The source verifier uses the committed dependency lock.
 
-- Refreshed archive SHA-256: `dffbf3e79988ad12cfaa77411e1d810e76cc5571626f35e9c6dfb11c405e8ff8`
-- Refreshed showcase proof: `a8fc9c6f0172da3d2b1d86c9095e1e770983316f72a6c0757145dc52af1155c1`
+- Refreshed archive SHA-256: `a9da5ccd18b4221ff2f0485bf7376f1d4937d7978e8fa68e448118f1777eaa0f`
+- Refreshed showcase proof: `e5b4bdeef20934c34c87f056666179d806fc8792dc7097827a01e0eed5c8f54b`
 - Benchmark proof: `7a7df46f83e4be2a26fe7dbcc212fb2305860a317af1d8fc92206c03ac2f8214`
 - Policy proof: `d1656f3e45f41694846ba3921b88312e35b326962bf233f80afb5fff55d5f0fe`
-- Render harness SHA-256: `b77013e734fb7540fea2b5fb18eac3e810f68e94803bb8ebb8529eb35ea0e19b`
+- Render harness SHA-256: `88305c1269544162a1eae909e51f1888b8d9ac9d8564ca26a0627f4cfa59ab11`
 
 The archive includes bound raw measurements, runtime locks, schemas, checkpoint,
 recipe, actions, replay digests, media, and the generated report. It excludes
@@ -230,3 +232,4 @@ training and inference capture; TurboBench owns comparison logic and media.
 | --- | --- | --- |
 | Original benchmark/showcase | [Proof files and verification instructions](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/releases/tag/benchmark-v0.5.15-20261004-tb2.0.11) | `0b3cf31ee3b97e3f0ef633249087ad97ff4f8658a99d8a2965b42892b3dcb9b9` |
 | Earlier media export (style v3) | [Proof files and verification instructions](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/releases/tag/showcase-v0.5.15-20261005-style3) | `c864c3725ddbf283cf3eae899b502069787415aa73cd3fbad1a4bb6515728d60` |
+| Earlier media export (style v4) | [Proof files and verification instructions](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/releases/tag/showcase-v0.5.15-20261005-style4) | `dffbf3e79988ad12cfaa77411e1d810e76cc5571626f35e9c6dfb11c405e8ff8` |

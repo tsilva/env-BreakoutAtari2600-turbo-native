@@ -3,13 +3,13 @@
   "description": "Refreshed presentation with unchanged published benchmark and policy children. Verify the complete proof with the pinned renderer source; TurboBench 2.0.11 verifies its benchmark child.",
   "proof": {
     "schema": "turbobench.showcase-proof/v3",
-    "proof_id": "a8fc9c6f0172da3d2b1d86c9095e1e770983316f72a6c0757145dc52af1155c1",
+    "proof_id": "e5b4bdeef20934c34c87f056666179d806fc8792dc7097827a01e0eed5c8f54b",
     "benchmark_id": "7a7df46f83e4be2a26fe7dbcc212fb2305860a317af1d8fc92206c03ac2f8214",
     "policy_id": "d1656f3e45f41694846ba3921b88312e35b326962bf233f80afb5fff55d5f0fe",
-    "release_url": "https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/releases/tag/showcase-v0.5.15-20261005-style4",
-    "archive_url": "https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/releases/download/showcase-v0.5.15-20261005-style4/breakout-policy-showcase-env0.5.15-style4.tar.gz",
-    "archive_sha256": "dffbf3e79988ad12cfaa77411e1d810e76cc5571626f35e9c6dfb11c405e8ff8",
-    "style": "comparison-style/v4"
+    "release_url": "https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/releases/tag/showcase-v0.5.15-20261005-style5",
+    "archive_url": "https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/releases/download/showcase-v0.5.15-20261005-style5/breakout-policy-showcase-env0.5.15-style5.tar.gz",
+    "archive_sha256": "a9da5ccd18b4221ff2f0485bf7376f1d4937d7978e8fa68e448118f1777eaa0f",
+    "style": "comparison-style/v5"
   },
   "providers": {
     "upstream": {
@@ -47,13 +47,13 @@
   "media": {
     "demo.mp4": {
       "proof_path": "media/comparison.mp4",
-      "sha256": "5b3bb4295c27bf44352793c92a08c9b3bb1642813812dc420aaf1d6bc4b2d086",
-      "size": 547578
+      "sha256": "4b79f04db3d65702a46232b49b36143ddd0a4cbd8e8c500c5d42237340a075b3",
+      "size": 548119
     },
     "demo.webp": {
       "proof_path": "media/comparison.webp",
-      "sha256": "b4d560f1878dde5a81e63f730d9ae30470cc1e9567647fc4c8f7481c1f6349a3",
-      "size": 809260
+      "sha256": "a7e265250e1ac5033d8be3d49853ab45550219dba9ec43402e892a999cdddcf0",
+      "size": 803264
     }
   },
   "original_showcase": {
@@ -73,9 +73,9 @@
   },
   "showcase_verifier": {
     "repository": "https://github.com/tsilva/turbobench",
-    "revision": "cfc7a19dc8d243c725f4b604658bc640cb587124",
-    "render_harness_sha256": "b77013e734fb7540fea2b5fb18eac3e810f68e94803bb8ebb8529eb35ea0e19b",
-    "note": "Style v4 is in this source revision; published TurboBench 2.0.11 verifies the unchanged benchmark child, not the refreshed style v4 root."
+    "revision": "10fc93d737671765269e07321de37f76345590b5",
+    "render_harness_sha256": "88305c1269544162a1eae909e51f1888b8d9ac9d8564ca26a0627f4cfa59ab11",
+    "note": "Style v5 is in this source revision; published TurboBench 2.0.11 verifies the unchanged benchmark child, not the refreshed style v5 root."
   },
   "readme_chart": {
     "asset": {
@@ -146,12 +146,12 @@
   },
   "previous_showcase": {
     "schema": "turbobench.showcase-proof/v3",
-    "proof_id": "ad2eeab534424e19eb2d05beb855c28a5c99d8e6ff28b34bc64b49c76fae13bb",
+    "proof_id": "a8fc9c6f0172da3d2b1d86c9095e1e770983316f72a6c0757145dc52af1155c1",
     "benchmark_id": "7a7df46f83e4be2a26fe7dbcc212fb2305860a317af1d8fc92206c03ac2f8214",
     "policy_id": "d1656f3e45f41694846ba3921b88312e35b326962bf233f80afb5fff55d5f0fe",
-    "release_url": "https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/releases/tag/showcase-v0.5.15-20261005-style3",
-    "archive_url": "https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/releases/download/showcase-v0.5.15-20261005-style3/breakout-policy-showcase-env0.5.15-style3.tar.gz",
-    "archive_sha256": "c864c3725ddbf283cf3eae899b502069787415aa73cd3fbad1a4bb6515728d60",
-    "style": "comparison-style/v3"
+    "release_url": "https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/releases/tag/showcase-v0.5.15-20261005-style4",
+    "archive_url": "https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/releases/download/showcase-v0.5.15-20261005-style4/breakout-policy-showcase-env0.5.15-style4.tar.gz",
+    "archive_sha256": "dffbf3e79988ad12cfaa77411e1d810e76cc5571626f35e9c6dfb11c405e8ff8",
+    "style": "comparison-style/v4"
   }
 }
