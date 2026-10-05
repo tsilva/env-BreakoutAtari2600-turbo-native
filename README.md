@@ -106,6 +106,63 @@ native game frames by default.
 See the [full rollout example](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/examples/quickstart.py)
 for a longer loop with selective resets and a local throughput measurement.
 
+## Extra info variables
+
+The stock [Stable Retro 1.0.1 Breakout integration](https://github.com/Farama-Foundation/Stable-Retro/blob/v1.0.1/stable_retro/data/stable/Breakout-Atari2600-v0/data.json)
+exposes `score` and `lives`. Native adds the fields below. **Default** means
+included with the default `info_filter="all"`; **opt-in** means explicitly
+selected through `info_filter`. Reset metadata is returned on reset regardless
+of that filter.
+
+| Extra info key(s) | Meaning | Availability |
+| --- | --- | --- |
+| `paddle_x`, `paddle_x_normalized` | Paddle's left edge; raw position uses fixed-point pixels. | Raw: default; normalized: opt-in |
+| `paddle_vx`, `paddle_vx_normalized` | Signed paddle displacement during the latest native frame, including inertia and edge clamping. | Opt-in |
+| `ball_x`, `ball_x_normalized` | Ball's horizontal position; raw position uses fixed-point pixels. | Raw: default; normalized: opt-in |
+| `ball_y`, `ball_y_normalized` | Atari RAM vertical coordinate; zero while waiting for FIRE. | Raw: default; normalized: opt-in |
+| `ball_screen_y`, `ball_screen_y_normalized` | Ball's simulation vertical position in fixed-point pixels, without the waiting-for-FIRE sentinel. | Opt-in |
+| `ball_vx`, `ball_vx_normalized` | Signed horizontal ball velocity in fixed-point pixels per native frame. | Raw: default; normalized: opt-in |
+| `ball_vy`, `ball_vy_normalized` | Signed vertical ball velocity in fixed-point pixels per native frame. | Raw: default; normalized: opt-in |
+| `paddle_width`, `paddle_width_normalized` | Paddle width: initially 16 pixels, narrowing to 12 after ceiling contact. | Opt-in |
+| `ball_paddle_offset`, `ball_paddle_offset_normalized` | Signed distance from paddle center to ball center; raw distance uses fixed-point pixels. | Opt-in |
+| `score_normalized` | Score divided by the selected layout's two-wall maximum. | Opt-in |
+| `lives_normalized` | Remaining lives divided by five. | Opt-in |
+| `brick_mask`, `brick_mask_high` | Logical brick occupancy split into low 64 and high 44 bits. | Default |
+| `bricks_remaining`, `bricks_remaining_normalized` | Remaining logical bricks in the current wall. | Raw: default; normalized: opt-in |
+| `bricks_destroyed`, `bricks_destroyed_normalized` | Cumulative brick removals across both walls. | Opt-in |
+| `walls_cleared`, `walls_cleared_normalized` | Completed walls, from zero to two. | Raw: default; normalized: opt-in |
+| `brick_grid` | Visible brick occupancy as a 6×18 matrix of zeros and ones; can differ from the logical count during startup. | Opt-in |
+| `is_initial_brick_layout` | Whether the episode is still in its initial layout animation, before native frame 36. | Opt-in |
+| `serve_phase` | Hidden serve phase: `0..3` while waiting for FIRE, `-1` during active play. | Opt-in |
+| `tick` | Elapsed native frames in the episode. | Default |
+| `layout_id` | Native layout identifier, `0..3`. | Default |
+| `collision_events` | Latest native frame's collision bitmask: wall `1`, paddle `2`, brick `4`, life loss `8`. | Default |
+| `pending_reset` | Whether the lane has terminated and requires a reset. | Default |
+| `state_index` | Current layout's index in the configured state catalog. | Reset only |
+| `start_source` | Reset source: `0` for a catalog state, `1` for a restored snapshot. | Reset only |
+| `noop_reset_count` | Raw-frame noops applied to a static reset; its presence mask is false for snapshot restores. | Reset only |
+
+Vector infos are arrays with a leading environment dimension. Each key has a
+Boolean presence mask named `_<key>`; check it before using a lane's value,
+especially after selective resets. Fixed-point values use 65,536 units per
+pixel. Normalized values are `float32` and are not clipped.
+
+Select the policy-oriented fields, including their raw/normalized pairs, with:
+
+```python
+from env_breakoutatari2600_turbo_native import BreakoutVecEnv, POLICY_INFO_KEYS
+
+env = BreakoutVecEnv(
+    "Breakout-Atari2600-v0",
+    info_filter={"mode": "all", "keys": POLICY_INFO_KEYS},
+)
+```
+
+An explicit `keys` selection replaces the default signal selection. See
+[info filtering and normalization](docs/environment.md#info-filtering) for
+divisors, shapes, validity, and ownership; `env.signal_schema` and
+`env.signal_metadata` describe the selected fields programmatically.
+
 ## Important behavior
 
 - **Serve each ball:** actions are `0` noop, `1` FIRE, `2` right, and `3` left.
