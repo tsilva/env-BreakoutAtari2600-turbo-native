@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="1372" viewBox="0 0 800 1372" role="img" aria-labelledby="title description">
+<title id="title">Environment throughput through the candidate peak</title>
+<desc id="description">Paired horizontal bars use one linear scale from zero. Every measured count through the first candidate throughput maximum is shown. Later counts remain in the complete benchmark proof. Speedup and 95% intervals use paired candidate/upstream ratios.</desc>
+<rect width="100%" height="100%" fill="#0d1117"/>
+<g font-family="Arial, Helvetica, sans-serif" fill="#f0f3f6">
+<text x="32" y="55" font-size="38" font-weight="700">Scaling to peak throughput</text>
+<text x="32" y="98" font-size="26">Environment steps / second · higher is faster</text>
+<rect x="32" y="121" width="22" height="22" fill="#acbde1"/><text x="66" y="141" font-size="28" fill="#acbde1">Stable Retro 1.0.1</text>
+<rect x="32" y="162" width="22" height="22" fill="#ffcc22"/><text x="66" y="182" font-size="28" fill="#ffcc22">BreakoutAtari2600-turbo 0.5.15</text>
+<text x="32" y="219" fill="#acbde1" font-size="24">Both bars use the same linear scale, starting at zero</text>
+<text x="36.000" y="258" text-anchor="middle" font-size="23" fill="#acbde1">0</text>
+<text x="209.333" y="258" text-anchor="middle" font-size="23" fill="#acbde1">200k</text>
+<text x="382.667" y="258" text-anchor="middle" font-size="23" fill="#acbde1">400k</text>
+<text x="556.000" y="258" text-anchor="middle" font-size="23" fill="#acbde1">600k</text>
+<text x="768" y="258" text-anchor="end" font-size="23" fill="#acbde1">Median SPS</text>
+<g data-n-envs="1"><text x="32" y="298" font-size="28" font-weight="700">n_envs = 1</text><text x="768" y="298" text-anchor="end" fill="#ffcc22" font-size="28" font-weight="700">362.30× speedup</text>
+<rect data-provider="left" data-sps="192.64882617994488" x="36" y="314" width="0.166962" height="18" fill="#acbde1"/><text x="768" y="333" text-anchor="end" font-size="28" fill="#acbde1">192.6</text>
+<rect data-provider="right" data-sps="69797.45612201637" x="36" y="344" width="60.491129" height="18" fill="#ffcc22"/><text x="768" y="363" text-anchor="end" font-size="28" fill="#ffcc22">69,797.5</text>
+<text x="768" y="397" text-anchor="end" font-size="24" fill="#acbde1">95% paired CI: 358.47–366.10×</text><path d="M32 415 H768" stroke="#30363d"/></g>
+<g data-n-envs="2"><text x="32" y="438" font-size="28" font-weight="700">n_envs = 2</text><text x="768" y="438" text-anchor="end" fill="#ffcc22" font-size="28" font-weight="700">331.04× speedup</text>
+<rect data-provider="left" data-sps="377.41150165629034" x="36" y="454" width="0.327090" height="18" fill="#acbde1"/><text x="768" y="473" text-anchor="end" font-size="28" fill="#acbde1">377.4</text>
+<rect data-provider="right" data-sps="124814.61841012655" x="36" y="484" width="108.172669" height="18" fill="#ffcc22"/><text x="768" y="503" text-anchor="end" font-size="28" fill="#ffcc22">124,814.6</text>
+<text x="768" y="537" text-anchor="end" font-size="24" fill="#acbde1">95% paired CI: 316.39–332.47×</text><path d="M32 555 H768" stroke="#30363d"/></g>
+<g data-n-envs="4"><text x="32" y="578" font-size="28" font-weight="700">n_envs = 4</text><text x="768" y="578" text-anchor="end" fill="#ffcc22" font-size="28" font-weight="700">298.26× speedup</text>
+<rect data-provider="left" data-sps="732.4865964314062" x="36" y="594" width="0.634822" height="18" fill="#acbde1"/><text x="768" y="613" text-anchor="end" font-size="28" fill="#acbde1">732.5</text>
+<rect data-provider="right" data-sps="218855.14319058336" x="36" y="624" width="189.674457" height="18" fill="#ffcc22"/><text x="768" y="643" text-anchor="end" font-size="28" fill="#ffcc22">218,855.1</text>
+<text x="768" y="677" text-anchor="end" font-size="24" fill="#acbde1">95% paired CI: 290.64–305.13×</text><path d="M32 695 H768" stroke="#30363d"/></g>
+<g data-n-envs="8"><text x="32" y="718" font-size="28" font-weight="700">n_envs = 8</text><text x="768" y="718" text-anchor="end" fill="#ffcc22" font-size="28" font-weight="700">251.21× speedup</text>
+<rect data-provider="left" data-sps="1032.2523001071434" x="36" y="734" width="0.894619" height="18" fill="#acbde1"/><text x="768" y="753" text-anchor="end" font-size="28" fill="#acbde1">1,032.3</text>
+<rect data-provider="right" data-sps="258955.42646216365" x="36" y="764" width="224.428036" height="18" fill="#ffcc22"/><text x="768" y="783" text-anchor="end" font-size="28" fill="#ffcc22">258,955.4</text>
+<text x="768" y="817" text-anchor="end" font-size="24" fill="#acbde1">95% paired CI: 249.10–270.88×</text><path d="M32 835 H768" stroke="#30363d"/></g>
+<g data-n-envs="16"><text x="32" y="858" font-size="28" font-weight="700">n_envs = 16</text><text x="768" y="858" text-anchor="end" fill="#ffcc22" font-size="28" font-weight="700">221.98× speedup</text>
+<rect data-provider="left" data-sps="1247.5403221764454" x="36" y="874" width="1.081202" height="18" fill="#acbde1"/><text x="768" y="893" text-anchor="end" font-size="28" fill="#acbde1">1,247.5</text>
+<rect data-provider="right" data-sps="276117.99861899996" x="36" y="904" width="239.302265" height="18" fill="#ffcc22"/><text x="768" y="923" text-anchor="end" font-size="28" fill="#ffcc22">276,118.0</text>
+<text x="768" y="957" text-anchor="end" font-size="24" fill="#acbde1">95% paired CI: 219.31–224.02×</text><path d="M32 975 H768" stroke="#30363d"/></g>
+<g data-n-envs="32"><text x="32" y="998" font-size="28" font-weight="700">n_envs = 32</text><text x="768" y="998" text-anchor="end" fill="#ffcc22" font-size="28" font-weight="700">263.21× speedup</text>
+<rect data-provider="left" data-sps="1342.3607550525423" x="36" y="1014" width="1.163379" height="18" fill="#acbde1"/><text x="768" y="1033" text-anchor="end" font-size="28" fill="#acbde1">1,342.4</text>
+<rect data-provider="right" data-sps="353326.7810414951" x="36" y="1044" width="306.216544" height="18" fill="#ffcc22"/><text x="768" y="1063" text-anchor="end" font-size="28" fill="#ffcc22">353,326.8</text>
+<text x="768" y="1097" text-anchor="end" font-size="24" fill="#acbde1">95% paired CI: 261.24–265.77×</text><path d="M32 1115 H768" stroke="#30363d"/></g>
+<g data-n-envs="64"><text x="32" y="1138" font-size="28" font-weight="700">n_envs = 64</text><text x="768" y="1138" text-anchor="end" fill="#ffcc22" font-size="28" font-weight="700">300.97× speedup</text>
+<rect data-provider="left" data-sps="1389.681125166189" x="36" y="1154" width="1.204390" height="18" fill="#acbde1"/><text x="768" y="1173" text-anchor="end" font-size="28" fill="#acbde1">1,389.7</text>
+<rect data-provider="right" data-sps="418587.6716885976" x="36" y="1184" width="362.775982" height="18" fill="#ffcc22"/><text x="768" y="1203" text-anchor="end" font-size="28" fill="#ffcc22">418,587.7</text>
+<text x="768" y="1237" text-anchor="end" font-size="24" fill="#acbde1">95% paired CI: 298.86–302.43×</text><path d="M32 1255 H768" stroke="#30363d"/></g>
+<text x="32" y="1278" font-size="26">Candidate peak at n_envs = 64</text>
+<text x="32" y="1316" font-size="24" fill="#acbde1">Later counts omitted here: 128, 256</text></g></svg>

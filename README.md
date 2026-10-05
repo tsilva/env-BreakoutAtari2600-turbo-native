@@ -29,33 +29,22 @@ environments such as [Stable Retro].
 </p>
 
 <p align="center">
-  <a href="https://raw.githubusercontent.com/tsilva/env-BreakoutAtari2600-turbo-native/showcase-v0.5.15-20261005-style3/benchmark.svg"><img src="https://raw.githubusercontent.com/tsilva/env-BreakoutAtari2600-turbo-native/showcase-v0.5.15-20261005-style3/benchmark.svg" alt="Side-by-side provider throughput bars at every measured environment count; open for full-size labels and confidence intervals" width="800" /></a>
+  <img src="benchmark-readme.svg" alt="Paired provider throughput bars from 1 to 64 environments, with readable SPS values, speedups, and 95% confidence intervals" width="800" />
 </p>
 
-[Open the full-size chart](https://raw.githubusercontent.com/tsilva/env-BreakoutAtari2600-turbo-native/showcase-v0.5.15-20261005-style3/benchmark.svg). The table keeps the values readable at README width.
-
-| n_envs | Stable Retro 1.0.1 SPS | Native 0.5.15 SPS | Paired speedup (95% CI) |
-| ---: | ---: | ---: | :---: |
-| 1 | 192.6 | 69,797.5 | 362.30× (358.47–366.10) |
-| 2 | 377.4 | 124,814.6 | 331.04× (316.39–332.47) |
-| 4 | 732.5 | 218,855.1 | 298.26× (290.64–305.13) |
-| 8 | 1,032.3 | 258,955.4 | 251.21× (249.10–270.88) |
-| 16 | 1,247.5 | 276,118.0 | 221.98× (219.31–224.02) |
-| 32 | 1,342.4 | 353,326.8 | 263.21× (261.24–265.77) |
-| 64 | 1,389.7 | 418,587.7 | 300.97× (298.86–302.43) |
-| 128 | 1,408.1 | 361,149.5 | 256.48× (254.61–256.76) |
-| 256 | 1,423.2 | 173,169.7 | 121.52× (120.64–122.43) |
-
+Native throughput improves through **64 environments**, reaching **418,587.7
+steps/s**. This README view stops at that measured peak; the slower native
+results at 128 and 256 remain in the [complete results](docs/speed-comparison.md#results-and-scaling)
+and verified proof.
 
 Native **0.5.15** achieved **362.30×** the environment throughput of Stable
 Retro **1.0.1** at `n_envs=1` (paired 95% CI **358.47–366.10×**) on an
-AMD Ryzen 5 7600X. The chart retains every measured count through the adaptive
-stop. Timing replays captured FirstWall policy actions with frame skip 2 and
+AMD Ryzen 5 7600X. Timing replays captured FirstWall policy actions with frame skip 2 and
 stack 4; it includes stepping and preprocessing and excludes policy inference,
 recording, and rendering. The animation uses a common 4× time compression and
 the measured ratio; it is not a wall-clock recording. The matching excerpt
 ends at score 429 with four lives and does not establish completed-wall parity
-or a success rate. [Full-size chart](https://raw.githubusercontent.com/tsilva/env-BreakoutAtari2600-turbo-native/showcase-v0.5.15-20261005-style3/benchmark.svg) · [Method, policy, and limitations](docs/speed-comparison.md) ·
+or a success rate. [Method, policy, and limitations](docs/speed-comparison.md) ·
 [Download and verify the proof](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/releases/tag/showcase-v0.5.15-20261005-style3).
 
 ## Quick start

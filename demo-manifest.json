@@ -81,5 +81,36 @@
     "revision": "f6f5e16787b74ddb48cd358a9611aee49f81dfc0",
     "render_harness_sha256": "5239fcb88cd4a9dc9f2945cff288c20504156edac650b291a7ee6622ef583d4a",
     "note": "Style v3 is in this source revision; published TurboBench 2.0.11 verifies the unchanged benchmark child, not the refreshed style v3 root."
+  },
+  "readme_chart": {
+    "asset": {
+      "path": "benchmark-readme.svg",
+      "sha256": "f024adf08da52351dc3bfe1a688c5fb275b9296fcd8b5348e2b7843ada21073b",
+      "size": 7167
+    },
+    "benchmark_id": "7a7df46f83e4be2a26fe7dbcc212fb2305860a317af1d8fc92206c03ac2f8214",
+    "diagnostic": false,
+    "format": "turbobench.readme-chart/v1",
+    "omitted_n_envs": [
+      128,
+      256
+    ],
+    "renderer_sha256": "28630e7e778cfed4d8c04f9cea4c3f26fa483bef2b75598880a5af02a3c49c4f",
+    "result_sha256": "ea05e31a0d23754c990483846ecfd1bed933a3a2d5d1f3c3499c648781373a6e",
+    "selection": "measured-prefix-through-first-candidate-median-sps-maximum",
+    "shown_n_envs": [
+      1,
+      2,
+      4,
+      8,
+      16,
+      32,
+      64
+    ],
+    "provenance_path": "benchmark-readme.json",
+    "provenance_sha256": "76ab0cba055543fedbc124c7837c5fa0869dc9ab22e0927ac39217fef0655bbe",
+    "renderer_repository": "https://github.com/tsilva/turbobench",
+    "renderer_revision": "0504863c9083f1c714e64c6bd1112abc3e9cbdff",
+    "note": "Derived publication view; original full chart and benchmark proof are unchanged."
   }
 }

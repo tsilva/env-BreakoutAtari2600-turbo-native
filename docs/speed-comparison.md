@@ -54,11 +54,45 @@ contains only validated measurements bound to the same frozen request.
 The predeclared adaptive rule doubles `n_envs` from one. A provider qualifies
 after two successive counts gain less than 3% against its own best previous
 median, or immediately after a decline of at least 5%. Both must qualify before
-stopping; every measured confirming or slower count remains in the chart.
+stopping; every measured confirming or slower count remains in the complete chart.
 The proof's `benchmark/verification/scaling.json` records the complete decisions.
 The sweep stopped at **256 environments**: Stable Retro: plateau, +1.1% versus its earlier best median; native: downgrade, -58.6% versus its earlier best median.
 This throughput heuristic does not supply a statistical interval for the peak's
 location. The cap is 1,024 environments; reaching it alone would be diagnostic.
+
+## Readable README chart
+
+The [README chart](../benchmark-readme.svg) uses an 800-unit canvas, paired
+horizontal bars on one shared zero-based linear scale, and large numeric SPS,
+paired speedup and 95% interval labels. It shows the measured prefix through
+the first maximum native median throughput: **1, 2, 4, 8, 16, 32, 64**.
+The cutoff uses native throughput, not the native/upstream speedup ratio.
+The native decline at **128 and 256** is omitted only from this presentation;
+all nine counts remain in the results table above, [complete chart](../benchmark.svg),
+and immutable benchmark proof. This display choice does not change the
+predeclared stopping rule or claim uncertainty about the peak location.
+
+This chart is a derived publication export, separate from the immutable
+showcase assets. [benchmark-readme.json](../benchmark-readme.json) binds the
+benchmark proof ID, original result digest, renderer file digest, selected
+and omitted counts, and SVG digest. [demo-manifest.json](../demo-manifest.json)
+pins renderer source revision [`0504863`](https://github.com/tsilva/turbobench/commit/0504863c9083f1c714e64c6bd1112abc3e9cbdff).
+The video and animated WebP are unchanged.
+
+After downloading and extracting the refreshed proof using the instructions
+below, reproduce the README export with that exact renderer source:
+
+```bash
+curl -fL https://github.com/tsilva/turbobench/archive/0504863c9083f1c714e64c6bd1112abc3e9cbdff.tar.gz -o readme-renderer.tar.gz
+tar -xzf readme-renderer.tar.gz
+uv run --frozen --python 3.14 --project turbobench-0504863c9083f1c714e64c6bd1112abc3e9cbdff python -m turbobench.readme_chart \
+  "$PWD/proof/benchmark" "$PWD/benchmark-readme.svg"
+```
+
+Compare the generated SVG and JSON digests with the repository's publication
+records. The command verifies the benchmark proof before exporting; it needs
+no ROM, state, inference, or new measurements. Published TurboBench 2.0.11 still
+verifies the unchanged benchmark child; this README renderer is pinned separately.
 
 ## Policy, controls, and timing boundary
 

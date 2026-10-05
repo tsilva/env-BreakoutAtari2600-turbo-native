@@ -1,0 +1,26 @@
+{
+  "asset": {
+    "path": "benchmark-readme.svg",
+    "sha256": "f024adf08da52351dc3bfe1a688c5fb275b9296fcd8b5348e2b7843ada21073b",
+    "size": 7167
+  },
+  "benchmark_id": "7a7df46f83e4be2a26fe7dbcc212fb2305860a317af1d8fc92206c03ac2f8214",
+  "diagnostic": false,
+  "format": "turbobench.readme-chart/v1",
+  "omitted_n_envs": [
+    128,
+    256
+  ],
+  "renderer_sha256": "28630e7e778cfed4d8c04f9cea4c3f26fa483bef2b75598880a5af02a3c49c4f",
+  "result_sha256": "ea05e31a0d23754c990483846ecfd1bed933a3a2d5d1f3c3499c648781373a6e",
+  "selection": "measured-prefix-through-first-candidate-median-sps-maximum",
+  "shown_n_envs": [
+    1,
+    2,
+    4,
+    8,
+    16,
+    32,
+    64
+  ]
+}
