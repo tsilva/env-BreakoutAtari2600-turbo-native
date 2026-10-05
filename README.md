@@ -30,7 +30,7 @@ environments such as [Stable Retro].
 
 <table>
   <tr><th align="left">Provider throughput and paired speedup — scroll to see every count</th></tr>
-  <tr><td><img src="https://raw.githubusercontent.com/tsilva/env-BreakoutAtari2600-turbo-native/benchmark-v0.5.15-20261004-tb2.0.11/benchmark.svg" alt="Side-by-side provider throughput bars and paired 95% confidence intervals at each environment count" width="4090" /></td></tr>
+  <tr><td width="2000"><img src="https://raw.githubusercontent.com/tsilva/env-BreakoutAtari2600-turbo-native/benchmark-v0.5.15-20261004-tb2.0.11/benchmark.svg" alt="Side-by-side provider throughput bars and paired 95% confidence intervals at each environment count" width="2000" /></td></tr>
 </table>
 
 Native **0.5.15** achieved **362.30×** the environment throughput of Stable
