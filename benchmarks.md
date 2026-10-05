@@ -52,36 +52,15 @@ The [animation](demo.webp) and [MP4](demo.mp4) use the measured ratio and common
 **4× time compression**, not wall-clock playback. Their latest export uses
 `comparison-style/v5`; the benchmark and policy proofs are unchanged.
 
-## Proof and verification
+## Proof provenance
 
-Download the [latest proof archive and SHA256SUMS](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/releases/tag/showcase-v0.5.15-20261005-style5).
-[demo-manifest.json](demo-manifest.json) records archive, provider, policy, and
-media identities and hashes. [README chart provenance](benchmark-readme.json)
-and [complete chart provenance](benchmark.json) bind the derived charts; their
-renderer is pinned to [9b64ddd](https://github.com/tsilva/turbobench/commit/9b64dddefdaca874a65a5dbd4e4bb140bde83025).
+The original downloadable proofs were withdrawn because they contained private
+infrastructure details. Measurements and the README media are unchanged.
+Original proof identities and archive digests remain in
+[demo-manifest.json](demo-manifest.json), with the
+[withdrawal record](docs/benchmark-proof-status.md). Proofs are retained privately;
+there is no public download or verification archive at present.
 
-Published **TurboBench 2.0.11** verifies the benchmark child. Pinned source
-[10fc93d](https://github.com/tsilva/turbobench/commit/10fc93d737671765269e07321de37f76345590b5)
-verifies the complete `comparison-style/v5` proof. Both need FFprobe; verification needs no ROM.
-
-```bash
-shasum -a 256 -c SHA256SUMS
-tar -xzf breakout-policy-showcase-env0.5.15-style5.tar.gz
-uvx --python 3.14 --exclude-newer-package turbobench-cli=2026-10-05 --with numpy==2.5.1 --with pillow==12.3.0 --with packaging==26.2 \
-  --from turbobench-cli==2.0.11 turbobench verify proof/benchmark
-curl -fL https://github.com/tsilva/turbobench/archive/10fc93d737671765269e07321de37f76345590b5.tar.gz -o renderer.tar.gz
-tar -xzf renderer.tar.gz
-uv run --frozen --python 3.14 --project turbobench-10fc93d737671765269e07321de37f76345590b5 turbobench verify "$PWD/proof"
-```
-
-The archive excludes ROMs, save states, raw reference frames, and private paths.
-Verification checks internal consistency, not author authentication or independent timing reproduction.
-For reruns and chart export commands, see the pinned [benchmark workflow](https://github.com/tsilva/turbobench/blob/turbobench-cli-v2.0.11/docs/comparison-workflow.md)
-and [chart renderer](https://github.com/tsilva/turbobench/blob/9b64dddefdaca874a65a5dbd4e4bb140bde83025/docs/comparison-workflow.md).
-[Library release parity](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/releases/tag/v0.5.15) is separate evidence.
-
-## Earlier proof references
-
-- [Original benchmark/showcase](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/releases/tag/benchmark-v0.5.15-20261004-tb2.0.11)
-- [Style v3 export](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/releases/tag/showcase-v0.5.15-20261005-style3)
-- [Style v4 export](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/releases/tag/showcase-v0.5.15-20261005-style4)
+The latest media renderer is pinned to TurboBench source `10fc93d`; the compact
+chart renderer is pinned to `9b64ddd`. Both exports were verified against the
+original proof before withdrawal.

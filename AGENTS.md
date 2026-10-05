@@ -36,3 +36,7 @@ requirements, and approval gates in the project adapter.
 - Keep README benchmark prose to one link to root `benchmarks.md` beside the current media and chart.
 - Update `benchmarks.md` with the latest benchmark's results, hardware, method, policy, limitations, asset provenance, pinned verification instructions, and proof links whenever publishing a benchmark. Replace superseded benchmark prose; retain older runs only as proof references.
 - Keep the linked report consistent with the README assets and `demo-manifest.json`; preserve immutable proof archives and their version-specific verification instructions.
+
+## Benchmark infrastructure privacy
+
+Never publish or print benchmark machine hostnames, IP addresses, ports, SSH aliases, login names, private tracking URLs, or other machine access/location details. Report hardware specifications only. Keep proofs containing access details private and omit their public download links.

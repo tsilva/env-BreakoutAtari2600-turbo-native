@@ -6,10 +6,10 @@
     "proof_id": "e5b4bdeef20934c34c87f056666179d806fc8792dc7097827a01e0eed5c8f54b",
     "benchmark_id": "7a7df46f83e4be2a26fe7dbcc212fb2305860a317af1d8fc92206c03ac2f8214",
     "policy_id": "d1656f3e45f41694846ba3921b88312e35b326962bf233f80afb5fff55d5f0fe",
-    "release_url": "https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/releases/tag/showcase-v0.5.15-20261005-style5",
-    "archive_url": "https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/releases/download/showcase-v0.5.15-20261005-style5/breakout-policy-showcase-env0.5.15-style5.tar.gz",
     "archive_sha256": "a9da5ccd18b4221ff2f0485bf7376f1d4937d7978e8fa68e448118f1777eaa0f",
-    "style": "comparison-style/v5"
+    "style": "comparison-style/v5",
+    "public_proof_status": "withdrawn-for-infrastructure-privacy",
+    "withdrawal_record": "docs/benchmark-proof-status.md"
   },
   "providers": {
     "upstream": {
@@ -61,9 +61,9 @@
     "proof_id": "b82ebbeefbef6c4319b314cda146b1c7727fa4e4c4823c041cd0f45783a5735d",
     "benchmark_id": "7a7df46f83e4be2a26fe7dbcc212fb2305860a317af1d8fc92206c03ac2f8214",
     "policy_id": "d1656f3e45f41694846ba3921b88312e35b326962bf233f80afb5fff55d5f0fe",
-    "release_url": "https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/releases/tag/benchmark-v0.5.15-20261004-tb2.0.11",
-    "archive_url": "https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/releases/download/benchmark-v0.5.15-20261004-tb2.0.11/breakout-policy-showcase-tb2.0.11-env0.5.15.tar.gz",
-    "archive_sha256": "0b3cf31ee3b97e3f0ef633249087ad97ff4f8658a99d8a2965b42892b3dcb9b9"
+    "archive_sha256": "0b3cf31ee3b97e3f0ef633249087ad97ff4f8658a99d8a2965b42892b3dcb9b9",
+    "public_proof_status": "withdrawn-for-infrastructure-privacy",
+    "withdrawal_record": "docs/benchmark-proof-status.md"
   },
   "benchmark_verifier": {
     "distribution": "turbobench-cli",
@@ -149,9 +149,9 @@
     "proof_id": "a8fc9c6f0172da3d2b1d86c9095e1e770983316f72a6c0757145dc52af1155c1",
     "benchmark_id": "7a7df46f83e4be2a26fe7dbcc212fb2305860a317af1d8fc92206c03ac2f8214",
     "policy_id": "d1656f3e45f41694846ba3921b88312e35b326962bf233f80afb5fff55d5f0fe",
-    "release_url": "https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/releases/tag/showcase-v0.5.15-20261005-style4",
-    "archive_url": "https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/releases/download/showcase-v0.5.15-20261005-style4/breakout-policy-showcase-env0.5.15-style4.tar.gz",
     "archive_sha256": "dffbf3e79988ad12cfaa77411e1d810e76cc5571626f35e9c6dfb11c405e8ff8",
-    "style": "comparison-style/v4"
+    "style": "comparison-style/v4",
+    "public_proof_status": "withdrawn-for-infrastructure-privacy",
+    "withdrawal_record": "docs/benchmark-proof-status.md"
   }
 }
