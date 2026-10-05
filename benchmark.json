@@ -8,7 +8,7 @@
   "diagnostic": false,
   "format": "turbobench.publication-chart/v1",
   "omitted_n_envs": [],
-  "renderer_sha256": "bc602dc10eb5ed538ea83238fa3ba060cd73a7aa302034c81521062421b71717",
+  "renderer_sha256": "5e74b59532ee25feffcf1a3053c959a44e615af00b345ff6ee63e3be1d1955f3",
   "result_sha256": "ea05e31a0d23754c990483846ecfd1bed933a3a2d5d1f3c3499c648781373a6e",
   "selection": "all-measured-counts",
   "shown_n_envs": [
