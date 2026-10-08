@@ -1,0 +1,157 @@
+{
+  "format": "breakout.benchmark-publication/v2",
+  "description": "Refreshed presentation with unchanged published benchmark and policy children. Verify the complete proof with the pinned renderer source; TurboBench 2.0.11 verifies its benchmark child.",
+  "proof": {
+    "schema": "turbobench.showcase-proof/v3",
+    "proof_id": "e5b4bdeef20934c34c87f056666179d806fc8792dc7097827a01e0eed5c8f54b",
+    "benchmark_id": "7a7df46f83e4be2a26fe7dbcc212fb2305860a317af1d8fc92206c03ac2f8214",
+    "policy_id": "d1656f3e45f41694846ba3921b88312e35b326962bf233f80afb5fff55d5f0fe",
+    "archive_sha256": "a9da5ccd18b4221ff2f0485bf7376f1d4937d7978e8fa68e448118f1777eaa0f",
+    "style": "comparison-style/v5",
+    "public_proof_status": "withdrawn-for-infrastructure-privacy",
+    "withdrawal_record": "docs/benchmark-proof-status.md"
+  },
+  "providers": {
+    "upstream": {
+      "adapter": "stable-retro-scalar",
+      "artifact_sha256": "1310a4c0f9a5d6c0dc99c4412318ffd34529083abad262bad20146d1bff2366a",
+      "compatibility_lineage": "1.0.1",
+      "provider": "stable-retro",
+      "runtime_id": "cca84ea7ed438b6c7c299484375a905e89ac40f3f30112e80e451f59267e386f",
+      "source_identity": "pypi:stable-retro==1.0.1",
+      "version": "1.0.1"
+    },
+    "native": {
+      "adapter": "turbo-vector-v2",
+      "artifact_sha256": "e6b4973736eb99be78abd754a7afaf64e4aa9d3e88ff86075d43a31c2f3f3eee",
+      "compatibility_lineage": "stable-retro/atari2600/breakout",
+      "provider": "env-breakoutatari2600-turbo-native",
+      "runtime_id": "c23698c94815b32350738c60bd003e8f751b4ce734e62264c1ff0d86977974de",
+      "source_identity": "pypi:env-breakoutatari2600-turbo-native==0.5.15",
+      "version": "0.5.15"
+    }
+  },
+  "measured_n_envs": [
+    1,
+    2,
+    4,
+    8,
+    16,
+    32,
+    64,
+    128,
+    256
+  ],
+  "policy_checkpoint_sha256": "dcfd8a41bcc7426ac0ef2f108d07a20f2ffb2c0c22745e6690c6065c01d5935a",
+  "policy_limitations": "Exact matching excerpt: 429 points, 4 lives. The full episode diverged at raw frame 5914 in the previous native 0.5.13 comparison; this excerpt does not demonstrate wall completion.",
+  "media": {
+    "demo.mp4": {
+      "proof_path": "media/comparison.mp4",
+      "sha256": "4b79f04db3d65702a46232b49b36143ddd0a4cbd8e8c500c5d42237340a075b3",
+      "size": 548119
+    },
+    "demo.webp": {
+      "proof_path": "media/comparison.webp",
+      "sha256": "a7e265250e1ac5033d8be3d49853ab45550219dba9ec43402e892a999cdddcf0",
+      "size": 803264
+    }
+  },
+  "original_showcase": {
+    "schema": "turbobench.showcase-proof/v3",
+    "proof_id": "b82ebbeefbef6c4319b314cda146b1c7727fa4e4c4823c041cd0f45783a5735d",
+    "benchmark_id": "7a7df46f83e4be2a26fe7dbcc212fb2305860a317af1d8fc92206c03ac2f8214",
+    "policy_id": "d1656f3e45f41694846ba3921b88312e35b326962bf233f80afb5fff55d5f0fe",
+    "archive_sha256": "0b3cf31ee3b97e3f0ef633249087ad97ff4f8658a99d8a2965b42892b3dcb9b9",
+    "public_proof_status": "withdrawn-for-infrastructure-privacy",
+    "withdrawal_record": "docs/benchmark-proof-status.md"
+  },
+  "benchmark_verifier": {
+    "distribution": "turbobench-cli",
+    "version": "2.0.11",
+    "wheel_sha256": "e7ae9d3104b9016159e4739fc2ab7e5065da67cfaf0f3d585829e2ac86a5b060",
+    "harness_sha256": "85da540ed868f812717bea83b885d13f08889d6b2b5d6d93c27b10964da9f2b8"
+  },
+  "showcase_verifier": {
+    "repository": "https://github.com/tsilva/turbobench",
+    "revision": "10fc93d737671765269e07321de37f76345590b5",
+    "render_harness_sha256": "88305c1269544162a1eae909e51f1888b8d9ac9d8564ca26a0627f4cfa59ab11",
+    "note": "Style v5 is in this source revision; published TurboBench 2.0.11 verifies the unchanged benchmark child, not the refreshed style v5 root."
+  },
+  "readme_chart": {
+    "asset": {
+      "path": "benchmark-readme.svg",
+      "sha256": "20c0c5b5b2d276fc76264055e847b2bdcdd4468fc601f24c4c892322717d55da",
+      "size": 6572
+    },
+    "benchmark_id": "7a7df46f83e4be2a26fe7dbcc212fb2305860a317af1d8fc92206c03ac2f8214",
+    "diagnostic": false,
+    "format": "turbobench.publication-chart/v1",
+    "omitted_n_envs": [
+      128,
+      256
+    ],
+    "renderer_sha256": "5e74b59532ee25feffcf1a3053c959a44e615af00b345ff6ee63e3be1d1955f3",
+    "result_sha256": "ea05e31a0d23754c990483846ecfd1bed933a3a2d5d1f3c3499c648781373a6e",
+    "selection": "measured-prefix-through-first-candidate-median-sps-maximum",
+    "shown_n_envs": [
+      1,
+      2,
+      4,
+      8,
+      16,
+      32,
+      64
+    ],
+    "provenance_path": "benchmark-readme.json",
+    "provenance_sha256": "fdf0f61e59d5df13fb25ef570f7e5feb255608acd6b78164f4610cb318ddedbb",
+    "renderer_repository": "https://github.com/tsilva/turbobench",
+    "renderer_revision": "9b64dddefdaca874a65a5dbd4e4bb140bde83025",
+    "note": "Derived publication view; original benchmark proof and archived chart are unchanged."
+  },
+  "archived_chart": {
+    "proof_path": "chart.svg",
+    "sha256": "3e4af1652b10fd787b3d778e48997a50e821223a34ceeaacf83c5af24fbe1a05",
+    "size": 9477,
+    "note": "Original complete chart remains inside the immutable showcase archive."
+  },
+  "full_chart": {
+    "asset": {
+      "path": "benchmark.svg",
+      "sha256": "cbca2f24d755306eeaacf9f23721b620a6df204577255ebf547d646835f58fcf",
+      "size": 9133
+    },
+    "benchmark_id": "7a7df46f83e4be2a26fe7dbcc212fb2305860a317af1d8fc92206c03ac2f8214",
+    "diagnostic": false,
+    "format": "turbobench.publication-chart/v1",
+    "omitted_n_envs": [],
+    "renderer_sha256": "5e74b59532ee25feffcf1a3053c959a44e615af00b345ff6ee63e3be1d1955f3",
+    "result_sha256": "ea05e31a0d23754c990483846ecfd1bed933a3a2d5d1f3c3499c648781373a6e",
+    "selection": "all-measured-counts",
+    "shown_n_envs": [
+      1,
+      2,
+      4,
+      8,
+      16,
+      32,
+      64,
+      128,
+      256
+    ],
+    "provenance_path": "benchmark.json",
+    "provenance_sha256": "0281b7b3012e9e940d0c5f3e6ad03d09af16f2158ee78f91403439c0af2c2435",
+    "renderer_repository": "https://github.com/tsilva/turbobench",
+    "renderer_revision": "9b64dddefdaca874a65a5dbd4e4bb140bde83025",
+    "note": "Derived publication view; original benchmark proof and archived chart are unchanged."
+  },
+  "previous_showcase": {
+    "schema": "turbobench.showcase-proof/v3",
+    "proof_id": "a8fc9c6f0172da3d2b1d86c9095e1e770983316f72a6c0757145dc52af1155c1",
+    "benchmark_id": "7a7df46f83e4be2a26fe7dbcc212fb2305860a317af1d8fc92206c03ac2f8214",
+    "policy_id": "d1656f3e45f41694846ba3921b88312e35b326962bf233f80afb5fff55d5f0fe",
+    "archive_sha256": "dffbf3e79988ad12cfaa77411e1d810e76cc5571626f35e9c6dfb11c405e8ff8",
+    "style": "comparison-style/v4",
+    "public_proof_status": "withdrawn-for-infrastructure-privacy",
+    "withdrawal_record": "docs/benchmark-proof-status.md"
+  }
+}

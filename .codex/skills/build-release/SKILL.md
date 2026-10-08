@@ -12,9 +12,11 @@ workflow monitoring, verification, and reporting. The rules below are this
 project's adapter; they retain its invocation default and required gates.
 If the shared skill is unavailable, stop and report the missing dependency.
 
-A bare `$build-release` or `/build-release` invocation starts the release
-sequence below, including its separately required `oracle` and `pypi` approvals.
-It does not preapprove either checkpoint. Explicitly local or inspection-only
+A bare `$build-release` or `/build-release` invocation authorizes the entire
+release sequence: preparation, commit and push, parity certification, candidate
+build and inspection, publication, and external verification. Complete it
+automatically without asking for separate `oracle` or `pypi` approval. Retain
+all validation gates and the PyPI wait timer. Explicitly local or inspection-only
 requests do not advance publication transitions.
 
 Use only the checked-in release state machine described in
@@ -24,7 +26,7 @@ Use only the checked-in release state machine described in
 2. protected TurboBench parity evidence for that exact commit and final macOS
    wheel;
 3. an attested cross-platform candidate bound to that parity run; and
-4. separately approved publication through PyPI Trusted Publishing.
+4. automatic publication of the verified candidate through PyPI Trusted Publishing.
 
 Never create or push a release tag by hand, upload to PyPI manually, rebuild a
 single candidate artifact, or substitute an artifact from another run. The
@@ -36,15 +38,18 @@ candidate also contains one source distribution.
 Before changing release metadata:
 
 - read `docs/release-validation.md` and the three workflow files named below;
-- require the current branch to be clean, named `main`, and synchronized with
-  `origin/main`;
+- require the current branch to be named `main` and synchronized with
+  `origin/main`; start clean, or resume only the previously prepared release
+  metadata with `prepare --resume`;
 - require authenticated `gh` access capable of dispatching workflows;
 - confirm the legacy tag-triggered `Release` workflow is absent or disabled;
 - confirm `.github/workflows/parity-evidence.yml`,
   `.github/workflows/release-build.yml`, and `.github/workflows/release.yml` are
   active;
-- confirm the `oracle` and `pypi` environments retain required reviewers,
-  disallow administrator bypass, and keep the `pypi` wait timer;
+- confirm the `oracle` environment has no required reviewers, remains restricted
+  to `main`, and disallows administrator bypass;
+- confirm the `pypi` environment has no required reviewers, remains restricted
+  to `main`, disallows administrator bypass, and keeps its wait timer;
 - confirm the publish workflow uses the `pypi` environment, OIDC
   `id-token: write`, and the pinned PyPI publish action without an API token;
   and
@@ -53,39 +58,39 @@ Before changing release metadata:
 Apply the shared stop conditions if a retained control is absent or the
 documentation and workflows disagree.
 
-The lock validator uses Docker, so require a working Docker daemon before
-running release preparation. Isolate local `uv` from user-wide configuration;
-otherwise global `exclude-newer-package` exemptions can make the committed
-lock appear stale even when the repository-owned lock policy is valid:
-
-```bash
-release_xdg_config="$(mktemp -d)"
-env -u UV_CONFIG_FILE -u UV_NO_CONFIG \
-  XDG_CONFIG_HOME="$release_xdg_config" \
-  UV_CACHE_DIR=.uv-cache \
-  uv sync --locked --extra dev
-```
+All compilation, dependency installation, Docker lock validation, native tests,
+wheel builds, parity certification, candidate inspection, publication, and fresh
+public-download verification run in GitHub Actions. The operator machine needs
+only Python 3.11+ for standard-library metadata editing, Git, and authenticated
+`gh`; never run `uv sync`, Cargo, maturin, or the release test suite locally for
+this flow. The GitHub runners own their locked release environments.
 
 ## 1. Prepare the release commit
 
 From the clean synchronized branch, run:
 
 ```bash
-UV_CACHE_DIR=.uv-cache scripts/release.py prepare
+python3 scripts/release.py prepare
 ```
 
 With no explicit target, `prepare` resolves the next patch version. Use
 `prepare --to <version>` or `prepare --part minor|major|patch` only when the
-user explicitly chose that target. The command may modify only changelog and
-version metadata and must run its complete local release checks.
+user explicitly chose that target. This edits only version metadata and
+checks version consistency, generated notes, lock policy, unused tag/PyPI
+version, and preservation of the third-party dependency graph. It does not
+compile or install the package. GitHub runs `scripts/release.py check` as a
+mandatory dependency of parity certification and again for the candidate.
 
-Review the diff before committing. Commit and push the prepared metadata only
-when authorized by the release request. Capture the resulting full `main` SHA
-and require both a clean worktree and `HEAD == origin/main` before continuing.
+If an earlier preparation already wrote uncommitted metadata, review that diff
+and use `python3 scripts/release.py prepare --resume`. Resume preserves the
+prepared version and rejects unrelated edits or third-party lock changes.
+Never bump again merely because a local preparation previously failed.
 
-If preparation stops after writing metadata, fix the prerequisite and run the
-remaining repository-owned checks exactly; do not bypass a failed check or
-silently regenerate the dependency graph.
+Review the diff before committing. Apply `$push` with scope limited to the
+prepared metadata, capture the full `main` SHA, and require a clean worktree
+with `HEAD == origin/main` before dispatching parity. Required remote checks
+must succeed for this exact SHA before publication; a prepared commit alone
+is not validation evidence.
 
 ## 2. Certify the exact macOS wheel
 
@@ -95,9 +100,10 @@ Dispatch the protected parity workflow for the full release SHA:
 gh workflow run parity-evidence.yml -f ref="<40-character-release-sha>"
 ```
 
-When the run waits on the `oracle` environment, ask the user for approval at
-that checkpoint. Do not approve it from a prior or implied authorization.
-Monitor the run to success and record its run id.
+The `oracle` environment starts this job without manual approval. Monitor the
+run to success and record its run id. If it unexpectedly waits for approval,
+report the environment configuration mismatch rather than introducing a new
+approval checkpoint.
 
 The workflow must be `.github/workflows/parity-evidence.yml`, be a
 `workflow_dispatch` run at the exact release SHA, and produce
@@ -122,8 +128,14 @@ parity-certified macOS wheel, build and smoke-test the Linux wheel and source
 distribution, verify the parity receipt, audit the distributions, generate an
 SPDX SBOM, and attest both provenance and SBOM.
 
-Download `release-candidate-v<version>` and inspect it before publication. It
-must contain exactly seven files when counted recursively:
+Require the candidate workflow's `Inspect attested candidate before publication`
+job to succeed. It downloads `release-candidate-v<version>` inside GitHub,
+verifies the manifest identity and distribution checksums from `candidate/dist`,
+and verifies provenance and SPDX attestations for every distribution against
+`.github/workflows/release-build.yml` and the exact source SHA. Receipt validation
+requires the official passed `breakout/start-v1` result for the pinned provider.
+
+The inspected candidate contains exactly seven files recursively:
 
 - `dist/<versioned-macos-arm64-wheel>`;
 - `dist/<versioned-linux-x86_64-wheel>`;
@@ -133,18 +145,14 @@ must contain exactly seven files when counted recursively:
 - `sbom.spdx.json`; and
 - `turbobench-parity-receipt.tar.gz`.
 
-Verify the distribution checksums from inside `candidate/dist`, require the
-manifest to bind the expected package, version, release SHA, repository, and
-candidate run id, and require the portable TurboBench result to be official
-and passed for the pinned profile and provider. Verify each distribution's
-provenance and SPDX attestations against
-`.github/workflows/release-build.yml` and the exact source SHA.
+No local build, package installation, or artifact substitution is needed to
+inspect the candidate. Download its manifest for reporting when helpful.
 
 If any build, audit, receipt, manifest, checksum, or attestation check fails,
 stop. Fix the cause in a new commit, rerun parity for that SHA, and build a new
 candidate.
 
-## 4. Approve and publish
+## 4. Publish the verified candidate
 
 After candidate inspection, dispatch:
 
@@ -155,44 +163,61 @@ gh workflow run release.yml \
   -f commit="<40-character-release-sha>"
 ```
 
-When the run waits on the `pypi` environment, explain that approval will
-publish the distributions and create the tag and immutable GitHub Release.
-Require a new explicit user approval for this publication checkpoint; the
-earlier `oracle` approval does not carry over.
+The `pypi` environment releases the job automatically after its wait timer.
+Invoking this skill already authorizes publishing the verified distributions
+and creating the tag and immutable GitHub Release; do not request another
+confirmation. If the run unexpectedly waits for manual review, report the
+environment configuration mismatch. When the user has explicitly authorized
+removing that requirement, approve an existing pending deployment through the
+GitHub API and remove required reviewers while preserving the wait timer,
+`main` restriction, and disabled administrator bypass.
 
-After approval, monitor through candidate revalidation, the idempotent PyPI
+Monitor through candidate revalidation, the idempotent PyPI
 transition, exact PyPI file-set verification, protected tag creation, and
 GitHub Release creation. A partial or conflicting PyPI version is a hard stop.
 
 ## 5. Verify externally
 
-Use fresh downloads from:
+The publish workflow's `Verify fresh public release downloads` job runs
+`scripts/verify_release.py` on a GitHub-hosted runner. Require that job and the
+entire publish run to succeed. It downloads the exact three non-yanked PyPI
+distributions, compares their SHA-256 values with the inspected candidate,
+and verifies both provenance and SPDX attestations for every fresh download
+against the candidate workflow and exact release SHA. It also verifies the
+lightweight `v<version>` tag and fresh copies of all seven assets from the
+published immutable GitHub Release.
 
-```text
-https://pypi.org/project/env-breakoutatari2600-turbo-native/<version>/
-```
+Download `release-verification-v<version>` from the publish run. Check its
+`verification.json` binds the expected version, tag, full release SHA and
+candidate run id, and records `verified: true`. A verification failure after
+publication is an incomplete release; preserve the published version, report
+the failed gate, and do not repeat publication or substitute distributions.
 
-Require exactly the two supported wheels and one source distribution. Compare
-their SHA-256 values with the inspected candidate, then verify both attestation
-types for every downloaded distribution:
+Finish only after the worktree is clean and synchronized. Report the PyPI and
+GitHub Release links, tag and SHA, distribution filenames, and parity,
+candidate, and publish workflow URLs. GradLab updates begin only after the
+remote external-verification job passes.
 
-```bash
-gh attestation verify <distribution> \
-  --repo tsilva/env-BreakoutAtari2600-turbo-native \
-  --signer-workflow tsilva/env-BreakoutAtari2600-turbo-native/.github/workflows/release-build.yml \
-  --source-digest <40-character-release-sha> \
-  --deny-self-hosted-runners
+## Update GradLab after successful publication
 
-gh attestation verify <distribution> \
-  --repo tsilva/env-BreakoutAtari2600-turbo-native \
-  --predicate-type https://spdx.dev/Document \
-  --signer-workflow tsilva/env-BreakoutAtari2600-turbo-native/.github/workflows/release-build.yml \
-  --source-digest <40-character-release-sha> \
-  --deny-self-hosted-runners
-```
+After the release succeeds and the exact PyPI version and required GitHub
+Release artifacts pass external verification, update GradLab to consume the
+latest successfully published `env-breakoutatari2600-turbo-native` version. Complete
+this step as part of the full publication flow; local builds, dry runs, and
+inspection-only requests do not trigger it.
 
-Confirm `v<version>` resolves to the release SHA and the immutable GitHub
-Release contains the same seven files, including
-`turbobench-parity-receipt.tar.gz`. Finish only after the worktree is clean and
-synchronized. Report the PyPI and GitHub Release links, tag and SHA, artifact
-filenames, and parity, candidate, and publish workflow URLs.
+Read `/Users/tsilva/repos/tsilva/gradlab/AGENTS.md` and its required
+specifications before editing. Synchronize GradLab's current branch with its
+configured upstream and preserve existing work. Update every matching exact
+pin in `pyproject.toml`, including platform-specific project dependencies and
+the `train-runtime` dependency group. Use the just-verified release version;
+if GradLab already consumes a newer verified publication, do not downgrade it.
+Regenerate `uv.lock` with `uv lock --upgrade-package env-breakoutatari2600-turbo-native`,
+preserving unrelated pins, supply-chain constraints, and existing per-package
+release-age exceptions. Review the dependency diff, validate lock consistency,
+and run GradLab's relevant provider compatibility checks.
+
+Report the GradLab version/pin and lockfile update separately from release
+success. If synchronization, resolution, or validation fails, preserve the
+published release and report the downstream update as incomplete with its
+blocker; do not repeat publication.

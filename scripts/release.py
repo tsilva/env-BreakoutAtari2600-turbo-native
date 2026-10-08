@@ -18,13 +18,12 @@ RELEASE_HELPER = (
 )
 RELEASE_NOTES = REPO_ROOT / "scripts" / "release_notes.py"
 LOCK_SCRIPT = REPO_ROOT / "scripts" / "lock.py"
-PYTHON = REPO_ROOT / ".venv" / "bin" / "python"
+PYTHON = Path(sys.executable)
 PACKAGE_NAME = "env-breakoutatari2600-turbo-native"
 CARGO_PACKAGE_NAME = "env-breakoutatari2600-turbo-native"
 ALLOWED_RELEASE_FILES = {
     "Cargo.lock",
     "Cargo.toml",
-    "CHANGELOG.md",
     "CITATION.cff",
     "VERSION.txt",
     "pyproject.toml",
@@ -98,24 +97,6 @@ def target_version(args: argparse.Namespace) -> str:
     return version
 
 
-def previous_release_version() -> str | None:
-    try:
-        tag = capture(["git", "describe", "--tags", "--abbrev=0"])
-    except subprocess.CalledProcessError:
-        return None
-    if not tag.startswith("v"):
-        raise SystemExit(f"latest release tag must start with 'v': {tag}")
-    return tag.removeprefix("v")
-
-
-def finalize_release_notes(version: str) -> None:
-    command = [str(PYTHON), str(RELEASE_NOTES), "--version", version, "--finalize"]
-    previous_version = previous_release_version()
-    if previous_version is not None:
-        command.extend(["--previous-version", previous_version])
-    run(command)
-
-
 def validate_release_notes(version: str) -> None:
     run([str(PYTHON), str(RELEASE_NOTES), "--version", version])
 
@@ -141,6 +122,21 @@ def dependency_graph_snapshot() -> str:
         if package.get("name") == CARGO_PACKAGE_NAME:
             package.pop("version", None)
     return json.dumps(normalized, sort_keys=True, separators=(",", ":"))
+
+
+def ensure_prepared_graph_unchanged() -> None:
+    """A resumed metadata change must not introduce dependency upgrades."""
+    for name in ("uv.lock", "Cargo.lock"):
+        before = tomllib.loads(capture(["git", "show", f"HEAD:{name}"]))
+        after = read_toml(REPO_ROOT / name)
+        for data in (before, after):
+            for package in data.get("package", []):
+                if package.get("name") == PACKAGE_NAME:
+                    package.pop("version", None)
+        if before != after:
+            raise SystemExit(
+                f"prepared release changed third-party dependencies in {name}"
+            )
 
 
 def ensure_dependency_graph_unchanged(before: str) -> None:
@@ -176,6 +172,10 @@ def ensure_only_release_files_changed() -> list[str]:
 
 
 def run_checks() -> None:
+    version = read_toml(REPO_ROOT / "pyproject.toml")["project"]["version"]
+    helper("check-version", "--version", str(version))
+    validate_release_notes(str(version))
+    helper("check-pypi", "--version", str(version))
     env = os.environ.copy()
     env.setdefault("UV_CACHE_DIR", ".uv-cache")
     run([str(PYTHON), str(LOCK_SCRIPT)], env=env)
@@ -205,28 +205,45 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         choices=("patch", "minor", "major"),
         help="Explicitly bump this component; otherwise use the next patch",
     )
+    group.add_argument(
+        "--resume",
+        action="store_true",
+        help="Validate existing uncommitted release metadata without bumping",
+    )
+    commands.add_parser(
+        "check", help="Run complete release source checks in GitHub Actions"
+    )
     return parser.parse_args(argv)
 
 
 def prepare(args: argparse.Namespace) -> None:
-    if not PYTHON.exists():
-        raise SystemExit("expected .venv/bin/python; run `uv sync --locked --extra dev`")
-    ensure_clean()
+    if args.resume:
+        ensure_only_release_files_changed()
+        ensure_prepared_graph_unchanged()
+    else:
+        ensure_clean()
     upstream = ensure_synced()
-    version = target_version(args)
+    if args.resume:
+        version = str(read_toml(REPO_ROOT / "pyproject.toml")["project"]["version"])
+        helper("check-pypi", "--version", version)
+    else:
+        version = target_version(args)
+    if capture(["git", "for-each-ref", "--format=%(refname)", f"refs/tags/v{version}"]):
+        raise SystemExit(f"release tag v{version} already exists")
     graph_before = dependency_graph_snapshot()
-    finalize_release_notes(version)
-    helper("bump-version", "--to", version, "--write")
+    if not args.resume:
+        helper("bump-version", "--to", version, "--write")
     helper("check-version", "--version", version)
     helper("check-lock-policy")
     ensure_dependency_graph_unchanged(graph_before)
     validate_release_notes(version)
     changed = ensure_only_release_files_changed()
-    run_checks()
-    ensure_dependency_graph_unchanged(graph_before)
 
     print()
-    print(f"Prepared v{version} from {upstream}; no commit, tag, push, or publish occurred.")
+    print(
+        f"Prepared v{version} from {upstream}; no commit, tag, push, or publish occurred."
+    )
+    print("Build, lock consistency, and source tests are gated by GitHub Actions.")
     print("Review and commit these files directly on main:")
     for path in changed:
         print(f"  {path}")
@@ -239,6 +256,9 @@ def main(argv: list[str] | None = None) -> None:
     os.chdir(REPO_ROOT)
     if args.command == "prepare":
         prepare(args)
+        return
+    if args.command == "check":
+        run_checks()
         return
     raise AssertionError(args.command)
 

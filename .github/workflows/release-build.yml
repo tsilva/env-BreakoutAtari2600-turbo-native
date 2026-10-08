@@ -112,15 +112,8 @@ jobs:
           turbobench verify-parity parity-evidence/receipt --require-canonical \
             --require-provider env-breakoutatari2600-turbo-native
 
-      - name: Run source checks
-        run: |
-          .venv/bin/python -m ruff check .
-          cargo fmt --check
-          cargo clippy --locked --all-targets -- -D warnings
-          cargo check --locked --release
-          cargo test --locked --lib
-          .venv/bin/python -m maturin develop --release --locked
-          .venv/bin/python -m pytest -m "not stable_retro"
+      - name: Run complete release source checks
+        run: .venv/bin/python scripts/release.py check
 
   build:
     name: Build ${{ matrix.platform }} wheel
@@ -164,10 +157,36 @@ jobs:
         run: uv sync --locked --extra dev
 
       - name: Build wheel
+        if: matrix.platform == 'linux-x86_64'
         run: |
           .venv/bin/python .codex/skills/build-release/scripts/release_build.py \
             build-platform --platform "${{ matrix.platform }}" \
             --version "${{ needs.validate.outputs.version }}"
+
+      - name: Download parity-certified macOS wheel
+        if: matrix.platform == 'macos-arm64'
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: breakout-parity-${{ needs.validate.outputs.commit }}
+          path: parity-evidence
+          run-id: ${{ inputs.parity_run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Reuse and verify exact certified macOS wheel
+        if: matrix.platform == 'macos-arm64'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_SHA: ${{ needs.validate.outputs.commit }}
+          RELEASE_VERSION: ${{ needs.validate.outputs.version }}
+        run: |
+          set -euo pipefail
+          mkdir -p "wheelhouse-v$RELEASE_VERSION-macos-arm64"
+          cp parity-evidence/*.whl "wheelhouse-v$RELEASE_VERSION-macos-arm64/"
+          for wheel in parity-evidence/*.whl; do
+            gh attestation verify "$wheel" --repo "$GITHUB_REPOSITORY" \
+              --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/parity-evidence.yml" \
+              --source-digest "$RELEASE_SHA" --deny-self-hosted-runners
+          done
 
       - name: Smoke wheel on supported Python bounds
         shell: bash
@@ -307,3 +326,46 @@ jobs:
           path: candidate
           if-no-files-found: error
           retention-days: 90
+
+  inspect:
+    name: Inspect attested candidate before publication
+    needs: [validate, candidate]
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: read
+      attestations: read
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ needs.validate.outputs.commit }}
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.13"
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: release-candidate-v${{ needs.validate.outputs.version }}
+          path: candidate
+      - name: Verify candidate ledger, checksums, provenance, and SPDX attestations
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ needs.validate.outputs.version }}
+          RELEASE_SHA: ${{ needs.validate.outputs.commit }}
+        run: |
+          set -euo pipefail
+          python scripts/release_state.py verify \
+            --candidate candidate --version "$RELEASE_VERSION" \
+            --commit "$RELEASE_SHA" --repository "$GITHUB_REPOSITORY" \
+            --run-id "$GITHUB_RUN_ID"
+          (cd candidate/dist && sha256sum -c ../SHA256SUMS)
+          for distribution in candidate/dist/*; do
+            gh attestation verify "$distribution" \
+              --repo "$GITHUB_REPOSITORY" \
+              --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release-build.yml" \
+              --source-digest "$RELEASE_SHA" --deny-self-hosted-runners
+            gh attestation verify "$distribution" \
+              --repo "$GITHUB_REPOSITORY" --predicate-type https://spdx.dev/Document \
+              --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release-build.yml" \
+              --source-digest "$RELEASE_SHA" --deny-self-hosted-runners
+          done

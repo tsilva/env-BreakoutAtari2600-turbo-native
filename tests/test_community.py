@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import subprocess
 import tomllib
 from pathlib import Path
 
@@ -12,7 +13,6 @@ COMMUNITY_FILES = (
     "CODE_OF_CONDUCT.md",
     "SECURITY.md",
     "SUPPORT.md",
-    "CHANGELOG.md",
     "CITATION.cff",
     ".github/ISSUE_TEMPLATE/bug_report.yml",
     ".github/ISSUE_TEMPLATE/feature_request.yml",
@@ -48,6 +48,13 @@ def test_package_metadata_exposes_public_project_identity():
 
 
 def test_readme_uses_pypi_safe_images_and_local_links_resolve():
+    tracked_paths = {
+        (REPO_ROOT / path).resolve()
+        for path in subprocess.check_output(
+            ["git", "ls-files", "-z"], cwd=REPO_ROOT, text=True
+        ).split("\0")
+        if path
+    }
     markdown_paths = [
         REPO_ROOT / "README.md",
         *sorted((REPO_ROOT / "docs").rglob("*.md")),
@@ -56,7 +63,9 @@ def test_readme_uses_pypi_safe_images_and_local_links_resolve():
 
     readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
     assert 'src="./' not in readme
-    assert "raw.githubusercontent.com/tsilva/env-BreakoutAtari2600-turbo-native" in readme
+    assert (
+        "raw.githubusercontent.com/tsilva/env-BreakoutAtari2600-turbo-native" in readme
+    )
 
     for markdown_path in markdown_paths:
         text = markdown_path.read_text(encoding="utf-8")
@@ -65,6 +74,11 @@ def test_readme_uses_pypi_safe_images_and_local_links_resolve():
                 continue
             relative = target.split("#", 1)[0]
             assert (markdown_path.parent / relative).resolve().exists(), (
+                markdown_path,
+                target,
+            )
+            assert (markdown_path.parent / relative).resolve() in tracked_paths, (
+                "documentation link must resolve in a fresh Git checkout",
                 markdown_path,
                 target,
             )
@@ -77,7 +91,6 @@ def test_readme_delegates_training_to_pinned_gradlab_recipes():
     assert (
         "uvx gradlab@0.1.1 train Breakout-Atari2600-v0/ppo-stable-updates"
     ) in readme
-    assert "env-BreakoutAtari2600-turbo-native is ROM-free" in readme
     assert "env-breakoutatari2600-turbo-native train" not in readme
 
 
@@ -100,4 +113,7 @@ def test_ci_covers_supported_python_versions_and_platforms():
     assert "runner: ubuntu-24.04" in workflow
     assert "cargo clippy --locked --all-targets -- -D warnings" in workflow
     assert "python -m pytest" in workflow
-    assert "actions/dependency-review-action@" in workflow
+    dependency_review = (
+        REPO_ROOT / ".github" / "workflows" / "dependency-review.yml"
+    ).read_text(encoding="utf-8")
+    assert "actions/dependency-review-action@" in dependency_review

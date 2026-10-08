@@ -8,12 +8,19 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def test_readme_quickstart_matches_runnable_example():
+def test_readme_python_example_runs():
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
-    block = re.search(r"## Try a rollout\n.*?```python\n(.*?)\n```", readme, re.S)
+    block = re.search(r"## Use from Python\n.*?```python\n(.*?)\n```", readme, re.S)
     assert block is not None
-    script = (ROOT / "examples" / "quickstart.py").read_text(encoding="utf-8")
-    assert block.group(1).strip() == script.split("\n\n", 1)[1].strip()
+    result = subprocess.run(
+        [sys.executable, "-c", block.group(1)],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=True,
+        timeout=30,
+    )
+    assert result.stdout.strip() == "(16, 4, 84, 84)"
 
 
 def test_quickstart_runs_a_scoring_vector_rollout():

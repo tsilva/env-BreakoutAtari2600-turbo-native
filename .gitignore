@@ -6,6 +6,7 @@
 /.pytest_cache/
 /dist/
 /runs/
+/media/
 /jerk_policy.json
 /wheelhouse-v*/
 **/__pycache__/

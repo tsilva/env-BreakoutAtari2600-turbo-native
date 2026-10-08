@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "env-breakoutatari2600-turbo-native"
-version = "0.5.14"
+version = "0.5.16"
 description = "Deterministic, fixed-point, high-throughput Breakout vector environment"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -39,7 +39,7 @@ dependencies = [
 ]
 
 [project.urls]
-Changelog = "https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/CHANGELOG.md"
+Changelog = "https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/releases"
 Discussions = "https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/discussions"
 Documentation = "https://github.com/tsilva/env-BreakoutAtari2600-turbo-native#readme"
 Issues = "https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/issues"

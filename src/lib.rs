@@ -552,8 +552,14 @@ fn step_native(lane: &mut Lane, action: u8) -> (f32, bool, bool) {
             unreachable!("wide-paddle zero offset is a crossing branch");
         }
         if relative_fp != 0 && !crossing_branch {
-            let steep_limit = if lane.narrow_paddle { 3 } else { 4 };
-            lane.steep_angle = relative_fp.abs() <= steep_limit * FP;
+            lane.steep_angle = if lane.narrow_paddle {
+                // The crossing branches use a center one pixel right of the
+                // ROM's narrow-paddle center. Its integer ball-origin test
+                // therefore maps to asymmetric fixed-point angle bounds.
+                -4 * FP < relative_fp && relative_fp <= 5 * FP
+            } else {
+                relative_fp.abs() <= 4 * FP
+            };
         }
         lane.collision_count = (lane.collision_count + 1).min(12);
         apply_atari_speed(lane);
@@ -2308,6 +2314,37 @@ mod parity_tests {
             (wide_positive_half.ball_x, wide_positive_half.ball_vx),
             (93 * FP + FP / 2, -2 * FP)
         );
+    }
+
+    #[test]
+    fn narrow_paddle_ordinary_speed_return_matches_atari_angle_boundaries() {
+        // Authority observations at the four edges of the narrow-paddle
+        // angle window, including the return that diverged at raw action 5914.
+        for (ball_x, expected_x, expected_vx) in [
+            (110 * FP, 109 * FP + FP / 2, -FP / 2),
+            (109 * FP + 3 * FP / 4, 108 * FP + FP / 4, -3 * FP / 2),
+            (118 * FP + 3 * FP / 4, 119 * FP + FP / 4, FP / 2),
+            (119 * FP, 120 * FP + FP / 2, 3 * FP / 2),
+        ] {
+            let mut lane = active_lane();
+            lane.paddle_x = 110 * FP;
+            lane.ball_x = ball_x;
+            lane.ball_y = 186 * FP + FP / 8;
+            lane.ball_vx = -3 * FP / 2;
+            lane.ball_vy = 2 * FP;
+            lane.collision_latches = 2;
+            lane.collision_count = 4;
+            lane.steep_angle = false;
+            lane.narrow_paddle = true;
+
+            step_native(&mut lane, 0);
+
+            assert_eq!(
+                (lane.ball_x, lane.ball_y, lane.ball_vx, lane.ball_vy),
+                (expected_x, 184 * FP + FP / 8, expected_vx, -2 * FP),
+                "incoming ball_x={ball_x}"
+            );
+        }
     }
 
     #[test]

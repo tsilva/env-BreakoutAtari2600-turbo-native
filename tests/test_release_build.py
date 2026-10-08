@@ -33,9 +33,9 @@ def lock_script_module():
 
 
 def test_release_workflow_restores_platform_scoped_cargo_cache():
-    workflow = (
-        REPO_ROOT / ".github" / "workflows" / "release-build.yml"
-    ).read_text(encoding="utf-8")
+    workflow = (REPO_ROOT / ".github" / "workflows" / "release-build.yml").read_text(
+        encoding="utf-8"
+    )
 
     assert re.search(r"uses: actions/cache@[0-9a-f]{40} # v\d+", workflow)
     assert "path: target-release" in workflow
@@ -62,9 +62,7 @@ def test_release_build_uses_persistent_platform_scoped_cargo_targets(tmp_path):
     output = tmp_path / "wheelhouse-v0.0.0-linux-x86_64"
     linux = release_build.linux_build_command(output, tmp_path)
 
-    assert macos["CARGO_TARGET_DIR"] == str(
-        tmp_path / "target-release" / "macos-arm64"
-    )
+    assert macos["CARGO_TARGET_DIR"] == str(tmp_path / "target-release" / "macos-arm64")
     assert "linux/amd64" in linux
     assert (
         f"{(tmp_path / 'target-release' / 'linux-x86_64').resolve()}:/cargo-target"
@@ -79,9 +77,7 @@ def test_release_build_uses_persistent_platform_scoped_cargo_targets(tmp_path):
 
 
 def test_core_package_keeps_play_dependencies_optional():
-    metadata = tomllib.loads(
-        (REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8")
-    )
+    metadata = tomllib.loads((REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8"))
     project = metadata["project"]
 
     assert project["dependencies"] == ["gymnasium>=1.1,<2", "numpy>=1.26,<3"]
@@ -92,8 +88,13 @@ def test_core_package_keeps_play_dependencies_optional():
         dependency.startswith("cibuildwheel")
         for dependency in project["optional-dependencies"]["dev"]
     )
-    assert "python/env_breakoutatari2600_turbo_native/py.typed" in metadata["tool"]["maturin"]["include"]
-    assert (REPO_ROOT / "python" / "env_breakoutatari2600_turbo_native" / "py.typed").is_file()
+    assert (
+        "python/env_breakoutatari2600_turbo_native/py.typed"
+        in metadata["tool"]["maturin"]["include"]
+    )
+    assert (
+        REPO_ROOT / "python" / "env_breakoutatari2600_turbo_native" / "py.typed"
+    ).is_file()
 
 
 def test_lock_policy_is_repository_owned_and_has_no_exemptions():
@@ -126,7 +127,10 @@ def test_wheel_audit_accepts_only_supported_platform_metadata(tmp_path):
     with zipfile.ZipFile(wheel, "w") as archive:
         archive.writestr("env_breakoutatari2600_turbo_native/__init__.py", "")
         archive.writestr("env_breakoutatari2600_turbo_native/env.py", "")
-        archive.writestr("env_breakoutatari2600_turbo_native/_env_breakoutatari2600_turbo_native.abi3.so", "")
+        archive.writestr(
+            "env_breakoutatari2600_turbo_native/_env_breakoutatari2600_turbo_native.abi3.so",
+            "",
+        )
         archive.writestr(
             f"{dist_info}/METADATA",
             "\n".join(
@@ -154,12 +158,12 @@ def test_release_workflow_publishes_sdist_checksums_and_github_release():
     build = (REPO_ROOT / ".github" / "workflows" / "release-build.yml").read_text(
         encoding="utf-8"
     )
-    publish = (
-        REPO_ROOT / ".github" / "workflows" / "release.yml"
-    ).read_text(encoding="utf-8")
-    parity = (
-        REPO_ROOT / ".github" / "workflows" / "parity-evidence.yml"
-    ).read_text(encoding="utf-8")
+    publish = (REPO_ROOT / ".github" / "workflows" / "release.yml").read_text(
+        encoding="utf-8"
+    )
+    parity = (REPO_ROOT / ".github" / "workflows" / "parity-evidence.yml").read_text(
+        encoding="utf-8"
+    )
 
     assert "build-sdist" in build
     assert "*.tar.gz" in build
@@ -201,13 +205,13 @@ def test_release_workflow_publishes_sdist_checksums_and_github_release():
 def test_diagnostic_parity_propagates_turbobench_failures():
     makefile = (REPO_ROOT / "Makefile").read_text(encoding="utf-8")
 
-    assert 'parity:\n\t@set -e; \\' in makefile
+    assert "parity:\n\t@set -e; \\" in makefile
 
 
 def test_publish_workflow_rejects_wrong_candidate_run_head_ref_or_workflow():
-    publish = (
-        REPO_ROOT / ".github" / "workflows" / "release.yml"
-    ).read_text(encoding="utf-8")
+    publish = (REPO_ROOT / ".github" / "workflows" / "release.yml").read_text(
+        encoding="utf-8"
+    )
 
     for required in (
         'test "$(jq -r .head_sha <<< "$run")" = "${{ inputs.commit }}"',
@@ -218,9 +222,9 @@ def test_publish_workflow_rejects_wrong_candidate_run_head_ref_or_workflow():
 
 
 def test_publish_workflow_binds_distribution_attestations_to_candidate_source():
-    publish = (
-        REPO_ROOT / ".github" / "workflows" / "release.yml"
-    ).read_text(encoding="utf-8")
+    publish = (REPO_ROOT / ".github" / "workflows" / "release.yml").read_text(
+        encoding="utf-8"
+    )
 
     assert (
         '--signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release-build.yml"'
@@ -238,27 +242,24 @@ def test_release_notes_are_validated_before_pypi_publication():
     build = (REPO_ROOT / ".github" / "workflows" / "release-build.yml").read_text(
         encoding="utf-8"
     )
-    publish = (
-        REPO_ROOT / ".github" / "workflows" / "release.yml"
-    ).read_text(encoding="utf-8")
-    release_script = (REPO_ROOT / "scripts" / "release.py").read_text(
+    publish = (REPO_ROOT / ".github" / "workflows" / "release.yml").read_text(
         encoding="utf-8"
     )
+    release_script = (REPO_ROOT / "scripts" / "release.py").read_text(encoding="utf-8")
 
     assert build.index("release_notes.py") < build.index("check-pypi")
     assert "release_state.py verify" in publish
     assert publish.index("release_state.py verify") < publish.index(
         "Publish exact primary candidate to PyPI"
     )
-    assert release_script.index("finalize_release_notes(version)") < release_script.index(
-        'helper("bump-version", "--to", version, "--write")'
-    )
-    assert release_script.index("validate_release_notes(version)") < release_script.rindex(
-        "run_checks()"
+    assert "validate_release_notes(version)" in release_script
+    assert (
+        "Build, lock consistency, and source tests are gated by GitHub Actions."
+        in release_script
     )
     assert "create_commit_and_tag" not in release_script
     assert "push_release" not in release_script
-    assert '"CHANGELOG.md"' in release_script
+    assert '"CHANGELOG.md"' not in release_script
 
 
 def test_built_wheel_smoke_exercises_exact_live_snapshot_replay():
@@ -305,7 +306,9 @@ def test_resolved_path_containment_canonicalizes_symlinks(tmp_path):
 
 def test_resolved_path_containment_rejects_checkout_import(tmp_path):
     environment = tmp_path / "venv"
-    checkout_module = tmp_path / "checkout" / "env_breakoutatari2600_turbo_native" / "__init__.py"
+    checkout_module = (
+        tmp_path / "checkout" / "env_breakoutatari2600_turbo_native" / "__init__.py"
+    )
     environment.mkdir()
     checkout_module.parent.mkdir(parents=True)
     checkout_module.touch()

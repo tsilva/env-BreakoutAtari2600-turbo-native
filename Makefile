@@ -23,8 +23,7 @@ lint:
 	cargo clippy --locked --all-targets -- -D warnings
 
 release-prepare:
-	UV_CACHE_DIR=$(UV_CACHE_DIR) uv sync --locked --extra dev
-	scripts/release.py prepare
+	python3 scripts/release.py prepare
 
 test-rust:
 	cargo test --locked --lib
