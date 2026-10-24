@@ -14,7 +14,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 RELEASE_HELPER = (
-    REPO_ROOT / ".codex" / "skills" / "build-release" / "scripts" / "release_build.py"
+    REPO_ROOT / ".codex" / "skills" / "breakout-native_build-release" / "scripts" / "release_build.py"
 )
 RELEASE_NOTES = REPO_ROOT / "scripts" / "release_notes.py"
 LOCK_SCRIPT = REPO_ROOT / "scripts" / "lock.py"

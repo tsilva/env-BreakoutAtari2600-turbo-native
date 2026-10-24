@@ -77,11 +77,11 @@ jobs:
       - name: Validate version, notes, lock, and unused PyPI version
         run: |
           .venv/bin/python scripts/lock.py
-          .venv/bin/python .codex/skills/build-release/scripts/release_build.py \
+          .venv/bin/python .codex/skills/breakout-native_build-release/scripts/release_build.py \
             check-version --version "${{ steps.identity.outputs.version }}"
           .venv/bin/python scripts/release_notes.py \
             --version "${{ steps.identity.outputs.version }}" > /dev/null
-          .venv/bin/python .codex/skills/build-release/scripts/release_build.py \
+          .venv/bin/python .codex/skills/breakout-native_build-release/scripts/release_build.py \
             check-pypi --version "${{ steps.identity.outputs.version }}"
 
       - name: Validate parity evidence workflow
@@ -159,7 +159,7 @@ jobs:
       - name: Build wheel
         if: matrix.platform == 'linux-x86_64'
         run: |
-          .venv/bin/python .codex/skills/build-release/scripts/release_build.py \
+          .venv/bin/python .codex/skills/breakout-native_build-release/scripts/release_build.py \
             build-platform --platform "${{ matrix.platform }}" \
             --version "${{ needs.validate.outputs.version }}"
 
@@ -198,7 +198,7 @@ jobs:
           uv python install 3.11 3.14
           for python_version in 3.11 3.14; do
             python_path="$(uv python find "$python_version")"
-            .venv/bin/python .codex/skills/build-release/scripts/release_build.py \
+            .venv/bin/python .codex/skills/breakout-native_build-release/scripts/release_build.py \
               smoke-wheel "${wheels[0]}" --python "$python_path"
           done
 
@@ -260,7 +260,7 @@ jobs:
 
       - name: Build source distribution
         run: |
-          .venv/bin/python .codex/skills/build-release/scripts/release_build.py \
+          .venv/bin/python .codex/skills/breakout-native_build-release/scripts/release_build.py \
             build-sdist --version "${{ needs.validate.outputs.version }}"
 
       - name: Assemble and audit exact distributions
@@ -276,7 +276,7 @@ jobs:
           mkdir -p wheelhouse-v${{ needs.validate.outputs.version }}-linux-x86_64
           cp candidate/dist/*macosx*.whl wheelhouse-v${{ needs.validate.outputs.version }}-macos-arm64/
           cp candidate/dist/*manylinux*.whl wheelhouse-v${{ needs.validate.outputs.version }}-linux-x86_64/
-          .venv/bin/python .codex/skills/build-release/scripts/release_build.py \
+          .venv/bin/python .codex/skills/breakout-native_build-release/scripts/release_build.py \
             final-check --version "${{ needs.validate.outputs.version }}"
 
       - name: Generate SPDX SBOM

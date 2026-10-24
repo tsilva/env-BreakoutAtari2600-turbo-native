@@ -1,0 +1,4 @@
+interface:
+  display_name: "Build Release"
+  short_description: "Automatically certify, publish, and verify releases"
+  default_prompt: "Use $breakout-native_build-release to prepare, certify, publish, and verify an env-breakoutatari2600-turbo-native release automatically, without further approval prompts."

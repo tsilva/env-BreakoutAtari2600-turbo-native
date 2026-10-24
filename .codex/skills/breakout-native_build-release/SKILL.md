@@ -1,5 +1,5 @@
 ---
-name: build-release
+name: breakout-native_build-release
 description: Prepare, certify, publish, and externally verify an env-breakoutatari2600-turbo-native release through its protected TurboBench and PyPI gates.
 ---
 
@@ -12,7 +12,7 @@ workflow monitoring, verification, and reporting. The rules below are this
 project's adapter; they retain its invocation default and required gates.
 If the shared skill is unavailable, stop and report the missing dependency.
 
-A bare `$build-release` or `/build-release` invocation authorizes the entire
+A bare `$breakout-native_build-release` or `/breakout-native_build-release` invocation authorizes the entire
 release sequence: preparation, commit and push, parity certification, candidate
 build and inspection, publication, and external verification. Complete it
 automatically without asking for separate `oracle` or `pypi` approval. Retain

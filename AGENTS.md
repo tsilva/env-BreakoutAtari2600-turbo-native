@@ -10,9 +10,9 @@ Before every task in this repository, use the `$specs-author` skill to read the 
 - Never edit `SPECS.md` from inference. Propose the exact change, explain why it reflects stakeholder intent, and edit the file only after the user explicitly approves that exact change.
 - Keep `SPECS.md` complete, concise, and compacted. It must contain stakeholder intent rather than implementation, architecture, operations, or transient project detail.
 
-- Use `/build-release` to cut, tag, publish, and verify PyPI releases with
+- Use `/breakout-native_build-release` to cut, tag, publish, and verify PyPI releases with
   validated macOS arm64 and Linux x86_64 wheels. Skill:
-  `.codex/skills/build-release/SKILL.md`.
+  `.codex/skills/breakout-native_build-release/SKILL.md`.
 
 ## Agent skills
 
@@ -26,7 +26,7 @@ This is a single-context repository with a root `CONTEXT.md`. See `docs/agents/d
 
 ## Shared release procedure
 
-The project `build-release` skill composes `$release-workflow` from
+The project `breakout-native_build-release` skill composes `$release-workflow` from
 `/Users/tsilva/.codex/skills/release-workflow/SKILL.md`.
 Read both for release work; keep project commands, version policy, artifact
 requirements, and approval gates in the project adapter.

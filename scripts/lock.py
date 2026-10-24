@@ -15,7 +15,7 @@ UV_IMAGE = (
     "sha256:531f855bda2c73cd6ef67d56b733b357cea384185b3022bd09f05e002cd144ca"
 )
 RELEASE_HELPER = (
-    REPO_ROOT / ".codex" / "skills" / "build-release" / "scripts" / "release_build.py"
+    REPO_ROOT / ".codex" / "skills" / "breakout-native_build-release" / "scripts" / "release_build.py"
 )
 PYTHON = REPO_ROOT / ".venv" / "bin" / "python"
 

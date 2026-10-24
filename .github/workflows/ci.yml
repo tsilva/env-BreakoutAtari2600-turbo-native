@@ -182,7 +182,7 @@ jobs:
 
       - name: Build supported wheel
         run: |
-          .venv/bin/python .codex/skills/build-release/scripts/release_build.py \
+          .venv/bin/python .codex/skills/breakout-native_build-release/scripts/release_build.py \
             build-platform --platform "${{ matrix.platform }}"
 
       - name: Audit and smoke wheel
@@ -195,9 +195,9 @@ jobs:
             printf 'expected one wheel, found %s\n' "${#wheels[@]}" >&2
             exit 1
           fi
-          .venv/bin/python .codex/skills/build-release/scripts/release_build.py \
+          .venv/bin/python .codex/skills/breakout-native_build-release/scripts/release_build.py \
             audit-wheels "${wheels[0]}"
-          .venv/bin/python .codex/skills/build-release/scripts/release_build.py \
+          .venv/bin/python .codex/skills/breakout-native_build-release/scripts/release_build.py \
             smoke-wheel "${wheels[0]}"
 
   determinism-trace:

@@ -26,7 +26,7 @@ reference frames, or extracted game assets.
 
 ## Release gates
 
-Use the [build-release skill](../.codex/skills/build-release/SKILL.md) for the
+Use the [breakout-native_build-release skill](../.codex/skills/breakout-native_build-release/SKILL.md) for the
 release procedure. Local `python3 scripts/release.py prepare` uses the standard
 library to validate metadata, release notes, lock policy, an unused version/tag,
 and unchanged third-party dependencies. `prepare --resume` accepts an already
