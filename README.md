@@ -202,3 +202,5 @@ for Atari, [Stable Retro], ROM, and trademark boundaries.
 [Gymnasium]: https://gymnasium.farama.org/
 [Stable Retro]: https://stable-retro.farama.org/
 [Stable Retro Turbo]: https://github.com/tsilva/env-StableRetro-turbo
+
+[MIT License](LICENSE).
