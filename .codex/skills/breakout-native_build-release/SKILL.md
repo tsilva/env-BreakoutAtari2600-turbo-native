@@ -5,9 +5,9 @@ description: Prepare, certify, publish, and externally verify an env-breakoutata
 
 # Build release
 
-Read and apply the shared `$release-workflow` skill at
-`/Users/tsilva/.codex/skills/release-workflow/SKILL.md` before execution.
-It owns common preflight, publication safeguards, `$push` integration,
+Read and apply the shared `$private-skills_release-workflow` skill at
+`/Users/tsilva/.codex/skills/private-skills/private-skills_release-workflow/SKILL.md` before execution.
+It owns common preflight, publication safeguards, `$private-skills_push` integration,
 workflow monitoring, verification, and reporting. The rules below are this
 project's adapter; they retain its invocation default and required gates.
 If the shared skill is unavailable, stop and report the missing dependency.
@@ -86,7 +86,7 @@ and use `python3 scripts/release.py prepare --resume`. Resume preserves the
 prepared version and rejects unrelated edits or third-party lock changes.
 Never bump again merely because a local preparation previously failed.
 
-Review the diff before committing. Apply `$push` with scope limited to the
+Review the diff before committing. Apply `$private-skills_push` with scope limited to the
 prepared metadata, capture the full `main` SHA, and require a clean worktree
 with `HEAD == origin/main` before dispatching parity. Required remote checks
 must succeed for this exact SHA before publication; a prepared commit alone
