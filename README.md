@@ -53,9 +53,42 @@ API, install without the optional player: `uv add env-breakoutatari2600-turbo-na
 
 ## Train an agent
 
-See [training recipes and a Python example](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/docs/training.md).
-The environment reference covers reset behavior, game signals, and compatibility
-with Stable Retro.
+Run a pinned GradLab recipe:
+
+```bash
+# Standard PPO
+uvx gradlab@0.1.1 train Breakout-Atari2600-v0/ppo
+
+# PPO with learning-rate decay and KL-based update stopping
+uvx gradlab@0.1.1 train Breakout-Atari2600-v0/ppo-stable-updates
+```
+
+## Use from Python
+
+Install the package without the player extra, then run:
+
+```python
+import gymnasium as gym
+import numpy as np
+
+env = gym.make_vec(
+    "env_breakoutatari2600_turbo_native:EnvBreakoutAtari2600TurboNative-v0",
+    game="Breakout-Atari2600-v0",
+    num_envs=16,
+    num_threads=4,
+)
+
+try:
+    obs, infos = env.reset(seed=42)
+    actions = np.ones(env.num_envs, dtype=np.uint8)  # FIRE in every game
+    obs, rewards, terminated, truncated, infos = env.step(actions)
+    print(obs.shape)  # (16, 4, 84, 84)
+finally:
+    env.close()
+```
+
+See the [training guide](https://github.com/tsilva/env-BreakoutAtari2600-turbo-native/blob/main/docs/training.md)
+for outputs and a longer rollout.
 
 ## Documentation and contributing
 
@@ -84,5 +117,3 @@ for Atari, [Stable Retro], ROM, and trademark boundaries.
 [Gymnasium]: https://gymnasium.farama.org/
 [Stable Retro]: https://stable-retro.farama.org/
 [Stable Retro Turbo]: https://github.com/tsilva/env-StableRetro-turbo
-
-[MIT License](LICENSE).
